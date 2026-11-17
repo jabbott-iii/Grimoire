@@ -47,4 +47,25 @@ updates:
     cooldown:
       default-days: 7
 
+  # The hash-pinned twine.txt (compiled from twine.in) that release.yml's verify-linux installs.
+  - package-ecosystem: "pip"
+    directory: "/.github/requirements"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
+      semver-minor-days: 7
+      semver-patch-days: 7
+    groups:
+      pip-minor-patch:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      pip-security:
+        applies-to: security-updates
+        patterns: ["*"]
+
   # docker: added in Phase 6 together with the Dockerfile.

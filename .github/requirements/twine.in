@@ -1,0 +1,5 @@
+# Input for twine.txt, the hash-pinned requirements that release.yml's verify-linux job
+# installs with `pip install --require-hashes --only-binary :all:` to run `twine check --strict`.
+# Regenerate twine.txt with the command in its header, moving --exclude-newer forward so that
+# every pin stays at least 7 days old (the Dependabot cooldown).
+twine==7.0.0

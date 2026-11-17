@@ -1,0 +1,17 @@
+---
+source: xtask/src/release/channels/wheel.rs
+expression: metadata
+---
+Metadata-Version: 2.4
+Name: agent-grimoire
+Version: 1.2.3
+Summary: Install only the AI-agent assets you choose (rules, skills, agents, tools, MCP servers) into your repository
+Keywords: ai,agents,mcp,skills,cli
+Project-URL: Repository, https://github.com/jabbott-iii/Grimoire
+Project-URL: Changelog, https://github.com/jabbott-iii/Grimoire/blob/v1.2.3/CHANGELOG.md
+License-Expression: MIT OR Apache-2.0
+License-File: LICENSE-MIT
+License-File: LICENSE-APACHE
+Description-Content-Type: text/markdown
+
+# Grimoire

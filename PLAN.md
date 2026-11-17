@@ -1,6 +1,6 @@
 # Grimoire: implementation plan
 
-- **Status:** Phases 0 to 3 approved and committed (Phase 3 on 2026-11-17). **Phase 4 implemented, awaiting review** (2026-11-17).
+- **Status:** Phases 0 to 4 approved and committed (Phase 4 on 2026-11-17). **Phase 5 implemented and reviewed, awaiting review** (2026-11-17).
 - **Date:** 2026-11-17
 
 ## Decisions recorded (2026-11-16)
@@ -8,7 +8,7 @@
 - **All Phase 0 proposals are accepted.** ADR-0001 to ADR-0005 are now *Accepted*, and every proposal in `architecture.md` is approved.
 - **Q1, license:** **`MIT OR Apache-2.0`**. `LICENSE` becomes `LICENSE-MIT`, `LICENSE-APACHE` is added, and the Cargo metadata uses the dual expression. This was done in Phase 1, not deferred to Phase 7.
 - **Q2–Q10:** as proposed below.
-- **Still open: repository spelling (C8).** Until you decide, the `repository` URL is left out of every config, including the Cargo metadata. Decide before Phase 5.
+- **Repository spelling (C8): decided 2026-11-17.** The repository stays `jabbott-iii/Grimoire`, capital G. Trusted publishers, cosign identities and every config use that exact spelling.
 - **Local tooling approved:** Rust 1.96 (MSRV), cargo-deny, cargo-shear, zizmor, actionlint, gitleaks, and the `gh-actions-lock` extension.
 - **Phase 2, filesystem layer:** cap-std with scoped deny.toml entries (the maintainer's choice when asked, [ADR-0006](docs/adr/0006-filesystem-confinement.md)).
 - **Phase rules:** each phase ends with a report and a stop. Nothing is committed, pushed, tagged, published or registered by the agent; the maintainer does all of that.
@@ -27,6 +27,19 @@
   - **Hooks stay Claude Code only** for now. The `codex`, `cursor`, `gemini-cli` and `copilot` adapters refuse hook outputs: none of those clients can guarantee that a failed hook blocks, three run hooks only through a shell, and none can be tested here.
   - **AGENTS.md covers Cursor and Copilot.** When a rule is in `AGENTS.md`, Cursor and Copilot get no rule file of their own, and Gemini CLI gets an `@AGENTS.md` import in `GEMINI.md`. Native rule files are written only when `AGENTS.md` isn't.
 - **Phase 4, `cargo deny`** (the maintainer's choice when asked, 2026-11-17): ignore RUSTSEC-2026-0543 ("chrono is unmaintained"), with its reason, in `deny.toml`. It is an unmaintained notice, not a vulnerability. rmcp 3.10.0 and 3.11.0 depend on chrono directly, so no upgrade removes it. The entry is reviewed on each rmcp bump, and `unused-ignored-advisory = "deny"` fails CI once it no longer applies.
+
+- **Phase 4 approved** (2026-11-17), and Phase 5 started.
+- **Phase 5, before implementation** (the maintainer's choices when asked, 2026-11-17):
+  - one version for the CLI and its five libraries, one `vX.Y.Z` tag;
+  - release-plz skips the asset crates, whose catalog CHANGELOGs stay hand-written;
+  - after the research: PyPI wheels are written by `cargo xtask` from the archived binary, not by maturin;
+  - Homebrew and Scoop pull the attested formula and manifest from each release, through template workflows in the tap and bucket repos;
+  - winget identifier `jabbott-iii.agent-grimoire`, command alias `agent-grimoire` (`grimoire` is taken by another package);
+  - release-plz opens the release PR only; the release workflow tags the commit it built and signed, and publishes.
+- **Phase 5, after the review** (the maintainer's choices when asked, 2026-11-17):
+  - publishing runs in four jobs with four environments (`release`, `crates-io`, `npm`, `pypi`), so one registry's job can't publish to another;
+  - each binary is built on its own (`cargo auditable build -p <pkg>`), so its features and SBOM match a `cargo install` build.
+- **Local tooling approved for Phase 5** (scratchpad only): ShellCheck, PowerShell with PSScriptAnalyzer, twine, release-plz, cosign, cargo-auditable, cargo-cyclonedx, and the Homebrew Docker image (which couldn't run: Docker isn't reachable for this user).
 
 ## Where things are
 
@@ -67,7 +80,7 @@ Per the working agreement, each item gives the safest alternative.
 | C5 | **Homebrew tap and winget automation** normally need cross-repo or classic PAT credentials (`BREW`, `WINGET`) | Homebrew and Scoop use a **pull model**: each repo autobumps itself with its own `GITHUB_TOKEN`. winget manifests are generated and validated in CI and **submitted by you**. |
 | C6 | **Hooks** run automatically with user privileges, and some clients run project hooks without a trust prompt in non-interactive mode (`CC-SET`) | Hooks are bindings declared by **tool** assets only. Exec form, pointing at our signed Rust binaries, never shell strings. They need the explicit `hooks` permission grant (`architecture.md` §3.4, §6.3). |
 | C7 | **LICENSE.** The repo already has an **MIT-only** `LICENSE`, while the brief's default suggestion is MIT OR Apache-2.0. | Your call (Q1). Dual licensing means adding `LICENSE-APACHE` and renaming to `LICENSE-MIT`. Dependencies so far (e.g. rmcp, Apache-2.0) are compatible with either. |
-| C8 | **Repository name.** The remote is `github.com/jabbott-iii/Grimoire`; the brief says `grimoire`. OIDC subjects, trusted-publisher configs and cosign identities embed it. | Pick the canonical spelling before Phase 5 (Q2). Nothing written so far contains the repo URL in any config. |
+| C8 | **Repository name.** The remote is `github.com/jabbott-iii/Grimoire`; the brief says `grimoire`. OIDC subjects, trusted-publisher configs and cosign identities embed it. | **Decided 2026-11-17:** keep `jabbott-iii/Grimoire` exactly. |
 | C9 | **Cross-OS CI** can't be verified without pushing, and I may not push. | I run every gate locally on Linux and report exactly what ran. You push a branch to get macOS and Windows results. |
 
 ## 3. Open questions
@@ -93,7 +106,7 @@ Per the working agreement, each item gives the safest alternative.
 | `aarch64-unknown-linux-musl` | `ubuntu-24.04-arm` | Static. Native arm64 runner, free for public repos. |
 | `x86_64-apple-darwin` | `macos-15-intel` | GitHub plans to drop Intel macOS "after the macOS 15 image is retired in Fall 2027". Fall back to cross-compiling from arm64 if needed. |
 | `aarch64-apple-darwin` | `macos-15` | |
-| `x86_64-pc-windows-msvc` | `windows-2025` | Static CRT; to be verified in Phase 5. |
+| `x86_64-pc-windows-msvc` | `windows-2025` | Static CRT: Rust links it dynamically by default, so release builds pass `-C target-feature=+crt-static` (Phase 5). |
 | `aarch64-pc-windows-msvc` | `windows-11-arm` | Native arm64 runner. |
 
 Labels are pinned explicitly. `ubuntu-latest` changes to 26.04 this month (`RUNNERS`).
@@ -298,6 +311,37 @@ Deviations from the Phase 4 candidate list (each the maintainer's choice or forc
 
 ### Phase 5: Release pipeline and every channel, dry-run only
 
+**Outcome (2026-11-17):** implemented and reviewed. Every gate that runs locally passes on Linux, and one target (x86_64 musl) was built and packaged end to end. Nothing has run on GitHub: the release workflow, the other five targets, attestations, keyless signing and every registry still need a push and, for a release, the bootstrap.
+
+What was built:
+- **Specs first.** Eight research topics (crates.io and release-plz, npm, PyPI, Homebrew and Scoop, winget, supply chain, Actions and builds, and the installer spike), each re-checked by a skeptic: 524 of 567 facts confirmed, 27 corrected, 16 left UNVERIFIED. They are recorded in `docs/specs.md` (Phase 5 additions).
+- **`cargo xtask release`** (`plan`, `build`, `sbom`, `channels`, `checksums`, `verify`, `notes`): the release logic, in Rust and unit-tested, so the workflow is glue ([ADR-0009](docs/adr/0009-release-pipeline.md)).
+  - Flat, reproducible archives (`.tar.gz` and a small zip writer of our own), with hostile-archive limits.
+  - A CycloneDX 1.6 SBOM per archive.
+  - npm launcher and six platform packages; six wheels; the Homebrew formula; the Scoop manifest; the three winget manifests; `install.sh` and `install.ps1` with the archive SHA-256s embedded.
+  - `verify` regenerates everything and checks that `dist/` holds exactly the release, with the same binary in every channel.
+- **`.github/workflows/release.yml`**: a dry-run on every pull request, and the release from `main` once the maintainer enables it. Plan → native builds → package → install tests on each OS → attest and keyless cosign → four approved publish jobs. **`release-plz.yml`** opens the release PR.
+- **Installers** `install.sh` and `install.ps1`, and the npm launcher, under a language-policy exception ([ADR-0010](docs/adr/0010-language-policy-exceptions.md)). The dist spike failed: dist's PowerShell installer checks no checksum, and its shell installer checks one only when dist built the archives.
+- **Templates** for the `homebrew-tap` and `scoop-bucket` repositories, and the maintainer's checklist and user verification in [`docs/release.md`](docs/release.md).
+- **Cargo:** `repository`, `readme`, crates.io keywords and categories, cargo-binstall metadata, licence files in each published crate, and a `dist` profile (fat LTO, one codegen unit, panic unwind).
+
+Deviations from the plan below, each recorded in ADR-0009:
+- release-plz opens the release PR only (it can't tag the commit that was signed).
+- PyPI wheels come from xtask, not maturin.
+- Homebrew and Scoop pull attested files instead of autobump and Excavator: neither can update a multi-arch prebuilt formula safely.
+- The release PR's CI runs by approving its pull_request runs: workflow_dispatch checks don't satisfy required checks (forced by the research).
+- `install.sh` requires curl: wget can't refuse an https→http redirect (forced by the review).
+- Release mode needs the repository variable `GRIMOIRE_RELEASES=enabled` and a CHANGELOG section for the version, so nothing releases before the bootstrap or outside a release PR.
+
+**Review (2026-11-17).** A six-area review (workflow security, the xtask code, the scripts, channel formats, docs, integration) raised 64 findings. An independent skeptic checked each one: 59 were confirmed (2 medium, the rest low) and 5 refuted. All 59 are addressed. The main ones:
+- **Medium: one publish job could publish anywhere.** Every step in it, including the PyPI action's container (an image referenced by tag), could mint a crates.io token. Publishing is now four jobs in four environments (the maintainer's choice).
+- **Medium: the npm dry-run failed on every PR after a release** because the version was already on npm. PRs now dry-run against an unreachable local registry.
+- **Artifacts are bound to the package job.** Release jobs download by artifact ID and check `SHA256SUMS` against the hash the package job recorded before attesting, signing or publishing.
+- **Hostile archives:** duplicate members, extra gzip members and overlapping zip entries are refused, and CLI archives must be byte-for-byte what `build` writes.
+- **Re-runs:** staged npm versions block a re-run (CI can't see them), so npm is its own job with a clear error; the recovery steps for a stuck release are documented.
+- **Smaller fixes:** per-package builds; `release checks` as one required check; release-plz on `main` only; sorted wheel tags; Scoop's `|` licence separator; the binstall URLs now tested; licence files in the crates; the launcher forwards signals; `install.ps1` restores the old binary if the swap fails.
+
+
 - **Pipeline:** release-plz config plus the hand-written release workflow (ADR-0003).
 - **Artifacts:** checksums, CycloneDX 1.6 SBOMs, `actions/attest` provenance, cosign v3 bundles, immutable-release flow.
 - **Channels:** crates.io (with binstall metadata), npm (launcher + platform packages, stage publish), PyPI (maturin), Homebrew tap formula, Scoop manifest, winget manifests.
@@ -323,9 +367,9 @@ Deviations from the Phase 4 candidate list (each the maintainer's choice or forc
 |---|---|
 | Before Phase 1 CI | Enable the repo setting "Require actions to be pinned to a full-length commit SHA"; set `GITHUB_TOKEN` default permissions to read-only; enable secret-scanning push protection. |
 | After the first green CI run | Add a branch ruleset on `main` that requires the CI and Security jobs to pass (and requires pull requests). Without it, failing gates do not block merges. Optionally enable "Require lockfile" for `actions.lock`. |
-| Before Phase 5 | Decide the repo spelling (C8). Create the `release` environment with yourself as required reviewer (and "Prevent self-review" as you prefer). Enable immutable releases. |
-| Phase 5 bootstrap | Create the npm org `agent-grimoire`. Do the first crates.io publish of each published crate (short-lived scoped token, then revoke) and set trusted-publishing-only. Do the first npm publish of each npm package, then configure trusted publishers. Add the PyPI pending publisher. Create the `homebrew-tap` and `scoop-bucket` repos. |
-| Phase 7 | Enable private vulnerability reporting (currently `enabled: false` on this repo). |
+| Before merging Phase 5 | Turn on "Allow GitHub Actions to create and approve pull requests": `release-plz.yml` opens the release PR on the next push to `main`. Leave that PR unmerged until the bootstrap is done. |
+| Phase 5 bootstrap | The checklist in [`docs/release.md`](docs/release.md) §2: the four environments (`release`, `crates-io`, `npm`, `pypi`), immutable releases, the ruleset (CI, Security and `release checks`), the npm org and packages, the crates.io first publish and trusted publishers, the PyPI pending publisher, the tap and bucket repos, the Phase 7 README, and finally `GRIMOIRE_RELEASES=enabled`. |
+| Before the first release | Enable private vulnerability reporting (currently `enabled: false` on this repo); it is part of the [`docs/release.md`](docs/release.md) §2 checklist. |
 
 ## 7. Risks
 

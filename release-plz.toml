@@ -1,0 +1,38 @@
+# release-plz 0.4.3 configuration (RELEASE-PLZ and Phase 5 additions in docs/specs.md).
+#
+# release-plz only opens the release PR: it bumps the shared workspace version and
+# writes CHANGELOG.md from Conventional Commits (ADR-0009). It never tags, creates
+# GitHub releases or publishes. `.github/workflows/release.yml` does that, for the
+# exact commit it built and signed. Run it as `release-plz release-pr` only.
+#
+# Asset crates (catalog/tools/*, catalog/mcp-servers/*), xtask, the testkit and
+# agent-grimoire-mcp are `publish = false` in Cargo, which release-plz already leaves
+# out, so a new asset needs no entry here. Their CHANGELOGs are written by hand.
+
+[workspace]
+git_release_enable = false
+git_tag_enable = false
+# Library APIs are internal to the CLI for now, and the 0.x series has no
+# compatibility promise; cargo-semver-checks would be one more unverified download.
+semver_check = false
+# `cargo update --workspace` only: dependency bumps arrive through Dependabot.
+dependencies_update = false
+# One changelog, for the CLI (below); the libraries share its version.
+changelog_update = false
+pr_labels = ["release"]
+
+[[package]]
+name = "agent-grimoire"
+changelog_update = true
+# Relative to the root Cargo.toml.
+changelog_path = "./CHANGELOG.md"
+# Commits to the libraries belong in the CLI's changelog too.
+changelog_include = [
+    "agent-grimoire-model",
+    "agent-grimoire-catalog",
+    "agent-grimoire-resolve",
+    "agent-grimoire-install",
+    "agent-grimoire-adapters",
+]
+# The tag the release workflow creates (ADR-0009); release-plz never creates it.
+git_tag_name = "v{{ version }}"

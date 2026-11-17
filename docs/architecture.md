@@ -148,7 +148,13 @@ crates/
   grimoire-install/        root-confined fs, atomic writes, outputs/ownership, planner, applier, drift, lockfile I/O
   grimoire-adapters/       Adapter trait + one module per client; insta snapshot tests
   grimoire-cli/            the `grimoire` binary (published package name: see ADR-0004)
-xtask/                     `cargo xtask …`: new, validate, schema, pack-catalog, gen-marketplace (publish = false)
+xtask/                     `cargo xtask …`: new, validate, schema, pack-catalog, gen-marketplace, release (publish = false)
+release-plz.toml           release-plz config: it opens the release PR only (Phase 5, ADR-0009)
+packaging/                 hand-written release inputs that aren't Rust (Phase 5, ADR-0010):
+  install/                 install.sh and install.ps1 templates, rendered per release
+  npm/grimoire.js          the npm launcher
+  homebrew-tap/            sync-formula.yml, a workflow template for jabbott-iii/homebrew-tap
+  scoop-bucket/            sync-manifest.yml, a workflow template for jabbott-iii/scoop-bucket
 catalog/
   rules/<id>/              asset.toml, rule.md, README.md, CHANGELOG.md, evals/
   skills/<id>/             asset.toml, SKILL.md, scripts/ references/ assets/, README.md, CHANGELOG.md, evals/
@@ -646,6 +652,21 @@ Marketplace (Phase 4, verified against `CC-PLUGIN-P4` and `CC-MKT-P4`):
 - **Adding it:** users add the marketplace as `owner/repo` or a GitHub repository URL. A raw `marketplace.json` URL can't resolve relative plugin sources.
 - **CI:** `gen-marketplace --check`, then a pinned, checksum-verified Claude Code 2.1.311 runs `claude plugin validate --strict` on the marketplace and on each plugin directory, with no secrets.
 - Plugin MCP servers still need the server binary on `PATH`. Codex also reads `.claude-plugin/marketplace.json` (`CODEX-PLUGINS-P4`); compatibility is unverified and out of v1 scope.
+
+Release assets (Phase 5, [ADR-0009](adr/0009-release-pipeline.md)):
+- **Generated at release time, not checked in.** `.github/workflows/release.yml` runs `cargo --locked xtask release` (`plan`, `build`, `sbom`, `channels`, `checksums`, `verify`, `notes`). Every PR runs all of them as a dry-run except `notes`, which runs only in the release-mode `publish` job. The only checked-in inputs are the templates and the launcher in `packaging/` (ADR-0010).
+- **Release mode needs the version's `CHANGELOG.md` section**, which the merged release PR adds; without it `plan` runs a dry-run and `notes` fails. `plan` also fails when the catalog would exceed GitHub's limits (256 matrix jobs, 1000 release assets).
+- **One build per package:** `build` runs `cargo auditable build -p <package>` for the CLI and for each asset binary, so each binary has only the dependency features its own manifest asks for, and its SBOM matches it.
+- **What a release holds**, all flat in one directory:
+  - the six CLI archives, `agent-grimoire-{V}-{triple}.tar.gz` or `.zip`;
+  - one archive per asset binary and target, `{bin}-{assetV}-{triple}.tar.gz` or `.zip`;
+  - a CycloneDX 1.6 SBOM per archive, `{archive}.cdx.json`;
+  - the npm launcher and six platform tarballs, and the wheels;
+  - `agent-grimoire.rb` (Homebrew), `agent-grimoire.json` (Scoop) and the three winget manifests;
+  - the rendered `install.sh` and `install.ps1`;
+  - `SHA256SUMS`, and a cosign bundle, `{file}.sigstore.json`, for every file.
+- **Asset binaries are discovered from `cargo metadata --no-deps`:** every `bin` target of a package under `catalog/tools/` or `catalog/mcp-servers/`. Nothing is listed by hand, so a new tool or MCP server is released with no core edit. This settles the check ADR-0002 left for Phase 5.
+- **Reproducible archives:** a fixed mtime, uid and gid 0, and sorted entries, so the same binaries always give the same archives.
 
 ## 11. Open design issues (to settle in the phase noted)
 

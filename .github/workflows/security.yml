@@ -79,6 +79,9 @@ jobs:
         with:
           persist-credentials: false
       # Blocking: advanced-security false keeps zizmor's failing exit codes. Online audits use the job token.
+      # `inputs` adds the workflow templates for the tap and bucket repositories to the default `.`;
+      # the action word-splits and globs the list in bash (action.sh at v0.8.1), and a pattern
+      # that matches nothing reaches zizmor as a missing path, which fails the step.
       - name: Run zizmor (pedantic)
         uses: zizmorcore/zizmor-action@45d7276c9ca790aabd705e31ca99c6185c3e76dd # v0.8.1
         with:
@@ -86,6 +89,7 @@ jobs:
           version: 1.32.0
           advanced-security: false
           annotations: true
+          inputs: . packaging/homebrew-tap/*.yml packaging/scoop-bucket/*.yml
       - name: Install actionlint (checksum-verified)
         run: |
           set -euo pipefail
@@ -95,6 +99,9 @@ jobs:
           tar -xzf actionlint.tar.gz actionlint
       - name: Run actionlint
         run: '"${RUNNER_TEMP}/actionlint" -color'
+      # Templates for the jabbott-iii/homebrew-tap and jabbott-iii/scoop-bucket repositories.
+      - name: Run actionlint on the workflow templates
+        run: '"${RUNNER_TEMP}/actionlint" -color packaging/homebrew-tap/*.yml packaging/scoop-bucket/*.yml'
 
   actions-lock:
     name: actions.lock is complete and current

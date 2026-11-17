@@ -1,6 +1,6 @@
 # ADR-0003: Release tooling: release-plz for versioning plus a hand-written, SHA-pinned release pipeline
 
-- **Status:** Accepted (maintainer approved all Phase 0 proposals, 2026-11-16)
+- **Status:** Accepted (maintainer approved all Phase 0 proposals, 2026-11-16). Amended by [ADR-0009](0009-release-pipeline.md) (2026-11-17): release-plz only opens the release PR; the release workflow tags and publishes; release-PR CI comes from approved `pull_request` runs, not `workflow_dispatch`; Grimoire writes its own installers (ADR-0010) and wheels; Homebrew and Scoop pull attested files instead of autobump and Excavator.
 - **Date:** 2026-11-16
 - **Specs:** `DIST`, `RELEASE-PLZ`, `CRATES-TP`, `NPM-TP`, `PYPI-TP`, `MATURIN`, `BINSTALL`, `BREW`, `WINGET`, `SCOOP`, `GHA-SEC`, `ATTEST`, `COSIGN`, `SBOM`, `RUNNERS` in [`../specs.md`](../specs.md)
 
@@ -94,7 +94,7 @@ Release requirements from the project brief:
   - one first publish per npm package, using an interactive `npm login` session (2-hour token);
   - PyPI needs no bootstrap.
 
-  `PLAN.md` lists these steps.
+  [`docs/release.md`](../release.md) §2 lists these steps (ADR-0009).
 - **Release PRs and CI.** PRs and tags created with `GITHUB_TOKEN` don't trigger other workflows (`RELEASE-PLZ`). Two ways round it:
   - Run the build in the same workflow run after the `release` step, and run CI on the release PR via `workflow_dispatch` or a maintainer push. This keeps zero stored credentials.
   - Use a GitHub App, whose private key is itself a long-lived secret.

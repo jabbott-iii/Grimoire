@@ -1,9 +1,10 @@
 # Grimoire security model
 
-- **Status:** third version (Phase 4).
+- **Status:** fourth version (Phase 5).
   - §1–§3 cover the installer's filesystem threat model (Phase 2).
   - §4–§6 cover MCP servers, tool hooks, and content that reaches the model, including prompt injection (Phase 3).
   - Phase 4 adds the Codex, Cursor, Gemini CLI and Copilot adapters, what each client can enforce, and the plugin marketplace.
+  - Phase 5 adds releases and distribution (§6b).
   - Phase 7 completes the document.
 - **Date:** 2026-11-17
 
@@ -110,6 +111,66 @@ Rules, skills, agents and MCP tool results become text in the model's context. G
 - **Generated content.** The generator reuses the `claude-code` adapter's renderers, except that agents name MCP tools the way Claude Code names a plugin's, and per-project options (transport, variable remapping) don't apply. `--check` in CI keeps the checked-in plugins equal to what the generator produces. CI also runs `claude plugin validate --strict` on every plugin with a pinned, checksum-verified Claude Code and no secrets.
 - **Double installs.** A user who installs an asset with `grimoire` and also enables its plugin gets two skills or two agents. An MCP server with the same command connects once, and per `CC-PLUGIN-P4` the project's definition wins, so a plugin agent's plugin-named MCP tools are then unavailable. Neither tool detects the other.
 
+## 6b. Releases and distribution
+
+How a release is built, signed and published is in [ADR-0009](adr/0009-release-pipeline.md); the runbook and the user's verification commands are in [`release.md`](release.md). Facts are in `*-P5` in `specs.md`. **No release exists yet**, so none of this has run against a real release.
+
+**The trust chain.** Each link is checked by the next:
+1. **Source.** A commit on `main`, merged through a PR that passed the required checks (CI, Security and `release checks`). The release PR's checks come from runs the maintainer approves. Release mode also needs the version's section in `CHANGELOG.md`, which only the merged release PR adds.
+2. **Build.** GitHub-hosted runners, one native runner per target:
+   - the pinned toolchain, `cargo --locked xtask`, and one `cargo auditable build --locked` per package, so each binary has only the dependency features its own manifest asks for and its SBOM describes it;
+   - remapped build paths;
+   - no caches;
+   - artifacts move only within the run, and download-artifact checks their digests.
+3. **Checksums.** `SHA256SUMS` lists every file. `cargo xtask release verify` checks that every wheel and npm platform package holds the same binary as its CLI archive. Every release-mode job downloads the files by artifact ID, then checks `SHA256SUMS` against the hash the package job recorded, and that the files are exactly the ones `SHA256SUMS` lists, before it attests, signs or publishes. So an artifact of the same name uploaded by another job is never what gets signed.
+4. **Attestations.** SLSA provenance for every file, and a CycloneDX SBOM attestation for every archive, through `actions/attest` and public-good Sigstore.
+5. **Signatures.** A keyless cosign bundle for every file, `SHA256SUMS` included, under the identity `https://github.com/jabbott-iii/Grimoire/.github/workflows/release.yml@refs/heads/main`.
+6. **First approval.** The `publish` job runs only after the maintainer approves it in the `release` environment. It re-checks the checksums, every bundle and the attestation, then creates the tag and the GitHub Release. It has no `id-token`, so it can't get a registry token.
+7. **Immutable release, if the repository setting is on.** Once such a release is published, the tag and the assets are locked, and GitHub adds its own release attestation. `GITHUB_TOKEN` can't read the setting, so `publish` reads the release's `immutable` field and only warns when it is false. A release published while the setting is off stays mutable and has no release attestation, so the tap and bucket syncs refuse it until it is deleted and published again (`release.md` §3).
+8. **Second approval, then the registries.** crates.io, npm and PyPI are published through OIDC trusted publishing, with no stored token:
+   - each registry has its own job and its own environment (`crates-io`, `npm`, `pypi`), approved by the maintainer; each job has only `id-token: write` (and `contents: read` for the crates checkout);
+   - npm versions are staged, and go live only after the maintainer approves each one with 2FA;
+   - npm should attach provenance to versions staged over OIDC. npm 11.19.1 turns it on for a public repository and package, but npm's docs don't say a staged version keeps it after approval (UNVERIFIED, `NPM-P5`);
+   - PyPI adds PEP 740 attestations.
+9. **Tap, bucket and winget.**
+   - The tap and the bucket take a formula or manifest only after `gh attestation verify` passes, and only through a PR the maintainer merges.
+   - The maintainer submits the winget manifests, and winget-pkgs validates them.
+
+**What each channel checks on the user's machine:**
+
+| Channel | Checks | Doesn't check |
+|---|---|---|
+| Direct download | What the user runs: `sha256sum -c`, `gh attestation verify`, `cosign verify-blob`, `gh release verify-asset` (`release.md` §5) | Anything the user skips |
+| Install scripts | An `https://` start URL. `install.sh` uses curl with `--proto =https`, so it also refuses redirects to anything but HTTPS; PowerShell 7.4 and later refuse HTTPS-to-HTTP redirects by default. The archive's SHA-256 against the value embedded in the script, failing closed | The script itself: verify it before running it. Signatures and attestations. HTTPS on redirects under Windows PowerShell 5.1 (UNVERIFIED) |
+| `cargo install` | Builds from the crates.io source; Cargo checks each crate against the registry's checksum | Grimoire's signed binaries aren't used |
+| `cargo binstall` | The crates.io crate checksum; HTTPS for the archive | The archive's checksum, its cosign bundle and its attestations (`RUST-REGISTRY-P5`) |
+| npm | The tarball's `dist.integrity` hash. In a project that installs `agent-grimoire` locally, `npm audit signatures` checks registry signatures and any provenance (`NPM-P5`) | `npm audit signatures` refuses global installs, so it can't check `npm i -g` or `npx`. cosign bundles and GitHub attestations |
+| PyPI (pip, pipx, uv) | The file hash listed by the index (not re-checked in Phase 5) | Whether these installers check PEP 740 attestations wasn't researched (UNVERIFIED) |
+| Homebrew | The SHA-256 in the formula, which came from an attested release file; tap trust | Signatures and attestations at install time |
+| Scoop | The SHA-256 in the manifest, which came from an attested release file | Signatures and attestations at install time |
+| winget | `InstallerSha256` from the manifest; winget-pkgs' validation, including antivirus scans | Code signatures: the binary isn't Authenticode-signed |
+
+**The release switch.**
+- No run publishes until the repository variable `GRIMOIRE_RELEASES` is `enabled` (ADR-0009).
+- It exists for ordering, not security. GitHub creates a missing environment without protection rules, so no job may reference `release`, `crates-io`, `npm` or `pypi` before the maintainer has created and protected it.
+- The variable approves nothing. The controls are the required reviewers on the four environments.
+- As a second check, each registry's trusted publisher is configured for its own environment: crates.io for `crates-io`, npm for `npm`, PyPI for `pypi`. An OIDC token from any other job, including another publish job, names another environment and is refused. A crates.io configuration without an environment would accept any, so the bootstrap always sets one.
+
+**Residual risks:**
+- **The PyPI publish action's image is pinned by tag, not digest.** The tag can be re-pushed and the base image is unpinned, so the code that uploads to PyPI can change under the same pin. A container action gets the job's OIDC request token and can mint a token for any audience. In `publish-pypi` that token names environment `pypi`, which the crates.io and npm publishers refuse, and the job holds only the wheels. So a re-pushed image can at worst publish to PyPI. It also gets the run's `ACTIONS_RUNTIME_TOKEN`, but every job downloads artifacts by ID, so an artifact it uploads is never used.
+- **One maintainer.** The same person writes, approves and publishes each release, so a compromised maintainer account defeats both approval rounds. npm's 2FA approval and immutable releases still apply, but they are the same person's controls.
+- **Signing comes before approval.** A run that is never approved still leaves Rekor entries and GitHub attestations for its files, under the same identity. Those files are never attached to a release. A valid signature shows only that this workflow built the file on `main`; `gh release verify-asset` shows it belongs to a published release.
+- **npm trusted publishing may fail** (npm/cli#9969). Then the maintainer stages the signed tarballs by hand with a 2-hour session, and those versions have no npm provenance. npm users can still compare the tarball with the attested release asset.
+- **Some pins protect only the download.** release-plz 0.4.3 and ShellCheck v0.11.0 publish no checksums or attestations, so their pins are GitHub asset digests: they fix the bytes, not who built them.
+- **release-plz's token can do more than open the release PR.** It runs with the job's `GITHUB_TOKEN` (`contents: write`, `pull-requests: write`). Compromised release-plz bytes could push branches, create and delete tags, create, publish and upload to GitHub Releases (a newly published release becomes "latest" by default), and merge PRs wherever the ruleset allows. What still protects users:
+  - the job has no `id-token`, and the registries accept only tokens from their own environments;
+  - the tap and bucket syncs check `release.yml`'s provenance with `gh attestation verify`;
+  - only cosign or `gh attestation verify` with the workflow identity proves that `release.yml` built a file. `gh release verify-asset` alone doesn't, because GitHub attests any immutable release. Install-script users should check the script's bundle or attestation (`release.md` §4).
+- **The publish jobs' shell runs only in real releases.** It reads `gh`, `curl` and `npm` answers to decide what is already published, and no PR dry-run exercises it. It fails closed on answers it doesn't recognise (ADR-0010).
+- **cargo-binstall users get only HTTPS for the archive.**
+- **winget aliases aren't reserved.** Another package could later claim `agent-grimoire` as its alias, and winget would replace the link without a cross-package check.
+- **Three targets are built only in release mode**, so a problem specific to them shows up first in a release run, before the approval.
+
 ## 7. Known gaps and residual risks
 
 - **The final step on Windows.** cap-std performs the final rename and remove path-based on Windows, after resolving the parents inside the sandbox (ADR-0006).
@@ -131,7 +192,8 @@ Rules, skills, agents and MCP tool results become text in the model's context. G
 - **Key rotation is manual.** The JWKS file must be replaced when the authorization server rotates its keys.
 - **Revocation is per key, not per token.** Removing a key from the JWKS file, or deleting the file, stops its tokens within about 5 seconds. A single token cannot be revoked before it expires. A file that cannot be read or parsed keeps the previous keys.
 - **No browser clients.** There is no CORS support.
+- **Releases and distribution:** the residual risks are listed in §6b.
 
 ## 8. Reporting a vulnerability
 
-Private vulnerability reporting will be enabled before the first release (`PLAN.md` §6). Until then, contact the maintainer privately; do not open a public issue.
+Private vulnerability reporting will be enabled before the first release ([`release.md`](release.md) §2, part A). Until then, contact the maintainer privately; do not open a public issue.

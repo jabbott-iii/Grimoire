@@ -9,9 +9,11 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.96"
 license = "MIT OR Apache-2.0"
-# Nothing is published until Phase 5 flips this per published crate (ADR-0003).
-# The `repository` URL is deliberately absent until its spelling is confirmed (PLAN.md C8).
-publish = false
+# The maintainer kept this spelling (PLAN.md C8, 2026-11-17). Trusted publishers and
+# cosign identities match it exactly, so never change its case.
+repository = "https://github.com/jabbott-iii/Grimoire"
+# Relative to the workspace root when inherited.
+readme = "README.md"
 
 [workspace.dependencies]
 agent-grimoire-adapters = { path = "crates/agent-grimoire-adapters", version = "0.1.0" }
@@ -71,9 +73,26 @@ rsa = { version = "0.10.0", default-features = false, features = ["std", "pkcs1v
 # >= 1.54.1 for RUSTSEC-2026-0384.
 tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "net", "signal", "time", "io-std", "sync"] }
 
+# --- Release packaging in xtask only (ADR-0009). The grimoire CLI links none of these. ---
+# Deflate for .tar.gz archives and for the small zip writer in xtask/src/release/zip.rs.
+flate2 = { version = "1.1.11", default-features = false, features = ["rust_backend"] }
+# No xattr support: archives carry only names, modes and contents.
+tar = { version = "0.4.46", default-features = false }
+
 insta = "1.49.0"
 proptest = "1.12.0"
 tempfile = "3.27.0"
+
+# Release binaries (`cargo xtask release build`, ADR-0009). A profile of its own, so local
+# `--release` builds stay fast. panic stays "unwind": hooks rely on a non-zero exit, and
+# secret-guard's binding blocks on failure either way.
+[profile.dist]
+inherits = "release"
+lto = "fat"
+codegen-units = 1
+debug = false
+strip = "debuginfo"
+panic = "unwind"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

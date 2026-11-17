@@ -1,0 +1,168 @@
+# TEMPLATE for jabbott-iii/homebrew-tap: copy it there as .github/workflows/sync-formula.yml.
+# It does not run in jabbott-iii/Grimoire, where CI only lints it. See README.md next to it.
+#
+# Every day (and on demand) it takes agent-grimoire.rb from the latest jabbott-iii/Grimoire
+# release, verifies it, and opens a pull request when it differs from Formula/agent-grimoire.rb.
+# It uses only this repository's own GITHUB_TOKEN, commits through the API (no git credentials),
+# and does nothing when the sync branch or a pull request for that release already exists.
+#
+# Hardening rules as in Grimoire's workflows: permissions {} at the top with commented per-job
+# grants, no ${{ }} in run: steps, no caches. It uses no actions, only the preinstalled gh CLI.
+name: Sync agent-grimoire formula
+
+on:
+  schedule:
+    - cron: "41 6 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+# Queued, never cancelled: a cancelled run could stop between creating the sync branch and
+# opening its pull request.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  sync:
+    name: sync Formula/agent-grimoire.rb
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write # create the sync branch and its commit through the API
+      pull-requests: write # open the pull request
+    env:
+      GH_TOKEN: ${{ github.token }}
+      UPSTREAM: jabbott-iii/Grimoire
+      ASSET: agent-grimoire.rb
+      TARGET_PATH: Formula/agent-grimoire.rb
+    steps:
+      # gh 2.102.0 fixed --signer-workflow prefix matching and case-insensitive --source-ref;
+      # gh release verify-asset needs 2.81.0.
+      - name: Check the GitHub CLI version
+        run: |
+          set -euo pipefail
+          gh_version="$(gh --version | sed -n 's/^gh version \([0-9][0-9.]*\).*/\1/p')"
+          if [ "$(printf '%s\n' 2.102.0 "${gh_version}" | sort -V | head -n 1)" != "2.102.0" ]; then
+            echo "::error::gh ${gh_version} is older than 2.102.0"
+            exit 1
+          fi
+      - name: Find the latest Grimoire release
+        id: release
+        run: |
+          set -euo pipefail
+          err="${RUNNER_TEMP}/release.err"
+          if ! tag="$(gh release view --repo "${UPSTREAM}" --json tagName --jq '.tagName' 2>"${err}")"; then
+            if grep -q 'release not found' "${err}"; then
+              echo "::notice::${UPSTREAM} has no release yet; nothing to sync"
+              echo "tag=" >> "${GITHUB_OUTPUT}"
+              exit 0
+            fi
+            cat "${err}" >&2
+            exit 1
+          fi
+          if ! [[ "${tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::unexpected tag '${tag}' for the latest ${UPSTREAM} release"
+            exit 1
+          fi
+          echo "latest release: ${tag}"
+          echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
+      # Two independent checks: build provenance from release.yml on Grimoire's main branch
+      # (GitHub-hosted runners only), and GitHub's attestation that the file is an asset of
+      # the immutable release.
+      - name: Download and verify the formula
+        if: steps.release.outputs.tag != ''
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          dir="${RUNNER_TEMP}/release"
+          mkdir -p "${dir}"
+          gh release download "${TAG}" --repo "${UPSTREAM}" --pattern "${ASSET}" --dir "${dir}"
+          gh attestation verify "${dir}/${ASSET}" \
+            --repo jabbott-iii/Grimoire \
+            --signer-workflow jabbott-iii/Grimoire/.github/workflows/release.yml \
+            --source-ref refs/heads/main \
+            --deny-self-hosted-runners
+          gh release verify-asset "${TAG}" "${dir}/${ASSET}" --repo "${UPSTREAM}"
+      # The new commit is built with the Git Data API (blob, tree, commit) and the branch is
+      # created last, so a branch never exists without its commit.
+      - name: Open a pull request if the formula changed
+        if: steps.release.outputs.tag != ''
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          file="${RUNNER_TEMP}/release/${ASSET}"
+          repo="${GITHUB_REPOSITORY}"
+          branch="sync/agent-grimoire-${TAG}"
+          err="${RUNNER_TEMP}/gh.err"
+          default="$(gh api "repos/${repo}" --jq '.default_branch')"
+          wanted="$(git hash-object "${file}")"
+
+          if current="$(gh api "repos/${repo}/contents/${TARGET_PATH}?ref=${default}" --jq '.sha' 2>"${err}")"; then
+            :
+          elif grep -q 'HTTP 404' "${err}"; then
+            current=""
+          else
+            cat "${err}" >&2
+            exit 1
+          fi
+          if [ "${current}" = "${wanted}" ]; then
+            echo "${TARGET_PATH} on ${default} already matches ${ASSET} from ${TAG}"
+            exit 0
+          fi
+
+          prs="$(gh pr list --repo "${repo}" --head "${branch}" --state all --json number --jq 'length')"
+          if [ "${prs}" != "0" ]; then
+            echo "::notice::a pull request from ${branch} already exists; nothing to do"
+            exit 0
+          fi
+          # A branch without a pull request is what an interrupted run leaves. If it holds
+          # exactly the verified file, open its pull request; otherwise leave it to a human.
+          if gh api "repos/${repo}/git/ref/heads/${branch}" >/dev/null 2>"${err}"; then
+            on_branch="$(gh api "repos/${repo}/contents/${TARGET_PATH}?ref=${branch}" --jq '.sha' 2>/dev/null || true)"
+            if [ "${on_branch}" != "${wanted}" ]; then
+              echo "::warning::branch ${branch} exists without a pull request and does not hold the verified ${ASSET}; delete it to retry"
+              exit 0
+            fi
+            echo "branch ${branch} already holds the verified ${ASSET}; opening its pull request"
+          elif ! grep -q 'HTTP 404' "${err}"; then
+            cat "${err}" >&2
+            exit 1
+          else
+            create_branch=1
+          fi
+
+          if [ -n "${create_branch:-}" ]; then
+          head="$(gh api "repos/${repo}/git/ref/heads/${default}" --jq '.object.sha')"
+          base_tree="$(gh api "repos/${repo}/git/commits/${head}" --jq '.tree.sha')"
+          blob="$(base64 -w0 "${file}" | jq -Rs '{content: ., encoding: "base64"}' \
+            | gh api --method POST "repos/${repo}/git/blobs" --input - --jq '.sha')"
+          if [ "${blob}" != "${wanted}" ]; then
+            echo "::error::the uploaded blob ${blob} is not ${wanted}"
+            exit 1
+          fi
+          tree="$(jq -n --arg base "${base_tree}" --arg path "${TARGET_PATH}" --arg sha "${blob}" \
+              '{base_tree: $base, tree: [{path: $path, mode: "100644", type: "blob", sha: $sha}]}' \
+            | gh api --method POST "repos/${repo}/git/trees" --input - --jq '.sha')"
+          commit="$(jq -n --arg message "agent-grimoire ${TAG#v}" --arg tree "${tree}" --arg parent "${head}" \
+              '{message: $message, tree: $tree, parents: [$parent]}' \
+            | gh api --method POST "repos/${repo}/git/commits" --input - --jq '.sha')"
+          gh api --method POST "repos/${repo}/git/refs" -f "ref=refs/heads/${branch}" -f "sha=${commit}" >/dev/null
+          fi
+
+          body="${RUNNER_TEMP}/pr-body.md"
+          cat > "${body}" <<EOF
+          Updates \`${TARGET_PATH}\` to the \`${ASSET}\` attached to [${UPSTREAM} ${TAG}](https://github.com/${UPSTREAM}/releases/tag/${TAG}), byte for byte.
+
+          Before opening this pull request, the workflow verified the file with:
+
+          - \`gh attestation verify\`: built by \`.github/workflows/release.yml\` on \`refs/heads/main\` of ${UPSTREAM}, on a GitHub-hosted runner;
+          - \`gh release verify-asset ${TAG}\`: an asset of that immutable release.
+          EOF
+          gh pr create --repo "${repo}" --base "${default}" --head "${branch}" \
+            --title "agent-grimoire ${TAG#v}" --body-file "${body}"

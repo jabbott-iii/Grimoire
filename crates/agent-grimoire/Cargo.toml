@@ -5,7 +5,10 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
-publish.workspace = true
+repository.workspace = true
+readme.workspace = true
+keywords = ["ai", "agents", "mcp", "skills", "cli"]
+categories = ["command-line-utilities", "development-tools"]
 
 [[bin]]
 name = "grimoire"
@@ -30,3 +33,29 @@ tempfile.workspace = true
 
 [lints]
 workspace = true
+
+# `cargo binstall agent-grimoire` downloads the release archive for the host
+# (BINSTALL in docs/specs.md). binstall checks the crate's checksum but not the
+# archive's: see docs/release.md for verifying with SHA256SUMS, attestations or cosign.
+# xtask's test `binstall_metadata_names_the_release_archives` checks these URLs against the archives.
+[package.metadata.binstall]
+pkg-url = "{ repo }/releases/download/v{ version }/agent-grimoire-{ version }-{ target }.tar.gz"
+pkg-fmt = "tgz"
+bin-dir = "{ bin }{ binary-ext }"
+# The quick-install strategy sends anonymised statistics; the archive is ours anyway.
+disabled-strategies = ["quick-install"]
+
+# Linux builds are static musl binaries; glibc hosts use them too.
+[package.metadata.binstall.overrides.x86_64-unknown-linux-gnu]
+pkg-url = "{ repo }/releases/download/v{ version }/agent-grimoire-{ version }-x86_64-unknown-linux-musl.tar.gz"
+
+[package.metadata.binstall.overrides.aarch64-unknown-linux-gnu]
+pkg-url = "{ repo }/releases/download/v{ version }/agent-grimoire-{ version }-aarch64-unknown-linux-musl.tar.gz"
+
+[package.metadata.binstall.overrides.x86_64-pc-windows-msvc]
+pkg-url = "{ repo }/releases/download/v{ version }/agent-grimoire-{ version }-{ target }.zip"
+pkg-fmt = "zip"
+
+[package.metadata.binstall.overrides.aarch64-pc-windows-msvc]
+pkg-url = "{ repo }/releases/download/v{ version }/agent-grimoire-{ version }-{ target }.zip"
+pkg-fmt = "zip"

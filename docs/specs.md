@@ -11,7 +11,7 @@ This file lists every external format, protocol, registry or tool that Grimoire 
 
 ## Register
 
-Rows were checked 2026-11-16 unless they say otherwise; the client rows were re-checked 2026-11-17 for Phase 4. Section IDs below link each row to its notes.
+Rows were checked 2026-11-16 unless they say otherwise; the client rows were re-checked 2026-11-17 for Phase 4, and the registry, release-tooling and supply-chain rows on 2026-11-17 for Phase 5. Section IDs below link each row to its notes.
 
 | ID | Spec / source | Version or revision checked | Primary URL | Status |
 |---|---|---|---|---|
@@ -26,21 +26,21 @@ Rows were checked 2026-11-16 unless they say otherwise; the client rows were re-
 | RMCP | rmcp (official Rust SDK) | 3.10.0 (2026-11-12); supports 2026-07-28 | https://github.com/modelcontextprotocol/rust-sdk | Verified |
 | MCP-REGISTRY | Official MCP Registry / `server.json` | registry 1.8.9; schema `2025-12-11`; **preview** | https://registry.modelcontextprotocol.io | Verified |
 | MCPB | MCP bundles | manifest 0.4; `@anthropic-ai/mcpb` 2.1.2 | https://github.com/modelcontextprotocol/mcpb | Verified (not used in v1) |
-| CRATES-TP | crates.io trusted publishing | docs @ 2026-10-02; `crates-io-auth-action` v1.0.6 | https://crates.io/docs/trusted-publishing | Verified |
-| NPM-TP | npm trusted publishing and token policy | docs @ 2026-10-06; npm 11.21.2 / 12.2.2 | https://docs.npmjs.com/trusted-publishers | Partial (docs conflict) |
-| PYPI-TP | PyPI trusted publishing | docs fetched 2026-11-16; `gh-action-pypi-publish` v1.14.3 | https://docs.pypi.org/trusted-publishers/ | Verified |
-| MATURIN | maturin binary wheels | 1.16.0; maturin-action v1.51.0 | https://www.maturin.rs | Verified |
-| BINSTALL | cargo-binstall metadata | 1.27.0 | https://github.com/cargo-bins/cargo-binstall | Verified |
-| BREW | Homebrew taps | brew 7.0.14 | https://docs.brew.sh/How-to-Create-and-Maintain-a-Tap | Partial |
-| WINGET | winget-pkgs manifests | schema 1.28 (community repo) | https://github.com/microsoft/winget-pkgs | Partial (Learn page stale) |
-| SCOOP | Scoop manifests and buckets | Scoop 0.6.0; wiki unversioned | https://github.com/ScoopInstaller/Scoop/wiki | Verified |
-| DIST | dist (cargo-dist) | 0.34.0 (2026-11-02) | https://github.com/axodotdev/cargo-dist | Partial |
-| RELEASE-PLZ | release-plz | 0.4.3 (2026-11-02) | https://release-plz.dev | Verified |
-| RUNNERS | GitHub-hosted runners | docs fetched 2026-11-16 | https://docs.github.com/en/actions/reference/runners/github-hosted-runners | Partial |
-| GHA-SEC | Actions hardening, lockfiles, SHA-pin policy, environments, OIDC | docs fetched 2026-11-16 | https://docs.github.com/en/actions/reference/security/secure-use | Verified |
-| ATTEST | Artifact attestations, immutable releases | `actions/attest` v4.2.2 | https://github.com/actions/attest | Verified |
-| COSIGN | Sigstore cosign | v3.1.4; installer v4.1.3 | https://github.com/sigstore/cosign | Partial |
-| SBOM | cargo-cyclonedx, cargo-auditable, buildx attestations | 0.5.10 / 0.7.7 / docs fetched 2026-11-16 | https://github.com/CycloneDX/cyclonedx-rust-cargo | Verified |
+| CRATES-TP | crates.io trusted publishing | docs @ 2026-10-02; `crates-io-auth-action` v1.0.6 | https://crates.io/docs/trusted-publishing | Verified; re-checked 2026-11-17 in RUST-REGISTRY-P5 |
+| NPM-TP | npm trusted publishing and token policy | docs @ 2026-10-06; npm 11.21.2 / 12.2.2 | https://docs.npmjs.com/trusted-publishers | Partial (docs conflict); re-checked 2026-11-17 in NPM-P5 |
+| PYPI-TP | PyPI trusted publishing | docs fetched 2026-11-16; `gh-action-pypi-publish` v1.14.3 | https://docs.pypi.org/trusted-publishers/ | Verified; re-checked 2026-11-17 in PYPI-P5 |
+| MATURIN | maturin binary wheels | 1.16.0; maturin-action v1.51.0 | https://www.maturin.rs | Verified; not used since Phase 5 (PYPI-P5) |
+| BINSTALL | cargo-binstall metadata | 1.27.0 | https://github.com/cargo-bins/cargo-binstall | Verified; re-checked 2026-11-17 in RUST-REGISTRY-P5 |
+| BREW | Homebrew taps | brew 7.0.14 | https://docs.brew.sh/How-to-Create-and-Maintain-a-Tap | Partial: re-checked from source on 2026-11-17 in BREW-SCOOP-P5; whether `brew style` passes `url` nested in two `on_*` blocks is UNVERIFIED |
+| WINGET | winget-pkgs manifests | schema 1.28 (community repo) | https://github.com/microsoft/winget-pkgs | Partial (Learn page stale); re-checked 2026-11-17 in WINGET-P5 |
+| SCOOP | Scoop manifests and buckets | Scoop 0.6.0; wiki unversioned | https://github.com/ScoopInstaller/Scoop/wiki | Verified; re-checked 2026-11-17 in BREW-SCOOP-P5 (the wiki lags the source), gaps listed |
+| DIST | dist (cargo-dist) | 0.34.0 (2026-11-02) | https://github.com/axodotdev/cargo-dist | Verified; re-checked 2026-11-17 in INSTALLERS-P5 (not adopted) |
+| RELEASE-PLZ | release-plz | 0.4.3 (2026-11-02) | https://release-plz.dev | Verified; re-checked 2026-11-17 in RUST-REGISTRY-P5 |
+| RUNNERS | GitHub-hosted runners | docs fetched 2026-11-16 | https://docs.github.com/en/actions/reference/runners/github-hosted-runners | Partial; re-checked 2026-11-17 in ACTIONS-P5 |
+| GHA-SEC | Actions hardening, lockfiles, SHA-pin policy, environments, OIDC | docs fetched 2026-11-16 | https://docs.github.com/en/actions/reference/security/secure-use | Verified; re-checked 2026-11-17 in ACTIONS-P5 |
+| ATTEST | Artifact attestations, immutable releases | `actions/attest` v4.2.2 | https://github.com/actions/attest | Verified; re-checked 2026-11-17 in SUPPLY-CHAIN-P5 |
+| COSIGN | Sigstore cosign | v3.1.4; installer v4.1.3 | https://github.com/sigstore/cosign | Partial (only GHCR referrers left; the Fulcio SAN was verified 2026-11-17 in SUPPLY-CHAIN-P5) |
+| SBOM | cargo-cyclonedx, cargo-auditable, buildx attestations | 0.5.10 / 0.7.7 / docs fetched 2026-11-16 | https://github.com/CycloneDX/cyclonedx-rust-cargo | Verified; re-checked 2026-11-17 in SUPPLY-CHAIN-P5 |
 | BASE-IMAGE | distroless static, Chainguard static, OCI annotations | `static-debian13`; image-spec v1.1.1 | https://github.com/GoogleContainerTools/distroless | Verified |
 | SCAN | Trivy incident; Grype / scan-action | trivy v0.76.2; grype v0.122.0; scan-action v7.4.2 | https://github.com/anchore/scan-action | Verified |
 | DENY | cargo-deny | 0.21.0; action v2.1.2 | https://github.com/EmbarkStudios/cargo-deny | Verified |
@@ -48,14 +48,14 @@ Rows were checked 2026-11-16 unless they say otherwise; the client rows were re-
 | SECRETS | GitHub secret scanning, gitleaks, private vulnerability reporting | gitleaks v8.30.1 | https://docs.github.com/en/code-security | Verified |
 | DEPENDABOT | Dependabot options | docs fetched 2026-11-16 | https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference | Verified |
 | LYCHEE | lychee link checker | 0.24.2; action v2.9.0 | https://github.com/lycheeverse/lychee-action | Verified |
-| RUST | Rust stable toolchain | 1.100.0 (channel 2026-11-12) | https://static.rust-lang.org/dist/channel-rust-stable.toml | Verified |
+| RUST | Rust stable toolchain | 1.100.0 (channel 2026-11-12) | https://static.rust-lang.org/dist/channel-rust-stable.toml | Verified; re-checked 2026-11-17 in ACTIONS-P5 |
 | CRATES | Candidate crate versions | see table | https://crates.io | Verified |
 | YAML | Frontmatter YAML parser (serde-saphyr) | 2.1.1 | https://github.com/bourumir-wyngs/serde-saphyr | Verified (Phase 1) |
 | SPDX-CRATE, MARKDOWN | spdx and pulldown-cmark behaviour | 0.13.6 / 0.13.6 | https://github.com/EmbarkStudios/spdx ; https://github.com/pulldown-cmark/pulldown-cmark | Verified (Phase 1) |
 | SCHEMARS | schemars draft, map keys, key order | 1.2.3 | https://docs.rs/schemars/1.2.3 | Verified (Phase 1) |
 | CARGO-LINTS | `[lints.cargo]`, workspace globs, inheritance | Cargo 1.96.0 / 1.99.0 / 1.100.0 | https://doc.rust-lang.org/cargo/reference/lints.html | Verified (Phase 1) |
-| CI-PINS | Pinned actions and CI tool binaries | see table | per pin | Verified (Phase 1) |
-| ZIZMOR | zizmor audits and personas | 1.32.0 | https://docs.zizmor.sh | Verified (Phase 1) |
+| CI-PINS | Pinned actions and CI tool binaries | see table | per pin | Verified (Phase 1); re-checked 2026-11-17 |
+| ZIZMOR | zizmor audits and personas | 1.32.0 | https://docs.zizmor.sh | Verified (Phase 1); re-checked 2026-11-17 in ACTIONS-P5 |
 | CC-P2 | Claude Code facts the `claude-code` adapter writes against | CLI 2.1.326; docs fetched 2026-11-16 | https://code.claude.com/docs/en/ | Verified (Phase 2), gaps listed |
 | FS-CRATES | cap-std, cap-fs-ext, cap-tempfile | 4.0.3 | https://github.com/sunfishcode/cap-std | Verified (Phase 2) |
 | EDIT-CRATES | jsonc-parser (CST), toml_edit, similar | 0.34.0 / 0.25.19 / 3.2.1 | https://github.com/dprint/jsonc-parser | Verified (Phase 2), with one finding |
@@ -72,15 +72,23 @@ Rows were checked 2026-11-16 unless they say otherwise; the client rows were re-
 | GEMINI-P4 | Gemini CLI context, settings, trust, MCP, skills, subagents, hooks | v0.68.0 (`5a5c7180ff`) source | https://github.com/google-gemini/gemini-cli | Verified from source (Phase 4), gaps listed |
 | COPILOT-P4 | Copilot instructions, agents, skills, MCP, hooks, plugins | CLI 1.0.112; VS Code 1.146.0; docs fetched 2026-11-17 | https://docs.github.com/en/copilot | Partial (Phase 4; docs only, no source) |
 | EDIT-P4 | TOML and JSONC entry editing | strip-json-comments 3.1.1; toml_edit 0.25.19; jsonc-parser 0.34.0; checked 2026-11-17 | https://unpkg.com/strip-json-comments@3.1.1/index.js | Verified (Phase 4); which TOML version Codex accepts is UNVERIFIED |
+| RUST-REGISTRY-P5 | release-plz, `cargo publish --workspace`, crates.io trusted publishing and metadata, cargo-binstall | release-plz 0.4.3 (`92e907a14715`); Cargo @ `3acc79c0c841` (1.100.0); crates.io @ `1aea7ef2ddea`; cargo-binstall v1.27.0 / v1.26.2 | https://github.com/release-plz/release-plz | Verified (Phase 5), gaps listed |
+| NPM-P5 | npm staged and trusted publishing, platform packages, the launcher | npm 12.2.2 / 11.21.2; setup-node v7.1.0; Node 24.22.3; docs fetched 2026-11-17 | https://docs.npmjs.com/trusted-publishers | Partial (Phase 5): npm/cli#9969 open, placeholder behaviour UNVERIFIED |
+| PYPI-P5 | Binary-only wheels, PyPI upload checks, pending publishers, `gh-action-pypi-publish` | wheel and core-metadata specs; warehouse @ `c2f79b4a6fb0`; gh-action-pypi-publish v1.14.3; twine 7.0.0 | https://packaging.python.org/en/latest/specifications/binary-distribution-format/ | Verified (Phase 5), gaps listed |
+| BREW-SCOOP-P5 | Prebuilt formula in a tap, local-tap audits, tap trust, Scoop manifest, schema and licence syntax | Homebrew 7.0.14; Homebrew/actions 2026.11.09.1; Scoop v0.6.0 | https://docs.brew.sh/How-to-Create-and-Maintain-a-Tap | Verified from source (Phase 5), gaps listed; nothing run |
+| WINGET-P5 | winget manifests 1.28.0, validation, submission, portable aliases | winget-cli v1.29.380 (schema 1.28.0); winget-pkgs @ `b192fe0471e6` | https://github.com/microsoft/winget-pkgs | Verified (Phase 5); winget on `windows-2025` UNVERIFIED |
+| SUPPLY-CHAIN-P5 | Attestations, gh verification, cosign, the Fulcio SAN, immutable releases, SBOMs, checksums | attest v4.2.2; gh 2.103.3; cosign v3.1.4 / installer v4.1.3; Fulcio v1.10.0; cargo-cyclonedx 0.5.10; cargo-auditable 0.7.7 | https://github.com/actions/attest | Verified (Phase 5), gaps listed |
+| ACTIONS-P5 | Runner images, Rust targets and build flags, `cargo metadata`, artifacts, environments, OIDC, `GITHUB_TOKEN` events | runner-images @ `5d331217d4`; Rust 1.100.0; upload-artifact v7.0.2 / download-artifact v8.0.2 | https://docs.github.com/en/actions/reference/runners/github-hosted-runners | Verified (Phase 5), gaps listed |
+| INSTALLERS-P5 | The dist installer spike; ShellCheck and PSScriptAnalyzer for Grimoire's scripts; the platform and tool behaviours the scripts rely on | dist v0.34.0; ShellCheck v0.11.0; PSScriptAnalyzer 1.25.0; curl 8.23.1 manual; Microsoft Learn and Apple pages fetched 2026-11-17 | https://github.com/axodotdev/cargo-dist | Verified (Phase 5), gaps listed |
 
 **Not yet researched, to verify in the phase that needs them:**
 
 | Topic | Phase |
 |---|---|
-| The exact Fulcio identity string for keyless verification docs | 5 |
+| ~~The exact Fulcio identity string for keyless verification docs~~ Answered in SUPPLY-CHAIN-P5: `https://github.com/jabbott-iii/Grimoire/.github/workflows/release.yml@refs/heads/main` | 5 |
 | GHCR OCI 1.1 referrers support for cosign v3 | 6 |
-| `winget validate` availability on GitHub Windows runners | 5 |
-| Whether npm staged publishing can create a brand-new package | 5 |
+| ~~`winget validate` availability on GitHub Windows runners~~ Answered in WINGET-P5: not on `windows-11-arm`; undocumented and conflicting on `windows-2025`, so the CI step is best effort | 5 |
+| ~~Whether npm staged publishing can create a brand-new package~~ Answered in NPM-P5: yes, with a session or a granular token (not OIDC), leaving a public `0.0.0-stage` placeholder | 5 |
 
 ---
 
@@ -524,6 +532,12 @@ Checked 2026-11-16. Status: Verified.
 - **Tokens:** expire after 30 minutes, and the action revokes them in its post step.
 - **Trusted-publishing-only mode:** a per-crate setting (`trustpub_only`) disables token publishing.
 - **Blocked triggers:** `pull_request_target` and `workflow_run` can't use trusted publishing.
+- **Re-checked 2026-11-17 (RUST-REGISTRY-P5):** still accurate. From crates.io's source:
+  - The owner and repository names are compared case-insensitively. `repository_owner_id` must match the ID captured when the config was created; the repository ID isn't checked.
+  - The workflow filename comes from `workflow_ref` and must match exactly. The environment is compared case-insensitively, and a config without one accepts any.
+  - `sub` isn't read, so the immutable `sub` doesn't matter.
+  - One token covers every matching crate, and a crate has at most 5 configs. Creating one needs a verified email and a linked GitHub account.
+  - `trustpub_only` is set with `PATCH /api/v1/crates/{name}` or on the crate's settings page.
 
 ### NPM-TP: npm trusted publishing and token policy
 - **Version:** `trusted-publishers.mdx` last edited 2026-10-06. npm CLI v12.2.2 / v11.21.2 (2026-11-04).
@@ -538,6 +552,15 @@ Checked 2026-11-16. Status: Verified.
   - Granular write tokens are capped at 90 days, with 2FA enforced.
   - "The ability to publish new package versions directly with a granular access token will be removed in **January 2027**."
 - **Conflict:** the `npm trust` docs say one configuration per package, while the trusted-publishers page says up to 10.
+- **Re-checked 2026-11-17 (NPM-P5):**
+  - **Status:** the providers are GitHub Actions on GitHub-hosted runners, GitLab.com shared runners and CircleCI cloud. Self-hosted runners aren't supported, and CircleCI gets no provenance.
+  - **Package must exist:** true for trusted publishing and `npm trust`. But **staged publishing can create a new package**, with a session or a granular token (not OIDC); it publishes a public `0.0.0-stage` placeholder.
+  - **Version line:** `staged-publishing.mdx` last changed on 2026-11-10. Tag commits: v12.2.2 `60e11343e61316d966c86805d803df5a0eb99230`, v11.21.2 `1c66798c9def37e12509ccebb5b08cddf247c2e8`.
+  - **Requirements, added:** dist-tags over OIDC need npm 11.21.0 or 12.2.0 and an opt-in. npm 12 needs Node `^22.22.2 || ^24.15.0 || >=26.0.0`. Node 24.22.3 bundles npm 11.19.1 and Node 22.23.4 bundles npm 10.9.9, so check the npm version explicitly.
+  - **Workflow rules, added:** all fields are case-sensitive (`Grimoire`), and `repository.url` must match exactly. OIDC is refused for `pull_request_target` and `issue_comment`. A `workflow_call` or `workflow_dispatch` publish matches the calling workflow's filename. `npm publish --dry-run` in a job with `id-token: write` performs a real OIDC exchange.
+  - **Tokens, added:** `npm login` gives 2-hour sessions with 2FA for publishing. Stage-only granular tokens exist. January 2027 is a target date.
+  - **Conflict:** still there at v12.2.2. The 2026-09-03 changelog says several configurations are GA, with no maximum.
+  - **Open bug:** npm/cli#9969, trusted publishing for repositories with the immutable `sub`, which includes this one.
 
 ### PYPI-TP and MATURIN
 - **Version:**
@@ -552,6 +575,14 @@ Checked 2026-11-16. Status: Verified.
   - Use `bindings = "bin"` (set it explicitly; the docs disagree on auto-detection). Binaries are packaged as scripts on PATH.
   - The PyPI-accepted tags cover manylinux and musllinux x86_64/aarch64, Windows x86_64/aarch64, and macOS x86_64/arm64.
   - `--compatibility pypi` rejects anything else.
+- **Re-checked 2026-11-17 (PYPI-P5):** every fact above still holds. Additions and corrections:
+  - **Publisher matching:** owner (pinned by ID), repository (matched exactly, so `Grimoire`), workflow filename (`.yml` or `.yaml`), an optional environment (case-insensitive) and the project name. `sub` is unchecked, so the immutable `sub` has no effect. `pull_request_target` and `issue_comment` are refused.
+  - **Pending publishers expire 30 days after creation** (warehouse source, not the docs).
+  - **Reusable workflows:** not a real conflict. PyPI matches the workflow file named in `job_workflow_ref`, which for a called workflow is the called file. warehouse#11096 is about workflows in *another* repository. A same-repository reusable workflow works if the publisher names the called file. Grimoire publishes from the top-level `release.yml`.
+  - **gh-action-pypi-publish:** Linux only, Docker-based, and its image is pinned by tag, not digest (PYPI-P5). It has no dry-run input.
+  - **maturin is not used** (ADR-0009): it can't package a prebuilt binary.
+  - **maturin-action:** it downloads maturin without a checksum check and defaults to `latest`. It resolves version requirements from a manifest on its main branch at run time. Docker mode uses `curl | tar`, `curl | sh` when rustup or uv is missing, and `:latest` images.
+  - **maturin details, for reference:** `bin` builds get no musllinux tag by default; at most one manylinux and one musllinux tag are allowed. maturin embeds a CycloneDX 1.5 SBOM unless `[tool.maturin.sbom] rust = false`. `license-files` globs can't contain `..`. Correct `License-Expression` output dates from 1.9.2. The source detects `bin` whenever there is no pyo3 or uniffi dependency and no cdylib, so keep `bindings = "bin"` explicit.
 
 ### BINSTALL: cargo-binstall
 - **Version:** v1.27.0 (2026-11-11).
@@ -560,6 +591,11 @@ Checked 2026-11-16. Status: Verified.
 - **URL guessing:** default patterns include `{ name }-{ target }-v{ version }{ archive-suffix }` under `{ repo }/releases/download/v{ version }/`.
 - **Signing:** **minisign only**, needing an explicit `pubkey`. Signatures are verified "if they are available". Sigstore and GitHub attestations are **not** documented.
 - **Telemetry:** the quick-install strategy sends anonymized stats by default. Grimoire's docs should mention `--disable-telemetry`.
+- **Re-checked 2026-11-17 (RUST-REGISTRY-P5):**
+  - v1.27.0 is the latest but was under 7 days old. The newest eligible release is v1.26.2 (2026-10-31, `851112458b5f28a29e5bc14a690c3f283d9dcc6f`).
+  - Also: the `signing {algorithm, pubkey, file}` key, `cfg(...)` override keys, `pkg-fmt` values `tar`, `tbz2`, `tgz`, `txz`, `tzstd`, `zip` and `bin`, and the full list of template variables (RUST-REGISTRY-P5).
+  - binstall verifies only the crates.io crate checksum, **not the prebuilt archive's**. Sigstore is still unsupported in v1.27.0. cargo-binstall's own releases have no checksum file, only minisign `.sig` files and GitHub attestations.
+  - Telemetry goes only through `quick-install`; Grimoire's metadata disables that strategy.
 
 ### BREW: Homebrew taps
 - **Version:** brew 7.0.14 (2026-11-16). Doc commits: tap guide 2026-10-25, Acceptable-Formulae 2026-07-23.
@@ -568,6 +604,10 @@ Checked 2026-11-16. Status: Verified.
 - **Tap trust:** since Homebrew 6.0.0, "Non-official taps require explicit trust by default". Users run `brew trust`, or install by fully qualified name.
 - **Workflows:** `brew tap-new` generates `tests.yml`, `publish.yml` (manually dispatched), **`autobump.yml`** and `dependabot.yml`.
 - **Placement:** homebrew/core wants builds from source; "Proprietary or platform-specific binary-only software belongs in a cask"; third-party taps take software outside those criteria.
+- **Re-checked 2026-11-17 (BREW-SCOOP-P5):** status is now **Verified**, from source; nothing was run.
+  - The binary-URL cop and the source-only audits apply only to homebrew/core, and Package-Acceptance-Policy says other software can live in a third-party tap.
+  - **Tap trust:** `brew install jabbott-iii/tap/agent-grimoire` trusts only that formula, and only for install, reinstall and upgrade. `brew trust --formula jabbott-iii/tap/agent-grimoire`, or `brew trust jabbott-iii/tap` for the whole tap, also work. A local tap used by CI needs `brew trust` too.
+  - **Workflows:** `autobump.yml` runs a daily `brew bump --no-fork --open-pr --formulae --bump-synced --tap=…` with `GITHUB_TOKEN` (`contents` and `pull-requests` write). It can't rewrite `url`/`sha256` nested in `on_*` blocks and doesn't bump casks. It needs "Allow GitHub Actions to create and approve pull requests", and the runs of the PRs it opens need approval. Grimoire uses its own sync workflow instead (ADR-0009).
 
 ### WINGET
 - **Version:** the community repo requires manifest schema **1.28** (the winget-cli "latest" schema is 1.31.0). wingetcreate v1.28.1.0 (2026-11-11); Komac v2.17.2 (2026-11-03).
@@ -575,6 +615,12 @@ Checked 2026-11-16. Status: Verified.
 - **Manifests:** multi-file (version, defaultLocale, installer) under `manifests/<l>/<Publisher>/<Package>/<version>/`.
 - **Zip with a portable exe:** `InstallerType: zip`, `NestedInstallerType: portable`, `NestedInstallerFiles` (`RelativeFilePath`, `PortableCommandAlias`). `arm64` is supported.
 - **Submission:** a PR to `microsoft/winget-pkgs`, one version per PR. **Komac needs a classic GitHub PAT**, which would be a long-lived credential.
+- **Re-checked 2026-11-17 (WINGET-P5):**
+  - **Version:** the newest stable winget-cli, v1.29.380 (2026-09-21, `000f6b55151cb0f1afd2933bb54c62a4724b9ca8`), embeds 1.28.0 as its latest schema. 1.31.0 is only master's in-development `latest/`, and v1.30.140-preview carries 1.30.0.
+  - The community repository recommends 1.28.0 (PR template, 2026-11-04) and still accepts 1.12.0.
+  - **Tools:** wingetcreate v1.28.1.0 is the first to emit 1.28.0 and was under 7 days old; the eligible v1.12.13.0 predates the change. Komac v2.17.2 supports 1.28.0.
+  - **Submission:** Komac and wingetcreate both need a classic `public_repo` PAT (wingetcreate also offers an interactive OAuth login). Fine-grained PATs and fork-only GitHub Apps fail, and there is no OIDC path (winget-pkgs#413785, open).
+  - **Validation** is now a 10-step GitHub App (`doc/Validation.md`) that replaced Azure DevOps. The Learn page is still stale.
 
 ### SCOOP
 - **Version:** Scoop v0.6.0 (2026-09-30). The wiki is unversioned.
@@ -582,6 +628,11 @@ Checked 2026-11-16. Status: Verified.
 - **Manifest fields:** `version`, `description`, `homepage`, `license` (SPDX); `architecture.{64bit,arm64}.{url,hash,bin}`; `checkver: "github"`; `autoupdate` with `hash.url = "$url.sha256"`.
 - **Personal bucket:** made from BucketTemplate, whose Excavator autoupdates every 4 hours. Users run `scoop bucket add`.
 - **Main bucket:** needs ≥500 stars and ≥150 forks.
+- **Re-checked 2026-11-17 (BREW-SCOOP-P5):** Scoop v0.6.0 is commit `e6aa3b366bdee8ed138c1e0f7b85192ebdd35d0f`, and master equals the tag. The wiki pages were last edited between 2022-07-05 and 2024-08-29 and lag the v0.6.0 source.
+  - **Manifest fields:** the draft-07 `schema.json` requires only `version`, `homepage` and `license`. The wiki lists `description` too, but calls it "not technically required".
+  - `architecture` keys are `32bit`, `64bit` and `arm64`, each with `url`, `hash`, `bin`, `extract_dir` and more. For `checkver: "github"`, `homepage` must be the GitHub repository URL unless `checkver.github` is set.
+  - **autoupdate:** `hash.url = "$url.sha256"` still works. The extract mode accepts a bare hash, `hash  filename` lines or an aggregate list matched on `$basename`. v0.6.0 also uses the GitHub asset digest when `hash.url` is omitted, and otherwise downloads the file and hashes it.
+  - **Personal bucket:** Excavator is `ScoopInstaller/GithubActions@5bceeda181721d9d10a18fdcc3ddca6f33467ae6` (v3.0.0), on cron `20 */4 * * *` with `contents: write`. It pushes straight to the default branch with no PR, and installs Scoop at run time from an unpinned script. Grimoire doesn't use it (ADR-0009).
 
 ---
 
@@ -599,6 +650,11 @@ Checked 2026-11-16. Status: Verified.
 - **npm installer:** "fetch[es] your prebuilt archives" at install time, so there are **no per-platform packages**. Its publish job uses `NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}` on Node 20, which is below the trusted-publishing minimum and **will break when direct granular-token publishing is removed in January 2027**.
 - **Homebrew publish:** needs a `HOMEBREW_TAP_TOKEN` secret.
 - **Attestations:** `github-attestations = true` (opt-in) generates `actions/attest@v4`.
+- **Re-checked 2026-11-17 (INSTALLERS-P5):** v0.34.0 is still the latest: a lightweight tag on `294c1b25d372d86e74cafead8469b9f36d02da29`. The release is immutable and ships `sha256.sum` and per-archive `.sha256` files.
+  - **Maintenance:** 108 commits since 2026-08-16: 62 from Dependabot, 29 from the maintainer, 17 from 9 other accounts. The last commit on main was on 2026-11-17 (a Dependabot bump), and the last maintainer-authored one on 2026-11-15.
+  - **Installers:** the config reference lists `shell`, `powershell`, `npm`, `homebrew` and `msi`; the source also supports `pkg`.
+  - **Status:** SHA-pinned workflows are possible: `[dist.github-action-commits]` (since 0.29.0) replaces each action's tag with a commit SHA. The default refs are tags. `github-attestations` is documented as experimental.
+  - **The installer spike failed.** `installer.ps1` checks no checksum, and `installer.sh` checks one fail-open, and only for archives dist built. Grimoire writes its own installers (ADR-0010).
 
 ### RELEASE-PLZ
 - **Version:** **v0.4.3** (2026-11-02). Last commit 2026-11-16. `release-plz/action` v0.5.148.
@@ -610,6 +666,12 @@ Checked 2026-11-16. Status: Verified.
   - `cargo publish` with **built-in crates.io trusted publishing**, which needs `id-token: write` and no token. It notes that "new crates can't be published with trusted publishing".
   - `git_only` mode for packages that aren't published.
 - **Limits:** it "doesn't build and release binaries". Tags pushed with `GITHUB_TOKEN` can't trigger other workflows.
+- **Re-checked 2026-11-17 (RUST-REGISTRY-P5):** v0.4.3 and action v0.5.148 are still the latest. Since Phase 5, Grimoire uses release-plz only for `release-pr` (ADR-0009).
+  - **Tags:** the default is `{{ package }}-v{{ version }}` only when more than one package is release-enabled, otherwise `v{{ version }}`. `git_tag_name` is a Tera template whose only variables are `package` and `version`.
+  - **The action** installs cargo-binstall with `curl | tar` and no check, today from `releases/latest`, then release-plz from a release asset with no checksum, signature or attestation. Its `version` input defaults to 0.4.3, although its docs say `latest`.
+  - **Trusted publishing:** used only when there is no token, outside a dry-run, with `GITHUB_ACTIONS` set. If getting a token fails, it continues without one, and no setting turns it off. One token covers every crate and is revoked only if all of them succeed. An empty `CARGO_REGISTRY_TOKEN` counts as a token.
+  - **Dry-run and recovery:** `--dry-run` still needs a git token and network access to GitHub and crates.io. A version already on crates.io is skipped without creating its missing tag, and an existing tag skips the package before any registry check.
+  - **`GITHUB_TOKEN`:** stale for PRs. Since 2026-05-22, PRs that `GITHUB_TOKEN` creates or updates get `pull_request` runs that wait for approval (ACTIONS-P5). Tags and pushes still trigger nothing.
 
 ### RUNNERS: GitHub-hosted runners
 - **Source:** https://docs.github.com/en/actions/reference/runners/github-hosted-runners; https://github.com/actions/runner-images; changelog 2025-09-19 and 2026-02-26. Checked 2026-11-16. Status: Partial (no retirement date for `macos-26-intel`).
@@ -618,6 +680,12 @@ Checked 2026-11-16. Status: Verified.
 - **Windows arm64:** `windows-11-arm`.
 - **macOS Intel:** `macos-15-intel`, `macos-26-intel`. x86_64 macOS support is to end after the macOS 15 image retires in "Fall 2027", but `macos-26-intel` was added in 2026.
 - **x64 defaults:** `ubuntu-latest` moves to 26.04 in November 2026. `windows-2025`/`windows-2022`.
+- **Re-checked 2026-11-17 (ACTIONS-P5):**
+  - `windows-2025` and `windows-latest` now map to Windows Server 2025 with Visual Studio 2026 (`windows-2025-vs2026`), and `windows-11-arm` to Windows 11 Arm64 with VS 2026. Arm64 images are now maintained in `actions/runner-images`; `actions/partner-runner-images` is archived.
+  - `ubuntu-latest`'s move to 26.04 is a rollout that ends on 2026-11-19. On 2026-11-17 the README still mapped it to 24.04, so explicit labels are still required.
+  - `macos-15-intel`'s latest image is from 2026-08-24 (Rust 1.98.0, Homebrew 6.0.18). `macos-26-intel` is a standard public label, and the "Fall 2027" end of Intel macOS is stale; no current end date was found.
+  - From 2026-11-30, the Windows 11 Arm64 workspace moves to `D:`, and `D:` becomes ReFS on the x64 and Arm64 Windows images.
+  - `winget` isn't on `windows-11-arm`; on `windows-2025` it is undocumented.
 
 ---
 
@@ -641,6 +709,12 @@ Checked 2026-11-16. Status: Verified.
 - **Lint tools:**
   - zizmor v1.32.0 (2026-11-02); zizmor-action v0.8.1, commit `45d7276c9ca790aabd705e31ca99c6185c3e76dd`.
   - actionlint v1.7.12 (2026-03-30).
+- **Re-checked 2026-11-17 (ACTIONS-P5):**
+  - **OIDC:** confirmed with `GET /repos/jabbott-iii/Grimoire/actions/oidc/customization/sub`: `use_immutable_subject` is true, and the prefix is `repo:jabbott-iii@84321953/Grimoire@1460666977`. An environment job's `sub` should be `<prefix>:environment:release`, but the docs have no literal example of that form.
+  - **`pull_request_target` and checkout v7:** `actions/checkout` v7.0.0 blocks fork-PR checkout under both `pull_request_target` and `workflow_run`. The default `pull_request_target` block is enforced from 2026-12-02 for repositories still on the default policy.
+  - **Lockfiles:** conflict. zizmor 1.32.0's docs still call them public preview and its own support experimental, while GitHub's docs carry no preview label. Keep GA.
+  - **Environments:** a run that references a missing environment creates it with no protection rules. "Prevent self-review" stops the person who started a run from approving it.
+  - **`GITHUB_TOKEN`:** PRs it creates or updates get approval-required runs (since 2026-05-22). `workflow_dispatch` checks don't satisfy required status checks.
 
 ### ATTEST: artifact attestations and immutable releases
 - **Source:** https://github.com/actions/attest; https://cli.github.com/manual/gh_attestation_verify; changelog 2025-10-28 (immutable releases GA). Checked 2026-11-16. Status: Verified.
@@ -650,12 +724,21 @@ Checked 2026-11-16. Status: Verified.
   - Available in public repos on all plans, via public-good Sigstore.
 - **Verify:** `gh attestation verify <file|oci://…> --repo OWNER/REPO [--signer-workflow …]`.
 - **Immutable releases:** lock the tag and assets, the tag name can never be reused, and a release attestation is generated automatically. Flow: draft, attach, publish.
+- **Re-checked 2026-11-17 (SUPPLY-CHAIN-P5):**
+  - **Permissions:** `id-token: write` and `attestations: write`, plus `contents: read` to check out. `artifact-metadata: write` is used only for storage records, which need `push-to-registry` and an organization-owned repository, so it isn't needed here.
+  - **Dry-runs and fork PRs:** there is no dry-run input, and the action fails at once without `id-token`, so it can't run on fork or Dependabot PRs. Public repositories always log to public-good Rekor.
+  - **Verify:** use gh 2.102.0 or later (GHSA-wjmr-j3rp-mh2g, GHSA-4mq3-hpgx-9cx8); the runners ship 2.103.3. `--repo` is case-insensitive, while `--signer-workflow` and `--cert-identity` are case-sensitive. Fully offline verification needs `--bundle` plus `--custom-trusted-root`.
+  - **Immutable releases:** the release attestation is signed by GitHub's Sigstore (SAN `https://dotcom.releases.github.com`, predicate `https://in-toto.io/attestation/release/v0.2`). Verify it with `gh release verify` and `gh release verify-asset` (gh 2.81.0 or later). REST: `GET`, `PUT` and `DELETE /repos/{owner}/{repo}/immutable-releases`. The title and notes stay editable. `GITHUB_TOKEN` can't create or edit a release whose target changes workflow files.
 
 ### COSIGN
 - **Version:** cosign **v3.1.4** (2026-10-20); 2.x is still maintained (v2.6.5). `sigstore/cosign-installer` **v4.1.3**, commit `756fe2d284c7292c4e9b62c8a28f1e5629c59532`, defaults to v3.1.4.
 - **Source:** https://github.com/sigstore/cosign; https://docs.sigstore.dev/cosign/. Checked 2026-11-16. Status: Partial (the exact Fulcio SAN for a GitHub workflow identity, and GHCR support for OCI 1.1 referrers, are **UNVERIFIED**).
 - **Bundles:** v3 defaults to protobuf bundles, and "`--bundle` has moved from optional to required". Image signatures are stored as OCI 1.1 referring artifacts.
 - **Blob signing:** `cosign sign-blob f --bundle f.sigstore.json`. Verify with `cosign verify-blob f --bundle … --certificate-identity … --certificate-oidc-issuer https://token.actions.githubusercontent.com`.
+- **Re-checked 2026-11-17 (SUPPLY-CHAIN-P5):**
+  - **The Fulcio SAN is now verified:** `https://github.com/jabbott-iii/Grimoire/.github/workflows/<FILE>@<REF>`, built from `job_workflow_ref`. Case is preserved, and the immutable `sub` doesn't affect it; the `sub` appears only in OID 1.3.6.1.4.1.57264.1.24. Only GHCR's OCI 1.1 referrers support stays UNVERIFIED (Phase 6).
+  - **Version floor:** keep v3.1.4, and require at least 3.1.3 (GHSA-fx35-mq7g-6g98, a verification bypass). `--use-signing-config` is deprecated in 3.1.4.
+  - **The installer** checks a hard-coded SHA-256 of its bootstrap binary, and supports Windows X64 only. There is no windows-arm64 cosign binary.
 
 ### SBOM
 - **Source:** https://github.com/CycloneDX/cyclonedx-rust-cargo; https://github.com/rust-secure-code/cargo-auditable; https://docs.docker.com/build/metadata/attestations/. Checked 2026-11-16. Status: Verified.
@@ -663,6 +746,10 @@ Checked 2026-11-16. Status: Verified.
 - **cargo-auditable 0.7.7:** embeds the dependency tree in binaries. Grype ≥0.83, Trivy, syft and cargo-audit can read it.
 - **syft:** v1.57.2.
 - **Docker buildx:** `--sbom=true` (SPDX via BuildKit's Syft) and `--provenance=mode=max`. Max mode "exposes the values of build arguments".
+- **Re-checked 2026-11-17 (SUPPLY-CHAIN-P5):**
+  - **syft:** v1.57.2 was released on 2026-11-16, too young to pin. The newest release at least 7 days old is v1.57.1 (2026-11-09).
+  - **cargo-auditable readers:** cargo audit 0.17.3+, trivy 0.31.0+, grype 0.83.0+, syft 1.15.0+, osv-scanner 2.0.1+ (container images), blint 2.1.3+, wasm-tools 1.227.0+, rust-audit-info and auditable2cdx.
+  - **cargo-cyclonedx:** also, there is no `-p`/`--package`; it writes `<package>.cdx.json` next to every workspace member's `Cargo.toml`; and `SOURCE_DATE_EPOCH` drops `serialNumber`, which `actions/attest`'s `sbom-path` requires.
 
 ### BASE-IMAGE
 - **Source:** https://github.com/GoogleContainerTools/distroless (README 2026-09-24); https://images.chainguard.dev/directory/image/static/overview; https://github.com/opencontainers/image-spec/blob/main/annotations.md (image-spec v1.1.1). Checked 2026-11-16. Status: Verified.
@@ -726,6 +813,7 @@ Checked 2026-11-16. Status: Verified.
 - **Current stable:** 1.100.0 (`0ef1bc386 2026-11-09`), channel manifest dated 2026-11-12. Source: https://static.rust-lang.org/dist/channel-rust-stable.toml, checked 2026-11-16.
 - **Local machine:** the default `stable` toolchain resolves to 1.99.0, and 1.100.0 is installed alongside. CI must install toolchains explicitly and never rely on whatever happens to be installed.
 - **Edition 2024:** current releases of `rmcp`, `toml`, `toml_edit`, `clap`, `keyring` and `maturin` themselves use edition 2024. That doesn't block Grimoire from using it, because editions interoperate. This was not checked against the release notes; it will be confirmed by building in Phase 1.
+- **Re-checked 2026-11-17 (ACTIONS-P5):** 1.100.0 is still current. Tag `1.100.0` is commit `0ef1bc386059596dada8fb65b50425aab2ea637a`, released on 2026-11-12. That is under the 7-day rule used for every other pin; the newest toolchain at least 7 days old is 1.99.1 (2026-10-15). The 1.100.0 pin in `rust-toolchain.toml` was a Phase 1 choice, and Phase 5 doesn't change it (ADR-0009). Release jobs publish with it, never with the MSRV toolchain: Cargo 1.97 fixed a workspace-publish deadlock regression in 1.96.
 
 ### CRATES: candidate dependencies
 Source: the crates.io API (`https://crates.io/api/v1/crates/<name>`), checked 2026-11-16. MSRV is the crate's declared `rust-version`.
@@ -869,6 +957,7 @@ The actionlint, gitleaks and lychee hashes were checked against each release's o
 - **cargo-deny-action not used:** it downloads cargo-deny with `curl | tar` and verifies no checksum.
 - **gh-actions-lock:** every write-mode run needs `--no-narrow`, or it rewrites SHA pins to tags. CI runs `--verify`, which reports the expected, non-blocking "pinned to a bare SHA" note.
 - Status: Verified.
+- **Re-checked 2026-11-17 (RUST-REGISTRY-P5, ACTIONS-P5):** every pin above is still the newest release at least 7 days old, and the actionlint, gitleaks and lychee checksums still match their checksum files. Newer, but too young: install-action v2.90.4 (2026-11-14) and v2.90.5 (2026-11-15), cargo-deny 0.21.0 (2026-11-16) and cargo-shear 1.14.1 (2026-11-13). actionlint, zizmor and gh-actions-lock also publish SLSA provenance attestations, which `gh attestation verify` can check and which are stronger than an API digest. Phase 5's new pins are listed in each `*-P5` entry.
 
 ### ZIZMOR: workflow audit rules
 - **Persona:** zizmor 1.32.0 runs at the **pedantic** persona with online audits, and `advanced-security: false` keeps failing exit codes.
@@ -883,6 +972,13 @@ The actionlint, gitleaks and lychee hashes were checked against each release's o
   - a Dependabot cooldown of at least 7 days.
 - **Known gap:** zizmor 1.32.0's `dependabot-cooldown` audit stops after the first compliant entry, so cooldowns on every entry are enforced by review.
 - Status: Verified.
+- **Re-checked 2026-11-17 (ACTIONS-P5):**
+  - **`use-trusted-publishing`** flags `run:` lines with `cargo publish` or `npm`/`pnpm`/`bun publish` (including `npm stage publish`) without `--dry-run`, **only when the job lacks `id-token: write`**. An OIDC publish job isn't flagged. It doesn't detect release-plz or maturin.
+  - **Exit codes:** zizmor exits 11 when the highest finding is Informational. zizmor-action's default SARIF mode (`advanced-security: true`) never uses exit codes of 11 or more, which is why Grimoire sets it to `false`.
+  - **`cache-mode`:** GitHub added this workflow key (`read`, `write`, `write-only`, `none`), and zizmor 1.31.0 and later honour it, but actionlint 1.7.12 rejects it. Don't add it; keep having no cache-aware steps.
+  - **Version comments:** only a *missing* version comment is pedantic; a mismatched one is flagged at the regular persona.
+  - **`concurrency-limits`** (pedantic) wants `cancel-in-progress: true` or an expression. Never cancel a publish run.
+  - zizmor-action v0.8.1 installs zizmor wheels pinned by hash in `support/locks/`.
 
 ---
 
@@ -2766,3 +2862,414 @@ Sources: https://unpkg.com/strip-json-comments@3.1.1/index.js (the version Gemin
   - toml_edit attaches comment lines before a `[header]` to that header. They usually belong to the item above, such as a setting commented out at the end of the previous table, so when Grimoire removes its table it moves them to the next header or the end of the file.
 - **Comments inside an entry:** values are hashed without their comments, so a comment the user adds inside Grimoire's TOML table or JSONC object would be lost by an update or a removal. The planner makes that update or removal a conflict (`Conflict::Commented`).
 - **UNVERIFIED:** toml_edit 0.25 targets TOML 1.1. What Grimoire writes uses only TOML 1.0 syntax (single-line inline tables, `\uXXXX` escapes), but which TOML version Codex's own parser accepts was not checked.
+
+---
+
+## Phase 5 additions (checked 2026-11-17)
+
+These facts came from an eight-topic research workflow: crates.io and release-plz, npm, PyPI, Homebrew and Scoop, winget, the supply chain (attestations, signing, SBOMs, checksums), Actions runners and builds, and installers. An independent skeptic re-checked each topic against its primary sources: crates.io and release-plz 68 of 74 confirmed (5 corrected, 1 uncertain), npm 63 of 70 (3 corrected, 4 uncertain), PyPI 65 of 72 (6 corrected, 1 uncertain), Homebrew and Scoop 64 of 70 (4 corrected, 2 uncertain), winget 67 of 70 (1 corrected, 2 uncertain), supply chain 74 of 75 (1 uncertain), Actions and builds 63 of 72 (5 corrected, 4 uncertain), installers 60 of 64 (3 corrected, 1 uncertain). The skeptics also re-checked all 78 pins; 2 needed corrections, and neither is used.
+
+Corrected facts appear below in corrected form, uncertain ones are marked UNVERIFIED, and facts the skeptics added are included where an implementer needs them. How the release tools behave comes from their source at the pinned tag and from their docs: no release tool was run. The only local commands were `cargo metadata`, `cargo tree` and `rustc --print deployment-target`. The raw results are not committed. Where an entry below differs from a 2026-11-16 entry, this one wins, and the older entry carries a "Re-checked 2026-11-17" note.
+
+### RUST-REGISTRY-P5: release-plz, cargo publish, crates.io and cargo-binstall
+Sources: https://github.com/release-plz/release-plz at `92e907a14715` (tag `release-plz-v0.4.3`: `crates/release_plz_core/src/command/release.rs`, `…/tera.rs`, `crates/release_plz/src/config.rs`, `website/docs/config.md`, `website/docs/github/token.md`); https://github.com/release-plz/action/blob/66b324fd6c72d05d2a08568492ecdd62bfb8a62b/action.yml; Cargo at `3acc79c0c841`, the 1.100.0 submodule (`doc/book/src/CHANGELOG.md`, `src/ops/cargo_package/mod.rs`, `tests/testsuite/publish.rs`); https://github.com/rust-lang/crates.io at `1aea7ef2ddea` (`src/controllers/trustpub/`, `crates/crates_io_trustpub/`, `src/controllers/krate/{publish,update}.rs`, `svelte/src/routes/docs/trusted-publishing/+page.svelte`); https://github.com/cargo-bins/cargo-binstall at `5885714d0a40` (`SUPPORT.md`, `SIGNING.md`, `README.md`). Status: Verified, except the gaps listed.
+
+- **Pins:**
+  - release-plz 0.4.3 (2026-11-02): `release-plz-x86_64-unknown-linux-musl.tar.gz`, SHA-256 `4a4cfa92ea2abaee02b40daa596a95ca2725816a6a32cb03a8f48ddead287681`. That is the GitHub asset digest: the release has no checksum file, no signing metadata and no attestations.
+  - `rust-lang/crates-io-auth-action` v1.0.6 (2026-10-21), commit `3268eb413133e2960fa4ae0e963ca76380c54cd9`. It runs on node24 and revokes its token in a post step.
+  - Not used: `release-plz/action` v0.5.148 (`66b324fd6c72`). Its composite steps install cargo-binstall with `curl | tar` and no check. Its empty `version` input means that today it installs `releases/latest` (v1.27.0, under 7 days old), then release-plz's `-gnu` asset, checked only by HTTPS.
+- **`release-plz.toml`** (unknown fields are refused):
+  - `git_tag_name` and `git_release_name` are Tera templates whose only variables are `package` and `version`. The default is `{{ package }}-v{{ version }}` when more than one package is release-enabled, otherwise `v{{ version }}`. Grimoire never lets release-plz tag, so the default doesn't matter.
+  - With `version.workspace = true`, every inheriting member gets the new workspace version, and `version_group` is ignored. A `[workspace.dependencies]` entry with a `path` and a `version` gets the new version.
+  - `git_release_enable` defaults to true and `git_release_draft` to false, so release-plz would publish the GitHub Release itself. That clashes with draft, upload, publish under immutable releases. Grimoire sets `git_release_enable = false`.
+  - For a crate not yet on crates.io, `release-pr` keeps the current version and still writes the changelog.
+  - The `release-pr` job needs `contents: write`, `pull-requests: write`, the repository setting that lets Actions create PRs, and a full-history checkout. It commits through the GraphQL API, so the commit shows as Verified.
+- **`release-plz release`** (Grimoire doesn't use it; recorded because ADR-0003 relied on it):
+  - Per package, in dependency order: skip it if the rendered tag exists locally, before any registry check; skip it if `cargo info name@version` finds the version, **without** creating the missing tag; otherwise `cargo publish`, then the tag and release.
+  - With `release_always = false`, it returns before any `cargo publish --dry-run` unless HEAD belongs to a `release-plz-*` PR. `--dry-run` still needs a git token, and calls the GitHub and crates.io APIs.
+  - Built-in trusted publishing runs only with no token, for crates.io, outside a dry-run, with `GITHUB_ACTIONS` set. One token covers every package, and it is revoked only if every package succeeds. If getting a token fails, release-plz warns and goes on without one.
+  - An empty `CARGO_REGISTRY_TOKEN` is read as a token, so trusted publishing is skipped and `cargo publish` gets an empty token.
+  - `publish_timeout` (default 30m) bounds only the published-check and the wait loop, not `cargo publish` itself. The docs say otherwise.
+- **`cargo publish`:**
+  - `cargo publish --workspace` (or repeated `-p`) has been stable since Cargo 1.90, and it isn't atomic.
+  - It packages the selected crates into a local overlay registry, so `cargo publish --workspace --dry-run` checks interdependent crates that aren't on crates.io yet. `cargo publish -p b` on its own fails while its new dependency `a` isn't in the registry.
+  - `--workspace` skips `publish = false` members. In a dry-run an existing version is only a warning; a real `--workspace` publish fails if any version already exists.
+  - Cargo 1.97 fixed a 1.96 regression where workspace publish failed with a false deadlock, so never publish with the MSRV toolchain.
+  - In Cargo 1.100, `cargo install` uses the packaged lockfile by default (`--locked` is a no-op), and `registry.global-min-publish-age` is stable.
+- **crates.io trusted publishing:**
+  - Owner and repository names are compared case-insensitively. `repository_owner_id` must equal the ID captured when the config was created; the repository ID isn't checked.
+  - The workflow filename comes from `workflow_ref` (the caller's workflow) and must match exactly. The environment is compared case-insensitively, and a config without one accepts any environment.
+  - `sub` isn't decoded, so GitHub's immutable `sub` format doesn't matter. `pull_request_target` and `workflow_run` are refused.
+  - A token covers every matching crate, and a crate has at most 5 configs. Trusted-publishing tokens can't create a crate. Creating a config needs a verified email and a linked GitHub account.
+  - `trustpub_only` is a per-crate boolean (default false), set with `PATCH /api/v1/crates/{name}` or on the crate's settings page; every owner gets an email.
+  - A repository rename or transfer changes the `repository` claim and needs new configs.
+  - These facts come from crates.io's `master` source on 2026-11-17. Whether that code is deployed wasn't checked.
+- **crates.io metadata:**
+  - `description` of at most 1000 characters, and `license` or `license-file`.
+  - At most 5 keywords: each at most 20 characters, ASCII alphanumeric first, then alphanumerics, `_`, `-` or `+`.
+  - At most 5 categories, each an exact slug; an unknown slug fails the publish. `command-line-utilities` and `development-tools` are among the 104.
+  - Limits: 10 MB upload, 512 MB unpacked, 30,000 entries.
+- **cargo-binstall:**
+  - v1.27.0 (2026-11-11) is the latest. The newest release at least 7 days old is v1.26.2 (2026-10-31, `851112458b5f`).
+  - `[package.metadata.binstall]` keys: `pkg-url`, `pkg-fmt`, `bin-dir`, `signing {algorithm, pubkey, file}`, `disabled-strategies`, and `overrides.<triple or cfg(...)>`, where an exact triple wins. Unknown keys are ignored, so typos go unnoticed.
+  - `pkg-fmt` values: `tar`, `tbz2`, `tgz` (the default), `txz`, `tzstd`, `zip`, `bin`.
+  - Template variables: `name`, `version`, `repo`, `bin`, `target`, `archive-suffix`, `archive-format`, `binary-ext`, `format`, `target-family`, `os-name`, `target-arch`, `target-libc`, `target-vendor`.
+  - **Verification:** the crates.io crate checksum, plus minisign only when `signing` is declared. **No checksum of the prebuilt archive**, and no Sigstore or GitHub attestations.
+  - Strategies: `crate-meta-data`, `quick-install`, `compile`. Telemetry goes only through `quick-install`, so `disabled-strategies = ["quick-install"]` turns it off for one crate.
+- **UNVERIFIED:** what Cargo does with an empty token; that release-plz's per-crate dry-run fails for dependents (consistent with the source, not run).
+
+### NPM-P5: staged and trusted publishing, platform packages and the launcher
+Sources: https://github.com/npm/documentation (`content/packages-and-modules/securing-your-code/{trusted-publishers,staged-publishing,generating-provenance-statements}.mdx`, `…/contributing-packages-to-the-registry/{creating-and-publishing-scoped-public-packages,package-name-guidelines}.mdx`, `content/integrations/integrating-npm-with-external-services/about-access-tokens.mdx`); npm CLI at tag v12.2.2 (`docs/lib/content/commands/{npm-trust,npm-stage}.md`, `lib/commands/{publish,stage/publish,trust/github}.js`, `lib/utils/oidc.js`, `workspaces/libnpmpublish/lib/publish.js`, and the bundled pacote, bin-links, cmd-shim and npm-install-checks); https://github.com/npm/cli/releases/tag/v12.0.0; https://registry.npmjs.org (npm, `agent-grimoire`, the `@agent-grimoire` scope, esbuild and biome packages); https://nodejs.org/dist/index.json; https://github.blog/changelog/2025-12-09-npm-classic-tokens-revoked-session-based-auth-and-cli-token-management-now-available/, https://github.blog/changelog/2026-10-02-npm-staged-publishing-now-supports-creating-new-packages, https://github.blog/changelog/2026-10-02-unvalidated-npm-trusted-publishing-configurations-now-expire, https://github.blog/changelog/2026-07-28-npm-publish-time-malware-scanning-and-dual-use-metadata/; https://github.com/npm/cli/issues/9969. Status: Partial (gaps listed).
+
+- **Versions and pins:**
+  - npm 12.2.2 (`latest`) and 11.21.2 (the newest 11.x), both 2026-11-04; tag commits `60e11343e613` and `1c66798c9def`. npm 12 needs Node `^22.22.2 || ^24.15.0 || >=26.0.0`.
+  - Minimums: trusted publishing needs npm 11.5.1 and Node 22.14.0; staged publishing and `npm trust` need npm 11.15.0 and Node 22.14.0; dist-tags over OIDC need npm 11.21.0 or 12.2.0 and an opt-in.
+  - `actions/setup-node` v7.1.0 (2026-10-08), commit `949feb2413d6458794dcd2491c4babbbce0c15c1`, with `package-manager-cache: false`.
+  - Node 24.22.3 (2026-11-10) bundles npm 11.19.1, enough for staged and trusted publishing. Node 22.23.4 bundles npm 10.9.9, which is too old. Node 24 has been Maintenance LTS since 2026-10-20, and Node 26 Active LTS since 2026-10-28.
+- **Staged publishing:**
+  - `npm stage publish` is `npm publish` with `stage=true`: the same flags, a POST to `/-/stage/package/<name>`, and no 2FA.
+  - Approve with 2FA, with `npm stage approve <stage-id>` or on npmjs.com's Staged Packages tab. Rejecting also needs 2FA.
+  - Batch approval takes up to 100 versions, one per package, with one 2FA challenge. Each action is independent and isn't rolled back.
+  - OIDC can publish, stage and (when opted in) set dist-tags. It can't list, view, approve or reject.
+  - **Staged publishing can create a new package**, with a local session or a granular token but not OIDC. npm then publishes a public placeholder version, `0.0.0-stage`.
+  - Staged and published versions share one version index. A staged version's tag is immutable, and a prerelease needs `--tag`.
+  - Since 2026-07-28, npm scans every new version before it can be installed. That typically takes about 5 minutes, sometimes 15 or more, and a version can be held for review.
+- **Trusted publishing:**
+  - GA since 2025-07-31. Providers: GitHub Actions on GitHub-hosted runners, GitLab.com shared runners, and CircleCI cloud. Self-hosted runners aren't supported.
+  - The package must already exist (`npm trust` refuses otherwise), so trusted publishing can't create a package.
+  - Configurations created after 2026-09-03 allow `npm stage publish` by default; `npm publish` and dist-tags are opt-in.
+  - A new configuration must publish successfully within 48 hours, or it expires. Validation binds it to the repository's immutable identity.
+  - Fields: organization or user, repository, workflow filename (`.yml` or `.yaml` in `.github/workflows/`), and an optional environment. **All are case-sensitive**, so type `Grimoire`. For `workflow_call` and `workflow_dispatch`, the calling workflow's filename is matched.
+  - CLI: `npm trust github <pkg> --file <wf>.yml --repo jabbott-iii/Grimoire --env npm --allow-stage-publish --yes` (Grimoire's npm environment is `npm`, ADR-0009). It needs 2FA, refuses bypass-2FA tokens, and has no dist-tag flag. It sends `repository`, `workflow_ref.file` and `environment`, never `sub`.
+  - npm refuses OIDC tokens from `pull_request_target` and `issue_comment`.
+  - **npm/cli#9969**, opened 2026-09-14: "OIDC trusted publishing fails with 'package not found' for GitHub repos that use immutable OIDC subject claims". On 2026-11-17 it was open, labelled Priority 1, triaged on 2026-10-28, with no fix announced. One post-cutoff repository published through a GitHub trusted publisher on 2026-11-05 and 2026-11-16, so it can work.
+  - npm recommends setting publishing access to "Require two-factor authentication and disallow tokens". Trusted publishers aren't affected.
+- **Provenance:**
+  - It is automatic only for trusted publishing from a public repository, of a public package. The CLI checks the token's `repository_visibility` and the package's visibility.
+  - `repository.url` must match the GitHub repository exactly, case included: `git+https://github.com/jabbott-iii/Grimoire.git`.
+  - libnpmpublish refuses provenance for a new or private package unless access is public, so pass `--access public`.
+- **Dry-runs:**
+  - `npm publish --dry-run` and `npm stage publish --dry-run` need no login; they only warn. But they fetch the packument, and **perform a real OIDC exchange when the job has `id-token: write`**. They run lifecycle scripts unless `--ignore-scripts` is passed.
+  - `npm pack --dry-run` on a directory is local, but without `--ignore-scripts` it still runs `prepack`, `prepare` and `postpack`.
+  - npm 12 refuses unknown flags.
+- **Platform packages and the launcher:**
+  - `os` and `cpu` match `process.platform` and `process.arch`. `libc` applies only on Linux, and a package that sets it is refused when the host's libc can't be detected. Static musl packages omit it, as esbuild's do.
+  - Optional dependencies that fail the `os`, `cpu` or `libc` check are skipped without failing the install.
+  - Only a global top-level package's `bin` reaches PATH, so the launcher must be a JS `bin` in `agent-grimoire`.
+  - `npm pack` sets modes to `(mode | 0o600) & ~0o022`, keeping execute bits, and forces `+x` only on declared `bin` files. It sets mtime 1985-10-26 and never includes symlinks. So set the binary to 0755 before packing.
+  - npm 12 blocks dependency lifecycle scripts by default, so no `postinstall`.
+  - The pattern followed is biome's launcher: `require.resolve`, `spawnSync` with `shell: false` and `stdio: "inherit"`, and 128 plus the signal number when the child dies of a signal. Grimoire's launcher uses `spawn` instead, so that it can forward `SIGINT`, `SIGTERM` and `SIGHUP` to the child (ADR-0010).
+- **Names (2026-11-17):** `agent-grimoire` and the `@agent-grimoire` scope are free; no user or organization owns the scope. Organization-scoped packages need an npm organization first.
+- **Tokens:** classic tokens were revoked on 2025-12-09. `npm login` gives 2-hour sessions with 2FA enforced for publishing. Granular write tokens last at most 90 days. Direct publishing with granular tokens is targeted for removal in January 2027. Stage-only tokens exist, and get `E_STAGE_REQUIRED` from `npm publish`.
+- **Conflicts:**
+  - The `npm trust` CLI docs at v12.2.2 still say one configuration per package. The web docs say up to 10, and the changelog says several are GA. Grimoire needs one.
+  - The config docs say a new package's access defaults to `public`; the scoped-package docs say scoped packages are private by default. Always pass `--access public`.
+- **Checked in the Phase 5 review (2026-11-17):**
+  - **Provenance in the pinned npm 11.19.1** (https://github.com/npm/cli/blob/v11.19.1/lib/utils/oidc.js, `lib/commands/publish.js`): `npm publish` and `npm stage publish` both run the OIDC exchange. After a successful exchange the CLI turns provenance on when the token's `repository_visibility` is `public` and the package is public. An error in the visibility lookup is logged only at verbose level, and the publish goes ahead without provenance. Grimoire passes no `--provenance`, so nothing fails when provenance is missing.
+  - **Re-staging:** a staged version isn't public, so `npm view` doesn't see it. npm refuses to stage a version that is already staged ("Staged packages share the same semver version unique index as published packages", `npm-stage.md` at v12.2.2). To stage it again, reject the stage first.
+  - **Dry-runs and published versions** (npm 11.19.1 `lib/commands/publish.js`, also run locally with npm 11.19.1 on Node 18.19.1): `--dry-run` still fetches the packument and refuses a version that is already published. Only `--force` skips that, and `--force` also skips the check that a prerelease needs `--tag`. With `--registry=http://127.0.0.1:9/ --fetch-retries=0` the lookup fails at once, npm sees no versions, and the other checks still run.
+  - **Session tokens can stage** (`npm-stage.md` at v12.2.2, the Token Behavior table): a session token can run `npm stage publish`, staging never asks for 2FA, and a package's publishing-access setting limits only granular-token `npm publish`. So the manual fallback works under "Require two-factor authentication and disallow tokens". Not run against the registry.
+  - **`npm audit signatures`** (https://github.com/npm/cli/blob/v12.2.2/lib/commands/audit.js; npm/documentation `generating-provenance-statements.mdx`): it checks the registry signatures and provenance attestations of a project's installed packages. It refuses global installs with `EAUDITGLOBAL`, so it can't check `npm i -g` or `npx`. Read from the v12.2.2 source; the refusal was reproduced with npm 11.20.0.
+- **UNVERIFIED:**
+  - which dist-tag the `0.0.0-stage` placeholder gets, and whether rejecting a stage keeps the package;
+  - whether staged versions expire;
+  - whether a stage, before approval, counts as the validating publish within 48 hours;
+  - whether npm supports repositories with the immutable `sub` (npm/cli#9969);
+  - any registry size limit (none documented; a biome package of 38 MB packed, 120 MB unpacked is accepted);
+  - any npm policy specific to native binaries (none found);
+  - whether a version staged over OIDC keeps its provenance after approval (the CLI turns it on, as above; the docs don't say whether the registry keeps it);
+  - whether setup-node checks the checksum of the Node it downloads.
+
+### PYPI-P5: hand-written wheels, PyPI's checks and the publish action
+Sources: https://packaging.python.org/en/latest/specifications/binary-distribution-format/, …/recording-installed-packages/, …/core-metadata/; https://github.com/pypi/warehouse at `c2f79b4a6fb0` (`warehouse/oidc/`, `warehouse/forklift/legacy.py`, `warehouse/utils/wheel.py`, `docs/user/trusted-publishers/`); https://docs.pypi.org/trusted-publishers/; https://github.com/pypa/gh-action-pypi-publish at v1.14.3; https://ghcr.io/v2/pypa/gh-action-pypi-publish/manifests/7245906fb61fa33a13554f9d5fb856fe61758086; https://github.com/pypa/twine/blob/7.0.0/docs/changelog.rst; https://github.com/pypa/pip/blob/26.3/src/pip/_internal/operations/install/wheel.py; maturin v1.16.0 and maturin-action v1.51.0, for comparison; https://pypi.org/pypi/agent-grimoire/json. Status: Verified, except the gaps listed.
+
+- **Pins:**
+  - `pypa/gh-action-pypi-publish` v1.14.3 (2026-10-20), commit `7245906fb61fa33a13554f9d5fb856fe61758086`.
+  - twine 7.0.0 (2026-07-27), installed from a hash-pinned requirements file. It fixed uploads of Metadata-Version 2.5 and no longer accepts 2.0.
+  - The alternative publisher, `uv publish` (uv 0.13.7, 2026-11-03), isn't used.
+- **Why Grimoire doesn't use maturin:** maturin 1.16.0 can't package a prebuilt binary. For `bindings = "bin"` it always compiles with `cargo rustc --bin`. uv, ruff and maturin itself build each target's wheel and archive from one compile. Grimoire writes the wheel in `cargo xtask` from the archived binary instead (ADR-0009). maturin-action also downloads maturin without a checksum check.
+- **A wheel doesn't depend on its generator;** PyPI checks the format. A binary-only wheel needs:
+  - `agent_grimoire-{V}.data/scripts/grimoire` (`grimoire.exe` on Windows), with zip mode 0755. pip 26.3 copies `.data/scripts` files unchanged, rewrites only a leading `#!python`, and sets `+x` only if the zip entry is executable.
+  - `.dist-info/METADATA`: Metadata-Version 2.4 added `License-Expression` and `License-File`; core metadata is now at 2.6.
+  - `.dist-info/WHEEL`: `Wheel-Version: 1.0`, `Generator`, `Root-Is-Purelib: false`, and one `Tag:` line per tag.
+  - `.dist-info/licenses/…`, and `.dist-info/RECORD`: `path,sha256=<urlsafe base64 without padding>,size`, with `RECORD,,` for itself. `.dist-info` goes last.
+  - A file name that starts with the normalized name, `agent_grimoire`. PyPI looks projects up by normalized name, and the pending publisher's project name must match the metadata `Name`.
+- **Tags:**
+  - Static musl: one wheel may carry `manylinux_2_17_<arch>` (with its `manylinux2014_<arch>` alias) and `musllinux_1_2_<arch>` together. PyPI hosts such wheels (maturin 1.16.0, uv 0.13.8).
+  - macOS: `macosx_10_12_x86_64` and `macosx_11_0_arm64`, rustc 1.100.0's deployment targets (checked with `rustc --print deployment-target`). Windows: `win_amd64` and `win_arm64`.
+  - PyPI's allow-list covers manylinux and musllinux on x86_64 and aarch64, and macOS and Windows on x86_64 and arm64.
+  - **Compressed tag sets are sorted** (https://github.com/pypa/packaging.python.org/blob/main/source/specifications/platform-compatibility-tags.rst, "Compressed Tag Sets", fetched 2026-11-17 in the Phase 5 review): each tag group in a file name is a `.`-separated, sorted collection. ASCII order puts `manylinux2014_<arch>` before `manylinux_2_17_<arch>`. PyPI doesn't check the order, because it parses the name into a set, but `wheel tags` rewrites an unsorted name and maturin 1.16.0 sorts. Grimoire sorts.
+- **What PyPI checks on upload:**
+  - the file name and tags, against the allow-list;
+  - zip framing, with STORED or DEFLATED members only, a 50× decompression-ratio limit and normalized member paths;
+  - that `RECORD` exists (a mismatch only triggers an email), `METADATA`, `License-File` and entry points;
+  - a YARA scan of `.py` files.
+  - **It doesn't inspect binaries.**
+- **Trusted publishing:**
+  - A pending publisher needs owner, repository, workflow filename (ending in `.yml` or `.yaml`, with no `/`) and project name. The environment is optional.
+  - PyPI stores the owner's canonical login and numeric ID. It stores the repository name as typed and matches it exactly, so register `Grimoire`. The environment is compared case-insensitively.
+  - `sub` and `repository_id` aren't checked, so the immutable `sub` has no effect. `pull_request_target` and `issue_comment` are refused.
+  - Tokens last 15 minutes. A pending publisher creates the project on first use, and doesn't reserve the name.
+  - **Pending publishers expire.** Since warehouse #19996 (2026-05-04), a daily task deletes them 30 days after creation, with a reminder 5 days before (`warehouse/oidc/tasks.py`). The docs don't say so.
+  - Reusable workflows: see the PYPI-TP note.
+- **gh-action-pypi-publish:**
+  - Linux only, and not in a job with `container:`.
+  - It is a composite action that runs `docker://ghcr.io/pypa/gh-action-pypi-publish:<ref>`, so pinning the action by SHA pins its image by **tag**, not digest. On 2026-11-17 the SHA tag resolved to `sha256:411241df99067c98b6d08fd8e26d14e86740a22460599c2af571e6dc26e27ffc`, and `v1.14.3` to `sha256:a20ee5e9a490ada64fce0c9176418a4fd5afad3b80e70fb4745803c1309dcdfc`. Every build of that commit re-pushes the SHA tag (4 builds on 2026-10-20), and it can be overwritten.
+  - The base image, `python:3.13-slim`, is unpinned. The Python dependencies (twine 7.0.0, sigstore 4.5.1, pypi-attestations 0.0.30, id 1.6.1) are hash-pinned in a constraints file, which pip enforces only from 26.1. The image upgrades to pip 26.2 using the base image's unpinned pip.
+  - `attestations` (PEP 740) defaults to true and needs trusted publishing. `verify-metadata` runs `twine check` first. There is no dry-run input.
+- **Offline checks for PRs:** `twine check --strict` renders the long description and validates metadata through `packaging`. Add tag and metadata assertions, and `pip install --no-index` into a venv followed by `grimoire --version`. check-wheel-contents 0.6.3 fails every binary-only wheel on W007 unless given `--ignore W007`.
+- **Name:** `agent-grimoire` was free on 2026-11-17: 404 for every spelling, including the ultranormalized `agentgr1m01re`.
+- **UNVERIFIED:** whether PyPI's similar-name or prohibited-name checks would refuse `agent-grimoire` (visible only when logged in); whether `uv publish --dry-run` mints an OIDC token; the action's `skip-existing` input, which Grimoire uses but the research didn't re-check.
+
+### BREW-SCOOP-P5: the prebuilt formula, local-tap audits and the Scoop manifest
+Sources: https://github.com/Homebrew/brew at tag 7.0.14 (`docs/{Taps,How-to-Create-and-Maintain-a-Tap,Formula-Cookbook,Tap-Trust,Acceptable-Formulae,Package-Acceptance-Policy,Adding-Software-to-Homebrew}.md`, `Library/Homebrew/{rubocops,dev-cmd,livecheck}/`, `formula.rb`, `trust.rb`, `utils/ast.rb`, `.github/workflows/tap-new-*.yml`); https://github.com/Homebrew/actions/blob/2026.11.09.1/README.md; https://github.com/ScoopInstaller/Scoop at v0.6.0 (`schema.json`, `lib/{autoupdate,manifest}.ps1`, `bin/checkver.ps1`, `test/`); https://github.com/ScoopInstaller/BucketTemplate at `dd0ce8ae6a9e`; https://github.com/ScoopInstaller/GithubActions/blob/v3.0.0/src/Action/Scheduled.psm1; https://github.com/PowerShell/PowerShell/blob/v7.6.9/src/Microsoft.PowerShell.Commands.Utility/commands/utility/TestJsonCommand.cs; runner-images readmes; for the licence syntax, https://github.com/ScoopInstaller/Scoop/wiki/App-Manifests and `libexec/scoop-info.ps1` at v0.6.0 (checked in the Phase 5 review). Status: Verified from source and docs, except the gaps listed. No `brew`, `scoop`, `pwsh` or schema validator was run.
+
+- **Pins:**
+  - Homebrew 7.0.14 is current (2026-11-16).
+  - `Homebrew/actions` 2026.11.09.1, commit `63a2d4d8d4193eab3e62b1b782ff3ab8408f5b29`. All its actions share one CalVer tag, so `setup-homebrew` has no tag of its own.
+  - Scoop v0.6.0 (2026-09-30), commit `e6aa3b366bdee8ed138c1e0f7b85192ebdd35d0f`. Its `schema.json` has SHA-256 `64ec829c70758d3fba2c8c168a5901a64408a6493efda25f172b0fe4505caac0`.
+- **Formula, not cask:**
+  - Homebrew's guidance: a formula for open-source command-line software it can build from source, a cask for binary-only software.
+  - homebrew/core is source-only, but its binary-URL cop and source-only audits run only for homebrew/core. Software outside core's criteria can live in a third-party tap.
+  - Casks quarantine downloads on macOS, and `brew audit --cask --new` runs a notarization check. Grimoire uses a prebuilt-binary formula in its own tap.
+- **Per-platform URLs:**
+  - `url`, `sha256` and `version` work inside `on_*` blocks at run time.
+  - `brew style`'s ComponentsOrder cop refuses `url` directly inside a top-level `on_*` block. It checks only that block's direct children, so `on_macos do on_arm do url … end end` isn't checked (inferred from source, not run).
+  - The OnSystemConditionals cop skips its OS and arch audits outside homebrew/core, so top-level `if OS.mac?` / `Hardware::CPU.arm?` is also allowed in a tap.
+- **Bumping:** `bump-formula-pr`, which the generated autobump uses, rewrites `url` and `sha256` only when they are direct children of the formula body. It can't update per-platform pairs, so Grimoire's tap uses its own sync workflow (ADR-0009).
+- **Other formula facts:** the version is detected from `…/releases/download/vX.Y.Z/…` URLs. A choice of licences is `license any_of: ["MIT", "Apache-2.0"]`. livecheck's Git strategy reads the repository's tags.
+- **Audits in CI:**
+  - `brew audit <path>` is disabled. Instead: `brew tap-new --no-git local/<tap>`, copy the formula into its `Formula/`, run `brew trust` on the tap, `brew style`, then `brew audit --strict --formula --os=all --arch=all local/<tap>/agent-grimoire`.
+  - The tap needs `brew trust` because the fully-qualified-name exemption covers only install, reinstall and upgrade.
+  - `--new` implies `--online`, which fetches the release URLs, so neither runs on PRs. For a tap, `--online`'s licence, archived and notability checks never run anyway.
+- **Runners:** ubuntu-24.04 has Homebrew 7.0.13, not on PATH: `eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"`. Outside a tap repository, `setup-homebrew` moves brew to its newest tag.
+- **Tap trust** (since Homebrew 6.0.0, non-official taps need explicit trust):
+  - `brew install jabbott-iii/tap/agent-grimoire` trusts only that formula.
+  - `brew trust --formula jabbott-iii/tap/agent-grimoire`, or `brew trust jabbott-iii/tap` for the whole tap, also work.
+  - The tap repository must be `github.com/jabbott-iii/homebrew-tap`.
+- **Tap repositories and `GITHUB_TOKEN`:** a personal-account repository's workflows can't create or approve PRs until "Allow GitHub Actions to create and approve pull requests" is on, and the PRs they open start with runs that need approval. `tap-new`'s `tests.yml` runs `brew test-bot`, which builds bottles; what it does with a prebuilt formula wasn't checked.
+- **The Scoop manifest:**
+  - `schema.json` is draft-07 and requires only `version`, `homepage` and `license`. The wiki lists `description` as required, but says it is "not technically required"; include it anyway.
+  - `architecture.{32bit,64bit,arm64}` take `url`, `hash`, `bin`, `extract_dir` and more. A top-level `bin` applies to every architecture.
+  - `checkver: "github"` reads `homepage`, which must then be the GitHub repository URL, or `checkver.github`. It queries `/releases/latest`.
+  - `autoupdate`'s `hash.url` accepts a bare-hash file, `hash  filename` lines, or an aggregate list matched on `$basename`. With no `hash.url` and a GitHub release URL, v0.6.0 uses the asset digest; failing that, it downloads the file and hashes it. The wiki lags v0.6.0.
+  - Bucket CI checks each file for no BOM, a final newline, CRLF line endings (the template's `.gitattributes` stores LF and checks out CRLF), no trailing whitespace and 4-space JSON.
+- **Excavator (not used):** BucketTemplate's Excavator (`ScoopInstaller/GithubActions` v3.0.0, every 4 hours, `contents: write`) pushes updated manifests straight to the branch, with no PR. At run time it installs Scoop from the unpinned `ScoopInstaller/Install` master `install.ps1`, through `irm | iex`. Pushes made with `GITHUB_TOKEN` trigger no workflow, so the bucket's own CI never tests them.
+- **Offline validation:** PowerShell 7.4 and later's `Test-Json -SchemaFile` uses JsonSchema.Net (7.4.0 in PowerShell 7.6.9). It supports drafts 6, 7, 2019-09 and 2020-12, not draft 4, and doesn't assert `format`. pwsh is 7.6.10 on ubuntu-24.04 and 7.6.9 on windows-2025.
+- **User commands:** `scoop bucket add <name> https://github.com/jabbott-iii/scoop-bucket` (needs git), then `scoop install <name>/agent-grimoire`.
+- **Scoop licence syntax** (checked 2026-11-17 in the Phase 5 review):
+  - The wiki's `license` entry: separate licences with `|` when the whole application is dual licensed, and with `,` when different files have different licences.
+  - `scoop info --verbose` (v0.6.0 `libexec/scoop-info.ps1`, lines 103-117) splits a licence string on `[|,]` and links one spdx.org page per part. Any other string becomes one link, so `MIT OR Apache-2.0` gives a dead link.
+  - The schema's `licenseIdentifiers` is a free string, so `Test-Json` doesn't check the syntax.
+  - ScoopInstaller/Main follows the pipe form (rustup: `MIT|Apache-2.0`). Grimoire writes `MIT|Apache-2.0`.
+- **UNVERIFIED:** whether `brew style` passes a formula with `url` nested two `on_*` levels deep, which is the shape of Grimoire's generated formula (the PR dry-run runs `brew style` on it, but no run has been recorded yet; if it fails, a top-level `if OS.mac? && Hardware::CPU.arm?` is the fallback the OnSystemConditionals cop allows in a tap); whether `Test-Json` loads Scoop's schema (its `$id` ends in `#`) and validates a real manifest cleanly; whether the preinstalled brew auto-updates itself during `tap-new`, `trust` or `audit`.
+
+### WINGET-P5: manifests, validation and submission
+Sources: https://github.com/microsoft/winget-pkgs at `b192fe0471e6` (`doc/{Authoring,Validation,ValidationFailureGuide,Policies,FAQ,FirstContribution}.md`, `doc/manifest/schema/1.28.0/`, `.github/PULL_REQUEST_TEMPLATE.md`, `manifests/`); https://github.com/microsoft/winget-cli at tag v1.29.380, commit `000f6b55151cb0f1afd2933bb54c62a4724b9ca8` (`schemas/JSON/manifests/latest/`, `src/AppInstallerCLICore/Commands/ValidateCommand.cpp`, `src/AppInstallerCommonCore/Manifest/`, `src/AppInstallerCLICore/PortableInstaller.cpp`), and master; https://learn.microsoft.com/en-us/windows/package-manager/winget/validate; https://github.com/microsoft/winget-create at v1.28.1.0; https://github.com/russellbanks/Komac at v2.17.2; https://github.com/actions/runner-images/issues/14083, …/13688; https://github.com/microsoft/winget-pkgs/issues/413785. Status: Verified, except the gaps listed. Nothing was run.
+
+- **Schema:**
+  - winget-pkgs recommends 1.28.0 (the PR template and `Authoring.md`, 2026-11-04), and still accepts 1.12.0.
+  - The newest stable winget-cli, v1.29.380 (2026-09-21), embeds 1.28.0 as its latest schema, byte-identical to master's `v1.28.0/`. That tag has no `v1.28.0/` directory, so the files to vendor are `latest/manifest.*.latest.json` at the tag.
+  - 1.31.0 exists only as master's in-development `latest/`. The `aka.ms` schema URLs redirect to the mutable master branch. The Learn manifest page is stale (1.12.0).
+- **Pins (`release.yml`, `verify-linux`):** winget-cli tag v1.29.380, commit `000f6b55151cb0f1afd2933bb54c62a4724b9ca8`, directory `schemas/JSON/manifests/latest/`:
+  - `manifest.version.latest.json`: SHA-256 `5c9fa37ebe70dd410114157d31e4d9e84451b2bb8890e1c4345b4c690406ee1a`;
+  - `manifest.installer.latest.json`: SHA-256 `2caa4cd3a630c284b5ef750522e2e5861f751f376180b89cd29873eb30504ef4`;
+  - `manifest.defaultLocale.latest.json`: SHA-256 `734c069c82470e3436d274fb381bfbe03e22f8fbfae2d2dd50df7dc055a3e061`.
+  - winget-cli publishes no checksum file for them, so the research computed the hashes locally on 2026-11-17. The review re-hashed local copies and they matched; they weren't downloaded again from the pinned commit for this entry.
+  - Dependabot can't see these `env:` pins. Bump them by hand, together with `WINGET_CLI_COMMIT`.
+- **Manifests:** community submissions are multi-file (version, defaultLocale, installer), each with the `yaml-language-server` `$schema` header.
+  - **Required fields.** Version: `PackageIdentifier`, `PackageVersion`, `DefaultLocale`, `ManifestType`, `ManifestVersion`. DefaultLocale adds `PackageLocale`, `Publisher`, `PackageName`, `License` (3–512 characters) and `ShortDescription` (3–256). Installer adds `Installers[]`, each with `Architecture`, `InstallerUrl` and `InstallerSha256`.
+  - `InstallerType` is required by winget and its docs, but not by the JSON Schema. The schema also allows unknown keys and doesn't pin `ManifestVersion` to 1.28.0, so xtask must check those itself.
+  - `PackageIdentifier`: 2 to 8 dot-separated segments of 1–32 characters, at most 128 in all, case-sensitive, and equal to the path `manifests/<lowercase first letter>/<segments>/<version>/`.
+  - **Zip with a portable exe:** `InstallerType: zip`, `NestedInstallerType: portable`, `NestedInstallerFiles: [{RelativeFilePath, PortableCommandAlias}]`. The alias is valid only with `portable`. `Architecture` includes `x64` and `arm64`.
+  - `InstallerSha256` is 64 hex characters, the hash of the zip, not the exe. `ReleaseDate` is optional (`YYYY-MM-DD`). `Moniker` is 1–40 characters.
+  - Rust MSVC links the CRT dynamically by default. Build with `+crt-static`, or declare `Microsoft.VCRedist.2015+.x64` / `.arm64`; otherwise validation can fail with `Validation-VCRuntime-Dependency`.
+  - Converting the YAML to JSON for `Test-Json` can change types: an unquoted `ReleaseDate` becomes a timestamp, and a version such as `1.10` a float.
+- **Names:**
+  - `CatfinityStudios.Grimoire` has been in winget-pkgs since 2026-11-04, as zip+portable with `PortableCommandAlias: grimoire` and `Moniker: grimoire`, and it ships often. GitHub code search returns 0 hits for it, so code search isn't a reliable name check.
+  - No `jabbott-iii` publisher folder exists. `jabbott-iii.agent-grimoire` and `JAbbottIII.AgentGrimoire` are both schema-valid, and lowercase, hyphenated publisher segments based on GitHub handles exist (`1broseidon.ketch`, `abemedia.stagelint`, `jdx.mise`).
+- **Portable installs:**
+  - winget extracts the zip under `%LOCALAPPDATA%\Microsoft\WinGet\Packages`, links the alias in `…\WinGet\Links`, and adds that folder to PATH. Without Developer Mode or admin rights it adds the package folder to PATH instead. Either way a new shell is needed.
+  - v1.29.380 deletes any existing file at the link path, so two packages with the same alias overwrite each other. Nothing checks for that across packages.
+- **`winget validate --manifest <dir>`:** runs full validation, with the schemas compiled into the client. Warnings, unknown fields included, fail unless `--ignore-warnings` is passed, so CI must not pass it. winget's validator also checks what JSON Schema can't: unknown fields, PascalCase and paths.
+- **Testing a local manifest** (checked 2026-11-17 in the Phase 5 review: winget-pkgs `README.md`, `doc/FirstContribution.md`, `doc/Validation.md` and `doc/Authoring.md`; winget-cli v1.29.380 `InstallCommand.cpp`, `Argument.cpp`, `Command.cpp` and `AdminSettings.cpp`):
+  - `winget install --manifest <dir>` needs the admin setting `LocalManifestFiles`, which is off by default. Turn it on with `winget settings --enable LocalManifestFiles` in an elevated shell. Group Policy can block it.
+  - winget-pkgs' `Tools\SandboxTest.ps1` tests a manifest in Windows Sandbox instead.
+  - `winget validate --manifest` uses a different argument and doesn't need the setting.
+  - That the setting needs elevation comes from the winget-pkgs docs, not from code.
+- **Runners:**
+  - `winget` isn't on `windows-11-arm`, and runner-images closed the request as not planned (2026-08-17).
+  - On `windows-2025` the sources conflict. No runner-images readme mentions winget or App Installer. One issue shows it working on an image from 2026-02-02, before the label moved to the VS2026 image. Learn says Server 2025 gets App Installer through updates, and that winget is unavailable until the first user logon.
+- **Tools:** wingetcreate has no `validate` command and builds only for win-x64 and win-x86. Its v1.28.1.0 (2026-11-11), the first to emit 1.28.0, was under 7 days old. Komac v2.17.2 has no `validate`, and its `--dry-run` still asks for a token.
+- **Submission:**
+  - One package version per PR, with manifest files only. A new package's PR title is `New package: Publisher.Name version X.Y.Z`. The contributor signs the Microsoft CLA personally.
+  - Every automated path needs a classic `public_repo` PAT: wingetcreate (which also offers interactive OAuth; fine-grained tokens and fork-only GitHub Apps fail), Komac, and winget-releaser (which also installs Komac unpinned). There is no OIDC path (winget-pkgs#413785, untriaged).
+- **Validation:**
+  - A GitHub App runs 10 steps: PR structure; schema and path case; URL reachability, HTTPS and SmartScreen; an official publisher domain; content policy; catalog build; installer scan (SHA-256, several antivirus engines, PUA refused); a non-elevated install with a Defender scan; installer metadata; a summary. Then a moderator approves. A `Portable-Archive` label blocks the PR.
+  - A signing requirement is documented only for MSIX. One Rust zip+portable package whose release has no Authenticode step merged on 2026-11-17; its binary wasn't inspected.
+- **UNVERIFIED:** a fully offline end-to-end `winget validate` run; winget on `windows-2025`; whether validation step 08 install-tests arm64 installers; whether a `+crt-static` build passes the VC++ runtime check.
+
+### SUPPLY-CHAIN-P5: attestations, cosign, immutable releases, SBOMs and checksums
+Sources: https://github.com/actions/attest at v4.2.2; https://github.com/cli/cli at v2.103.3 (`pkg/cmd/attestation/`, `pkg/cmd/release/`) and releases v2.49.0, v2.81.0 and v2.102.0; https://github.com/sigstore/cosign at v3.1.4 (`cmd/cosign/cli/`, `pkg/cosign/`, `doc/cosign_verify-blob.md`, `.goreleaser.yml`) and v3.1.3; https://github.com/sigstore/cosign-installer/blob/v4.1.3/action.yml; https://github.com/sigstore/sigstore-go at v1.3.0; https://github.com/sigstore/fulcio/blob/v1.10.0/config/identity/config.yaml; https://raw.githubusercontent.com/sigstore/root-signing/refs/heads/main/targets/signing_config.v0.2.json; real certificates from the GitHub attestations API (`lifthrasiir/aqueous`, `Homebrew/brew`); https://docs.github.com/en/actions/reference/security/oidc; https://github.com/github/docs (`content/code-security/concepts/supply-chain-security/immutable-releases.md`, `content/actions/how-tos/secure-your-work/use-artifact-attestations/use-artifact-attestations.md`); https://github.com/github/rest-api-description; https://github.com/CycloneDX/cyclonedx-rust-cargo at `769fa7dc5d23`; https://github.com/rust-secure-code/cargo-auditable at v0.7.7; https://github.com/coreutils/coreutils/blob/v9.12/doc/coreutils.texi. Status: Verified, except the gaps listed. No cosign, gh or SBOM tool was run; real certificates were decoded with `openssl x509`.
+
+- **Pins:**
+  - `actions/attest` v4.2.2 (2026-08-04), commit `1e69f48acb82d1966a394da916b4c1698aa569d6`.
+  - `sigstore/cosign-installer` v4.1.3 (2026-11-04), commit `756fe2d284c7292c4e9b62c8a28f1e5629c59532`. Its default is cosign v3.1.4 (2026-10-20, commit `0e48502cf5ef`), whose linux-amd64 SHA-256 is `424e2c97d0b45fd7a6b608a87f090f35633f4c23ece5f092d48bba11aaf4bbfa` (`cosign_checksums.txt`).
+  - cargo-auditable 0.7.7, through `taiki-e/install-action` v2.90.3, whose manifest hashes match the tool's `sha256.sum`.
+  - cargo-cyclonedx 0.5.10: the `x86_64-unknown-linux-musl` tarball has SHA-256 `528be9dd99ae522c3ee14fb881fd0cbf51767e8f12b74248f437e6a66b1a3c1b` (its `sha256.sum`). install-action v2.90.3 has only 0.5.9; v2.90.4 (2026-11-14) adds 0.5.10 and becomes eligible on 2026-11-21. The prebuilt archives cover 5 targets, without aarch64 musl or Windows arm64.
+  - gh 2.103.3, preinstalled on the runners, is the latest release at least 7 days old.
+- **`actions/attest`:**
+  - Subjects: `subject-path` (a glob or a list; files only; at most 1024; named by basename), `subject-digest` with `subject-name`, or `subject-checksums` (untagged shasum lines only; no `--tag` lines or escaped names).
+  - With no predicate inputs it writes SLSA provenance v1. `sbom-path` (SPDX or CycloneDX JSON up to 16 MB; CycloneDX needs `bomFormat`, `serialNumber` and `specVersion`) writes predicate type `https://cyclonedx.org/bom`. That means one step per predicate type.
+  - Permissions: `id-token: write` and `attestations: write`, plus `contents: read` to check out. `artifact-metadata: write` is only for storage records, which need `push-to-registry` and an organization-owned repository.
+  - **There is no dry-run input.** It fails at once without `id-token`, so it can't run on fork or Dependabot PRs. A public repository signs through public-good Sigstore, and every run writes a Rekor entry.
+- **gh verification:**
+  - `gh attestation verify` exists since v2.49.0, but use **2.102.0 or later**: that release fixed `--signer-workflow` prefix matching (GHSA-wjmr-j3rp-mh2g) and case-insensitive `--source-ref` (GHSA-4mq3-hpgx-9cx8).
+  - One of `--repo` and `--owner` is required, and both are compared case-insensitively.
+  - `--signer-workflow [host/]OWNER/REPO/.github/workflows/FILE` becomes the anchored, case-sensitive regex `^https://github.com/…(@(refs/.*|hex))?$`. It excludes `--signer-repo`, `--cert-identity` and `--cert-identity-regex`.
+  - Other flags: `--source-ref` (case-sensitive), `--source-digest`, `--signer-digest`, `--deny-self-hosted-runners`, `--cert-oidc-issuer` (GitHub's by default), `--predicate-type` (SLSA provenance v1 by default).
+  - Offline: `--bundle` plus `--custom-trusted-root`, made with `gh attestation trusted-root`. With `--bundle`, gh checks only the names in the certificate, so it can't notice a repository rename or reuse.
+  - **Getting the bundle** (gh v2.103.3 `pkg/cmd/attestation/{download/download.go,verify/attestation.go,api/attestation.go,trustedroot/trustedroot.go}`, read in the Phase 5 review on 2026-11-17, not run):
+    - `gh attestation download <file> --repo OWNER/REPO`, optionally with `--predicate-type`, saves a file's attestations as `sha256-<hex>.jsonl` and prints the path. That it writes to the current directory comes from its help text; the code that writes it wasn't read (UNVERIFIED).
+    - `gh attestation trusted-root` prints the trust root to stdout and needs the network.
+    - `gh attestation verify --bundle` skips any bundle without a DSSE envelope. A cosign `sign-blob` bundle holds a message signature instead, so gh reports "no attestations found".
+  - `gh release verify [<tag>]` and `gh release verify-asset [<tag>] <file>` (since v2.81.0) check only GitHub's release attestation (SAN `https://dotcom.releases.github.com`). They can't check the source archives GitHub generates.
+- **cosign:**
+  - Require **3.1.3 or later**, which fixed a verification bypass (GHSA-fx35-mq7g-6g98).
+  - cosign-installer checks a SHA-256 of the bootstrap v3.1.4 binary, hard-coded in `action.yml`. With the default version, that is the only check. On Windows it supports X64 only, so it fails on `windows-11-arm`, and there is no windows-arm64 cosign binary.
+  - **Keyless signing:** `cosign sign-blob --yes --bundle <f>.sigstore.json <f>`, with `id-token: write`.
+    - `--bundle` is required in v3. The new bundle format and the TUF signing config are the defaults; `--new-bundle-format`, `--use-signing-config` and `--tlog-upload` are deprecated.
+    - The public-good signing config includes Fulcio, Rekor v1 and the timestamp authority, so a bundle carries the certificate, a Rekor entry and a timestamp.
+    - `--yes` skips the privacy prompt. Bundles are written with mode 0600. cosign's own releases name them `<file>.sigstore.json`.
+  - **Verifying:** `cosign verify-blob <f> --bundle <f>.sigstore.json --certificate-identity <SAN> --certificate-oidc-issuer https://token.actions.githubusercontent.com`.
+    - The SAN comparison is exact and case-sensitive. `--certificate-identity-regexp` is RE2 and unanchored, so anchor it.
+    - `--certificate-github-workflow-{repository,ref,trigger,sha,name}` exact-match the deprecated OIDs 1.2 to 1.6. No flag checks the repository or owner ID extensions.
+  - **Offline dry-run** (from the source, not run):
+    1. `COSIGN_PASSWORD=<random> cosign generate-key-pair --output-key-prefix dryrun`;
+    2. `cosign signing-config create --out f.json`, which names no services;
+    3. `cosign sign-blob --yes --key dryrun.key --signing-config f.json --bundle <f>.sigstore.json <f>`, which uploads nothing and fetches no trust root;
+    4. `cosign verify-blob --key dryrun.pub --bundle <f>.sigstore.json --insecure-ignore-tlog <f>`.
+    - `--tlog-upload=false` together with a signing config is refused.
+- **The Fulcio identity** (answers the open question from Phase 0):
+  - Fulcio v1.10.0 builds the SAN as `{{ .url }}/{{ .job_workflow_ref }}`, with `https://github.com`. For Grimoire that is `https://github.com/jabbott-iii/Grimoire/.github/workflows/release.yml@refs/heads/main`, because releases run on a push to `main`.
+  - For a top-level workflow, `job_workflow_ref` equals `workflow_ref`: OID 1.9 equals OID 1.18 in real certificates. A reusable workflow gets its own path and ref.
+  - Case is preserved, as real certificates for `App-vNext/Polly` and `Homebrew/brew` show.
+  - The immutable `sub` doesn't change the SAN. It appears only in OID 1.3.6.1.4.1.57264.1.24, as a certificate for a repository created on 2026-10-13 shows. The repository and owner IDs appear only in extensions 1.15, 1.17 and 1.24.
+- **Immutable releases:**
+  - Turned on in Settings → Releases → "Enable release immutability", for future releases only. REST: `GET`, `PUT` and `DELETE /repos/{owner}/{repo}/immutable-releases`. The `GET` needs the Administration permission, which `GITHUB_TOKEN` can't have, so CI checks the release object's `immutable` field instead. The setting's current state on this repository is unknown (403 for the research token).
+  - Once a release is published, its tag can't be moved, or deleted while the release exists, and its name can never be reused. Its assets are locked. The title, notes and pre-release and latest flags stay editable.
+  - The flow is draft, upload, publish. `gh release create` with assets already does that, and deletes the draft on failure. Release assets carry a `digest` field.
+  - `GITHUB_TOKEN` with `contents: write` can create releases, but creating or editing one fails if its target commit changes `.github/workflows` relative to the default branch. Whether a target commit that is an ancestor of a newer default branch counts as changing them is UNVERIFIED.
+  - `contents: write` also covers creating, moving and deleting refs (tags and branches), creating, publishing and deleting releases and their assets, and merging pull requests (GitHub's fine-grained permission data, checked in the Phase 5 review). A newly published release becomes "latest" unless `make_latest` says otherwise (REST description).
+  - Before a release is published, nothing locks its tag or its draft. A release that was published while the setting was off can be deleted with its tag kept; publishing that tag again should make an immutable release (reasoned from the facts above, not tried).
+  - GitHub's release attestation is signed by GitHub's own Sigstore instance (SAN `https://dotcom.releases.github.com`, with an RFC 3161 timestamp). Its predicate type is `https://in-toto.io/attestation/release/v0.2`, and its subjects are the tag (with its commit) and each asset's SHA-256.
+  - GitHub renames asset files whose names contain special characters or start or end with a period. Keep to `[A-Za-z0-9._-]`.
+- **SBOMs:**
+  - cargo-cyclonedx 0.5.10 flags: `--spec-version` 1.3 to 1.7 (default 1.3), `-f json|xml` (default xml), `--describe crate|binaries|all-cargo-targets`, `--target <triple>|all`, `--target-in-filename`. `--target` only filters `cargo metadata` (`--filter-platform`); nothing is built.
+  - **There is no `-p`.** It writes one file per workspace member, next to that member's `Cargo.toml`: `<bin>_bin[_<triple>].cdx.json` with `--describe binaries`.
+  - `SOURCE_DATE_EPOCH` fixes the timestamp but drops `serialNumber`, which `actions/attest`'s `sbom-path` requires. Grimoire leaves it unset.
+  - cargo-auditable 0.7.7 passes its arguments straight to cargo. It embeds a Zlib-compressed, sorted, timestamp-free dependency list in a `.dep-v0` linker section. Readers: cargo audit 0.17.3+, trivy 0.31.0+, grype 0.83.0+, syft 1.15.0+, osv-scanner 2.0.1+ (images), blint 2.1.3+, wasm-tools 1.227.0+, rust-audit-info and auditable2cdx.
+- **Checksums:**
+  - A GNU untagged line is `<hex><space><' ' or '*'><name>`. A name containing `\`, a newline or CR is escaped, and the line starts with `\`. `sha256sum -c` also reads tagged lines, and `--ignore-missing` checks only the files present.
+  - Consumers: winget needs `InstallerSha256` in the manifest; Scoop reads `$url.sha256` or an aggregate list; cargo-binstall reads none.
+- **UNVERIFIED:** when a draft release's tag is created (no primary source says); whether `--filter-platform` gives correct SBOMs for targets other than the host; GHCR support for OCI 1.1 referrers (Phase 6).
+
+### ACTIONS-P5: runners, targets, build flags, artifacts, environments and OIDC
+Sources: https://docs.github.com/en/actions/reference/runners/github-hosted-runners; https://github.com/actions/runner-images at main `5d331217d4` (`images/{ubuntu,macos,windows}/*-Readme.md`; issues 14017, 14083, 14602, 14748, 15314 and 15315); Rust at tag 1.100.0 (`src/doc/rustc/src/{platform-support.md,platform-support/apple-darwin.md,remap-source-paths.md,codegen-options/index.md}`, `compiler/rustc_target/src/spec/`); Cargo at `3acc79c0c841` (`doc/book/src/reference/{config,profiles,unstable}.md`, `doc/book/src/commands/cargo-metadata.md`); https://github.com/actions/upload-artifact/blob/v7.0.2/README.md, https://github.com/actions/download-artifact/blob/v8.0.2/README.md; https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments, https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/review-deployments, …/manage-environments; https://docs.github.com/en/actions/concepts/security/github_token; https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks; https://docs.github.com/en/rest/actions/oidc; https://github.com/zizmorcore/zizmor at v1.32.0; https://github.com/rhysd/actionlint at v1.7.12. Status: Verified, except the gaps listed. Only `cargo metadata` and `cargo tree` were run, locally.
+
+- **Pins:** `actions/upload-artifact` v7.0.2 (`cf430e030ddbb5b0abf93d22962f4752f3646cd9`) and `actions/download-artifact` v8.0.2 (`9000827ccba6bdab643e8b6fd33ac0654aef8333`), both 2026-10-07, on node24. The CI-PINS pins are unchanged.
+- **Runners** (all free on public repositories):
+
+  | Label | Image on 2026-11-17 | Contents |
+  |---|---|---|
+  | `ubuntu-24.04` | 20261111.370.1 | Rust 1.99.1, Node 22.23.4, Python 3.12.3, pwsh 7.6.10, PSScriptAnalyzer 1.25.0, apt shellcheck 0.9.0, gh 2.103.3, Homebrew 7.0.13 (not on PATH) |
+  | `ubuntu-24.04-arm` | 20261111.182.1 | as `ubuntu-24.04` |
+  | `macos-15` (arm64) | 20261104.0514.1 | Rust 1.99.1, Homebrew 7.0.12, pwsh 7.6.9; no shellcheck |
+  | `macos-15-intel` | 20260824.0482.1, the latest x64 release | Rust 1.98.0, Homebrew 6.0.18, pwsh 7.6.4: stale |
+  | `windows-2025` | Server 2025 with VS2026, 20261103.298.1 | Rust 1.99.1, pwsh 7.6.9, PSScriptAnalyzer 1.25.0; no winget listed |
+  | `windows-11-arm` | Windows 11 Arm64 with VS2026, 20261112.217.1 | Rust 1.100.0 (aarch64 host), Node 24.22.3, pwsh 7.6.10; no winget |
+
+  - `windows-latest`, `windows-2025` and `windows-2025-vs2026` map to the VS2026 image; the migration issue closed on 2026-07-06. `windows-11-arm` maps to the Arm64 VS2026 image; that issue closed on 2026-11-17. Arm64 images moved to `actions/runner-images`, and `actions/partner-runner-images` is archived.
+  - `ubuntu-latest` moves to 26.04 in a rollout from 2026-10-19 to 2026-11-19. On 2026-11-17 the README still mapped it to 24.04.
+  - From 2026-11-30, in rollouts of 2 to 3 days: the Windows 11 Arm64 workspace moves to `D:` (#15314), and `D:` becomes ReFS on the Server 2022, Server 2025 VS2026 and Windows 11 Arm64 VS2026 images (#15315).
+  - `macos-26-intel` is a standard public label. The 2025 statement that Intel macOS ends with macOS 15 in Fall 2027 is stale, and no current end date was found.
+- **Targets (Rust 1.100.0):**
+  - `x86_64-unknown-linux-musl` and `aarch64-unknown-linux-musl`: Tier 2 with host tools (musl 1.2.5). Both set `crt_static_default = true` and link self-contained CRT objects whenever crt-static is on. No crate built for any target compiles C (`cc` appears only behind `cfg(target_os = "haiku")`), so no `musl-tools` is needed.
+  - `x86_64-pc-windows-msvc` and `aarch64-pc-windows-msvc`: Tier 1 with host tools. The CRT is dynamic by default and static with `-C target-feature=+crt-static`.
+  - `aarch64-apple-darwin`: Tier 1, minimum macOS 11.0. `x86_64-apple-darwin`: Tier 2 with host tools, minimum 10.12. `MACOSX_DEPLOYMENT_TARGET` is honoured.
+- **Build flags:**
+  - Cargo's sources of compiler flags are exclusive, and the first match wins: `CARGO_ENCODED_RUSTFLAGS`, then `RUSTFLAGS`, then the config's `target.<triple>.rustflags`, then the rest. With `--target`, none of them reach build scripts or proc macros.
+  - `--remap-path-prefix FROM=TO` is a textual rewrite, and the last match wins. It doesn't cover paths the linker writes (MSVC `.pdb`, Apple OSO entries). `--remap-path-scope` is stable; `trim-paths` is still unstable.
+  - Release profile defaults: opt-level 3, debug false, lto false, panic unwind, incremental false, codegen-units 16.
+  - The profiles page says `strip` defaults to `"none"`, but `debug = false` has implied `strip = "debuginfo"` since 1.77 (and rustc ignores `-C strip` on MSVC). Set it explicitly. rustc warns that `strip = "symbols"` degrades backtraces and isn't a security measure.
+- **Finding asset binaries:** `cargo metadata --format-version 1 --no-deps --locked` gives `packages[]`, each with `name`, `version`, an absolute `manifest_path`, `publish` (`null` when unrestricted, `[]` when forbidden) and `targets[]` with `kind`.
+  - Filter on `kind` containing `"bin"`, not on `crate_types`, which examples share.
+  - Keep packages whose `manifest_path` is under `catalog/tools/` or `catalog/mcp-servers/`. Today that gives `grimoire-tool-secret-guard` and `grimoire-mcp-project-docs`.
+  - Run it on Linux.
+- **Artifacts:**
+  - Artifacts from v4 on are immutable, and `overwrite: true` creates a new ID. `retention-days` is 1 to 90.
+  - Zipping resets modes to 644 or 755, so tar executables first.
+  - download-artifact v8 fails on a digest mismatch by default, and downloads only from the current run. Keep everything in one run, and re-hash files before attesting.
+- **Environments:**
+  - Up to six required reviewers, and one approval suffices. On Free plans they are available only for public repositories.
+  - "Prevent self-review" stops the person who started the run from approving it, even as a required reviewer. Administrators can bypass the rules by default; that can be turned off per environment. Who counts as the initiator of a re-run, or of a push made by merging a PR, isn't documented.
+  - Deployment branch and tag rules are fnmatch patterns matched against `GITHUB_REF`, and `*` doesn't match `/`. Wait timers are 1 to 43,200 minutes.
+  - **A run that references a missing environment creates it, with no protection rules.**
+- **OIDC:**
+  - This repository has `use_immutable_subject: true` and the `sub` prefix `repo:jabbott-iii@84321953/Grimoire@1460666977` (REST `actions/oidc/customization/sub`). A job in `release` should get `<prefix>:environment:release`; the docs give a literal example only for the branch form.
+  - Claims include `workflow_ref`, `job_workflow_ref`, `repository`, `repository_id`, `repository_owner`, `repository_owner_id`, `environment`, `ref`, `event_name`, `workflow_sha` and `runner_environment`.
+- **Events caused by `GITHUB_TOKEN`:**
+  - They create no runs, with these exceptions: `workflow_dispatch` and `repository_dispatch` always do, and since 2026-05-22 `pull_request` opened, synchronize and reopened events create runs that wait until a user with write access approves them.
+  - Pushes, tags and releases made with `GITHUB_TOKEN` still trigger nothing.
+  - Checks from a `workflow_dispatch` run on a PR's head branch don't satisfy a ruleset's required status checks. Checks must pass on the latest head SHA.
+- **zizmor and actionlint:** see the ZIZMOR note.
+- **Checked in the Phase 5 review (2026-11-17):**
+  - **Limits:** "A job matrix can generate a maximum of 256 jobs per workflow run" (https://docs.github.com/en/actions/reference/limits). "Up to 1000 release assets may be associated with a single release" (https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases). `actions/attest` v4.2.2 takes at most 1024 subjects and fails above that (`src/subject.ts`). Whether the 256 counts each matrix or every matrix in the run is UNVERIFIED.
+  - **Re-runs** (https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs, re-fetched 2026-11-17): allowed "up to 30 days after its initial run"; a re-run uses "the same `GITHUB_SHA` (commit SHA) and `GITHUB_REF` (git ref) of the original event"; re-running failed jobs or one job "also re-runs the jobs that depend on them". The page says nothing about environment approvals on a re-run.
+  - **Scheduled workflows** (https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows, `schedule`, re-fetched 2026-11-17): "In a public repository, scheduled workflows are automatically disabled when no repository activity has occurred in 60 days." `gh workflow enable` or the Actions tab turns one on again. What counts as activity, and whether a disabled workflow can still be started by hand, are UNVERIFIED.
+  - **Container actions get the OIDC request token** (actions/runner `src/Runner.Worker/Handlers/ContainerActionHandler.cs` on `main`, not a pinned runner version): a container action receives `ACTIONS_ID_TOKEN_REQUEST_URL`, `ACTIONS_ID_TOKEN_REQUEST_TOKEN` and `ACTIONS_RUNTIME_TOKEN`. The audience is a query parameter the caller picks (GitHub's OIDC docs). So any code in a job with `id-token: write` can mint a token for any audience, carrying that job's claims, `environment` included.
+  - **Skipped jobs and required checks** (troubleshooting-required-status-checks, in the sources above): a job skipped because a job it needs failed reports success, so a required check needs a summary job with `if: always()`.
+  - **Concurrency:** with `cancel-in-progress: true`, a new run cancels the running one in its group; without it, the new run waits as pending.
+- **UNVERIFIED:** winget on `windows-2025`; what `download-artifact`'s `merge-multiple` does when names collide; the literal `sub` of an environment job; any GitHub statement about the immutable `sub` and crates.io, npm, PyPI or Fulcio (each registry's own source answers it: RUST-REGISTRY-P5, NPM-P5, PYPI-P5, SUPPLY-CHAIN-P5); whether Windows builds are byte-for-byte reproducible (PE timestamps, PDB paths).
+
+### INSTALLERS-P5: the dist spike, ShellCheck and PSScriptAnalyzer
+Sources: https://github.com/axodotdev/cargo-dist at v0.34.0 (`cargo-dist/templates/installer/installer.{sh,ps1}.j2`, `cargo-dist/src/{tasks,manifest,host,lib}.rs`, `cargo-dist/src/backend/installer/shell.rs`, `book/src/`, tests and snapshots), issues #439 and #1672, and PR #2497; https://github.com/koalaman/shellcheck/releases/tag/v0.11.0; https://www.powershellgallery.com/api/v2/FindPackagesById()?id='PSScriptAnalyzer'; https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.psresourceget/install-psresource; runner-images readmes; Apple's `text_cmds` at its `distribution-macOS` tags. Status: Verified, except the gaps listed. No dist, ShellCheck or PSScriptAnalyzer binary was downloaded or run.
+
+- **dist v0.34.0** (2026-11-02, a lightweight tag on `294c1b25d372`; the release is immutable, and its musl tarball has 2 attestations):
+  - The installer templates are compiled into the binary and can't be overridden. Only `dist build --artifacts=global` (or `host` or `all`) writes the installers; `dist generate` handles only `ci` and `msi`.
+  - **`installer.ps1` checks no checksum at all** (PR #2497 is open).
+  - **`installer.sh` checks SHA-256 only with `sha256sum`.** If that is missing, it skips the check and carries on. If no hash was embedded, it prints "no checksums to verify" and installs anyway. Hashes are embedded only from the `*dist-manifest.json` files that dist's own builds write (issue #1672).
+  - Using them without dist's CI would need dist's archive naming (`{package}-{target}{ext}`, with tarballs nested in a root directory), a GitHub `repository` URL, the mandatory `cargo-dist-version`, a dist binary in the release job, and hand-made manifests.
+  - Defaults: install to `$CARGO_HOME/bin`; edit `.profile`, existing bash files, `.zshrc` (created if missing) and fish config, or the HKCU `Path`; append to `$GITHUB_PATH`; write a receipt; send a Bearer header to any download URL when `{APP}_GITHUB_TOKEN` is set; download with `curl -sSfL`, with no `--proto`. No telemetry.
+  - Maintenance: 108 commits since 2026-08-16 (62 from Dependabot, 29 from the maintainer, 17 from 9 others). The maintainer's latest activity was on 2026-11-17.
+- **Tools for our scripts:**
+  - ShellCheck v0.11.0 (2025-08-04) is the latest. Pin the CI-uploaded `shellcheck-v0.11.0.linux.x86_64.tar.xz`, SHA-256 `8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198`. That is the GitHub asset digest: there is no checksum file, no attestation, and the release isn't immutable. The `.tar.gz` was uploaded by hand on 2026-01-05. ubuntu-24.04 has only apt shellcheck 0.9.0.
+  - PSScriptAnalyzer 1.25.0 (2026-03-20) is the Gallery's latest, and is preinstalled on ubuntu-24.04, windows-2025 and the Windows Arm64 image. The Gallery's SHA-512 `PackageHash`, in hex, is `e7fb573262e604bab29914ae62921d24b97c2f88b519b41277b403ef6ce163f14b7d1b36dc73449a68e5ae5a8d9502891b10c264131fd1813adf29bf131c1663`. `Save-PSResource -Name PSScriptAnalyzer -Version 1.25.0 -AsNupkg`, then `Get-FileHash -Algorithm SHA512`, can check it.
+  - SHA-256 tools: macOS 15 and later ship `/sbin/sha256sum`, a link to `md5` (from `text_cmds-190.0.1`). macOS 14 and earlier don't have it.
+- **UNVERIFIED:** whether stock macOS ships `shasum`, and whether `/sbin` is on PATH; that the Gallery's `PackageHash` covers the `.nupkg` byte for byte (inferred from NuGet's catalog docs); the licence of dist's generated installer output.
+- **Behaviours Grimoire's scripts rely on** (checked 2026-11-17, for `install.sh`, `install.ps1` and the docs that tell users how to fetch them). Sources were read in their saved copies unless a line says the Phase 5 review checked them.
+  - **Rosetta** (Apple's "About the Rosetta translation environment", https://developer.apple.com/tutorials/data/documentation/apple-silicon/about-the-rosetta-translation-environment.json):
+    - Apple's example reads `sysctl.proc_translated` and returns 0 for a native process, 1 for a translated one and -1 on an error. It treats `ENOENT`, a missing key, as native.
+    - The page doesn't say that Intel Macs lack the key. XNU defines it only under `CONFIG_ROSETTA` (xnu `main` at `f6217f891ac0`, `bsd/kern/kern_sysctl.c`, read in the review), so that is plausible but UNVERIFIED. `install.sh` treats anything but exactly `1` as Intel, which is right either way, though its comment states the Intel claim as fact.
+  - **curl** (https://curl.se/docs/manpage.html, describing curl 8.23.1):
+    - `--proto =https` permits only HTTPS.
+    - `--proto-redir` limits redirects, and "Protocols denied by --proto are not overridden by this option". So `--proto =https` also refuses a redirect to HTTP.
+    - `--tlsv1.2` means TLS 1.2 or later. In old curl versions it was documented as TLS 1.2 only.
+    - Which curl version added each option wasn't checked.
+  - **wget, and why `install.sh` doesn't use it** (checked in the review):
+    - GNU Wget's manual (https://www.gnu.org/software/wget/manual/wget.html): `--https-only` applies "When in recursive mode". The review ran GNU Wget 1.21.4 with it, and it followed a redirect from HTTPS to HTTP.
+    - BusyBox wget has no `--https-only` (BusyBox 1.38.0 `networking/wget.c`, from sources.debian.org). Alpine's base image has BusyBox wget and no curl.
+  - **`Invoke-WebRequest`** (https://learn.microsoft.com/powershell/module/microsoft.powershell.utility/invoke-webrequest, the 5.1 and 7.6 pages, both `ms.date` 2026-01-20):
+    - PowerShell 7.4 and later: "By default, any request that's redirected from HTTPS to HTTP results in an error", unless `-AllowInsecureRedirect` is passed. The review saw PowerShell 7.6.9 refuse such a redirect.
+    - Windows PowerShell 5.1: the page has no such parameter and doesn't say what happens on an HTTPS-to-HTTP redirect (UNVERIFIED). `-MaximumRedirection` defaults to 5.
+    - Windows PowerShell 5.1: `-UseBasicParsing` "is required when Internet Explorer is not installed". Since the 2025-12-09 update for CVE-2025-54100 (KB5074596), a call without it shows a "Script Execution Risk" prompt, and "There is no way to bypass this prompt without using the UseBasicParsing parameter".
+  - **`Expand-Archive`** (https://learn.microsoft.com/powershell/module/microsoft.powershell.archive/expand-archive, the 5.1 page, `ms.date` 2026-04-01): in the `Microsoft.PowerShell.Archive` module, zip archives only, with `-LiteralPath`, built on `System.IO.Compression.ZipArchive`.
+  - **`Get-FileHash`** (https://learn.microsoft.com/powershell/module/microsoft.powershell.utility/get-filehash, the 5.1 page, `ms.date` 2022-12-12): SHA256 by default. Its example output shows the hash in upper case, so `install.ps1` lowercases it before comparing.
+  - **TLS 1.2 in .NET** (https://learn.microsoft.com/dotnet/api/system.net.securityprotocoltype, updated 2026-05-27, from dotnet-api-docs `xml/System.Net/SecurityProtocolType.xml`): `Tls12` is 3072 and "On Windows systems, this value is supported starting with Windows 7"; `SystemDefault` is 0. Which Windows PowerShell 5.1 installations don't offer TLS 1.2 by default is UNVERIFIED. Microsoft's PowerShellGet install page for 5.1 still tells users to add it to `[Net.ServicePointManager]::SecurityProtocol` (checked in the review).
+  - **`File.Replace` and `ReplaceFileW`:**
+    - `System.IO.File.Replace(source, destination, backup)` (dotnet-api-docs `xml/System.IO/File.xml`): it replaces the destination's contents with the source's and keeps the replaced file as the backup; `null` means no backup. Source and destination must be on one volume.
+    - On Windows it calls `ReplaceFileW` (dotnet/runtime `FileSystem.Windows.cs` and .NET Framework's `file.cs`, read in the review).
+    - `ReplaceFileW` (https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-replacefilew, updated 2025-07-01): all three files must be on one volume. `ERROR_UNABLE_TO_REMOVE_REPLACED` (1175): both files keep their names. `ERROR_UNABLE_TO_MOVE_REPLACEMENT` (1176): with a backup, both keep their names; without one, the replaced file no longer exists. `ERROR_UNABLE_TO_MOVE_REPLACEMENT_2` (1177): the replaced file still exists under another name, the backup name when one was given. Any other error: both keep their names and no backup exists.
+    - So with a backup name the old binary always survives, under its own name or the backup name, and `install.ps1` moves it back.
+  - **`RuntimeInformation.OSArchitecture`** (dotnet-api-docs `xml/System.Runtime.InteropServices/RuntimeInformation.xml`): "intended to represent the actual architecture of the underlying operating system", taking Windows and macOS emulation into account. The review found it available in .NET Framework only from 4.7.1, so `install.ps1` falls back to environment variables. dist's note that it reports X64 on Arm64 before PowerShell 7.3 or Windows 11 22H2 is UNVERIFIED.
+  - **WOW64** (Microsoft's "WOW64 Implementation Details", checked in the review): a 32-bit process sees `PROCESSOR_ARCHITECTURE=x86`, and `PROCESSOR_ARCHITEW6432` holds the real architecture (`AMD64` or `ARM64`).

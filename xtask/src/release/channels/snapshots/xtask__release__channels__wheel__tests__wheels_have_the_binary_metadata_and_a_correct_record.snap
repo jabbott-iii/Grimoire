@@ -1,0 +1,12 @@
+---
+source: xtask/src/release/channels/wheel.rs
+expression: names
+---
+[
+    "agent_grimoire-1.2.3.data/scripts/grimoire",
+    "agent_grimoire-1.2.3.dist-info/METADATA",
+    "agent_grimoire-1.2.3.dist-info/WHEEL",
+    "agent_grimoire-1.2.3.dist-info/licenses/LICENSE-MIT",
+    "agent_grimoire-1.2.3.dist-info/licenses/LICENSE-APACHE",
+    "agent_grimoire-1.2.3.dist-info/RECORD",
+]

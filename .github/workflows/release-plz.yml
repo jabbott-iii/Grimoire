@@ -1,0 +1,88 @@
+# Opens or updates the release PR (version bumps and changelogs) after every push to main.
+# release-plz never tags or publishes here: release.yml tags the exact commit it built and
+# signed, and publishes it (ADR-0003 as amended). Asset crates are publish = false, which
+# release-plz skips; their catalog CHANGELOGs stay hand-written.
+#
+# A PR opened with GITHUB_TOKEN gets approval-required pull_request runs: the maintainer approves
+# them (or pushes to the branch) so that the required checks run.
+#
+# Hardening rules as in ci.yml. release-plz runs as a pinned binary checked by SHA-256, not
+# through release-plz/action (which installs cargo-binstall unverified). The SHA-256 is the
+# GitHub asset digest: the release publishes no checksum file. Verified on 2026-11-17.
+name: Release PR
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions: {}
+
+# Queued, never cancelled: a cancelled run could stop between creating its temporary branch
+# and updating the release PR.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  release-pr:
+    name: release-plz release-pr
+    # Forks have no use for the release PR. release-plz rebuilds the open release PR from
+    # whatever ref it runs on, so a manual run on another branch would put that branch's
+    # commits into the release PR: run it on main only.
+    if: github.repository == 'jabbott-iii/Grimoire' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write # release-plz creates the release branch and commits to it through the API
+      pull-requests: write # release-plz opens, updates or closes the release PR
+    env:
+      RELEASE_PLZ_VERSION: "0.4.3"
+      RELEASE_PLZ_SHA256: "4a4cfa92ea2abaee02b40daa596a95ca2725816a6a32cb03a8f48ddead287681"
+    steps:
+      # Full history: release-plz reads the commits since each package's last release.
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Install Rust
+        # Installs the toolchain and components pinned in rust-toolchain.toml.
+        run: rustup toolchain install
+      # Unpacked outside the checkout. The tarball holds the binary at its root.
+      - name: Install release-plz (checksum-verified)
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/release-plz"
+          cd "${RUNNER_TEMP}/release-plz"
+          curl -fsSLo release-plz.tar.gz "https://github.com/release-plz/release-plz/releases/download/release-plz-v${RELEASE_PLZ_VERSION}/release-plz-x86_64-unknown-linux-musl.tar.gz"
+          echo "${RELEASE_PLZ_SHA256}  release-plz.tar.gz" | sha256sum -c -
+          tar -xzf release-plz.tar.gz release-plz
+          ./release-plz --version
+      # The same identity release-plz/git-config would set: the token's own user.
+      - name: Configure git as the token's user
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          viewer="$(gh api graphql -f query='query { viewer { name login databaseId } }' --jq '.data.viewer')"
+          login="$(jq -r '.login' <<<"${viewer}")"
+          name="$(jq -r '.name // empty' <<<"${viewer}")"
+          id="$(jq -r '.databaseId' <<<"${viewer}")"
+          git config --global user.name "${name:-${login}}"
+          git config --global user.email "${id}+${login}@users.noreply.github.com"
+      # release-plz reads the token from GIT_TOKEN, so it never appears on a command line.
+      - name: Open or update the release PR
+        env:
+          GIT_TOKEN: ${{ github.token }}
+        run: >-
+          "${RUNNER_TEMP}/release-plz/release-plz" release-pr
+          --forge github
+          --repo-url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}"
+          -o json

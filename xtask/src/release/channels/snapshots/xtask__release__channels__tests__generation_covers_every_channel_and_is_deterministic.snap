@@ -1,0 +1,19 @@
+---
+source: xtask/src/release/channels/mod.rs
+expression: names
+---
+[
+    "agent-grimoire.json",
+    "agent-grimoire.rb",
+    "agent_grimoire-1.2.3-py3-none-macosx_10_12_x86_64.whl",
+    "agent_grimoire-1.2.3-py3-none-macosx_11_0_arm64.whl",
+    "agent_grimoire-1.2.3-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.musllinux_1_2_aarch64.whl",
+    "agent_grimoire-1.2.3-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.musllinux_1_2_x86_64.whl",
+    "agent_grimoire-1.2.3-py3-none-win_amd64.whl",
+    "agent_grimoire-1.2.3-py3-none-win_arm64.whl",
+    "install.ps1",
+    "install.sh",
+    "jabbott-iii.agent-grimoire.installer.yaml",
+    "jabbott-iii.agent-grimoire.locale.en-US.yaml",
+    "jabbott-iii.agent-grimoire.yaml",
+]

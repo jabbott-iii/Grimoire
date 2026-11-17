@@ -1,6 +1,6 @@
 # ADR-0002: Packaging MCP servers and tools: separate binaries, released with the CLI
 
-- **Status:** Accepted (maintainer approved all Phase 0 proposals, 2026-11-16)
+- **Status:** Accepted (maintainer approved all Phase 0 proposals, 2026-11-16). Amended by [ADR-0009](0009-release-pipeline.md) (2026-11-17): the release workflow finds asset binaries with `cargo metadata`, which settles the Phase 5 check under Consequences.
 - **Date:** 2026-11-16
 - **Specs:** `RMCP`, `MCP-SPEC`, `CRATES-TP`, `NPM-TP`, `PYPI-TP`, `MCP-REGISTRY` in [`../specs.md`](../specs.md)
 

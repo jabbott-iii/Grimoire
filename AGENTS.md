@@ -28,7 +28,8 @@ Grimoire is a catalog of AI-agent assets (rules, skills, agents, tools, MCP serv
 | `crates/agent-grimoire` | The `grimoire` CLI: a library (`run`) plus the binary |
 | `crates/agent-grimoire-mcp` | Shared hardening for MCP server assets: stdio, Streamable HTTP, limits and OAuth resource-server checks (never published) |
 | `crates/agent-grimoire-testkit` | Fixture catalogs and projects for tests (never published) |
-| `xtask/` | `cargo xtask schema`, `validate`, `pack-catalog`, `gen-marketplace`, `new`; scaffolding templates in `xtask/templates/` |
+| `xtask/` | `cargo xtask schema`, `validate`, `pack-catalog`, `gen-marketplace`, `new`, `release`; scaffolding templates in `xtask/templates/` |
+| `packaging/` | Hand-written release inputs that aren't Rust ([ADR-0010](docs/adr/0010-language-policy-exceptions.md)): the `install.sh`/`install.ps1` templates, the npm launcher, and the tap and bucket sync workflow templates. Release assets are generated from them at release time and never checked in ([`docs/release.md`](docs/release.md)) |
 | `catalog/<kind>/<id>/` | One directory per asset (data only). See [`catalog/README.md`](catalog/README.md) |
 | `.claude-plugin/`, `plugins/claude-code/` | The Claude Code plugin marketplace, generated from `catalog/`. Never edit by hand |
 | `schemas/` | Generated JSON Schemas. Never edit by hand |
@@ -48,6 +49,16 @@ cargo xtask pack-catalog --check
 cargo xtask gen-marketplace   # regenerate .claude-plugin/ and plugins/claude-code/ after changing catalog/
 cargo xtask gen-marketplace --check
 cargo xtask new <kind> <id> --maintainer <login>   # scaffold an asset
+# Release pipeline (ADR-0009). These build and check locally; none of them publishes anything.
+# CI runs them as `cargo --locked xtask …`, so a stale Cargo.lock fails instead of being rewritten.
+cargo xtask release plan --event <event> --ref <ref>   # the mode (dry-run, release or skip), version, targets and archive names for a release.yml run; fails past GitHub's matrix and asset limits
+cargo xtask release build --target <triple> --out dist # build (one cargo auditable build per package), smoke-test and archive the CLI and every asset binary for one target
+cargo xtask release sbom --dist dist                   # a CycloneDX 1.6 SBOM per archive
+cargo xtask release channels --dist dist --work work   # npm packages, wheels, Homebrew formula, Scoop and winget manifests, install scripts
+cargo xtask release checksums --dist dist [--check]    # write or check dist/SHA256SUMS
+cargo xtask release verify --dist dist                 # the expected assets, SHA256SUMS, and the same binary in every channel
+cargo xtask release notes --version <V> --out <file>   # the GitHub Release text, from the version's CHANGELOG.md section (fails without one)
+# Pass --partial to `channels` and `verify` when dist/ holds only some of the six targets.
 cargo +1.96 check --workspace --all-targets --locked   # MSRV
 cargo deny check
 cargo shear

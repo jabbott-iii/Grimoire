@@ -1,0 +1,35 @@
+---
+source: xtask/src/release/channels/npm.rs
+expression: launcher
+---
+{
+  "name": "agent-grimoire",
+  "version": "1.2.3",
+  "description": "Install only the AI-agent assets you choose (rules, skills, agents, tools, MCP servers) into your repository",
+  "license": "MIT OR Apache-2.0",
+  "homepage": "https://github.com/jabbott-iii/Grimoire",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jabbott-iii/Grimoire.git"
+  },
+  "bin": {
+    "grimoire": "bin/grimoire.js"
+  },
+  "files": [
+    "bin/grimoire.js",
+    "README.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "optionalDependencies": {
+    "@agent-grimoire/linux-x64": "1.2.3",
+    "@agent-grimoire/linux-arm64": "1.2.3",
+    "@agent-grimoire/darwin-x64": "1.2.3",
+    "@agent-grimoire/darwin-arm64": "1.2.3",
+    "@agent-grimoire/win32-x64": "1.2.3",
+    "@agent-grimoire/win32-arm64": "1.2.3"
+  }
+}

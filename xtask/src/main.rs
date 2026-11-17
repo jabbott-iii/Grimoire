@@ -8,6 +8,8 @@
 //!   binary (ADR-0001).
 //! - `new <kind> <id> --maintainer LOGIN [MEMBER]...`: scaffold an asset, or a
 //!   bundle of existing assets, that validates as generated.
+//! - `release <plan|build|sbom|channels|checksums|verify|notes>`: the release
+//!   pipeline's steps (ADR-0009). Paths are relative to the repository root.
 //!
 //! Diagnostics go to stderr. Exit status: 0 success, 1 validation failure or
 //! stale files, 2 usage error.
@@ -17,6 +19,7 @@ mod git;
 mod marketplace;
 mod new;
 mod pack;
+mod release;
 mod render;
 mod schema;
 
@@ -77,6 +80,11 @@ enum Command {
         /// Catalog directory, relative to the repository root.
         #[arg(long, default_value = "catalog")]
         catalog: PathBuf,
+    },
+    /// Release pipeline steps, run by .github/workflows/release.yml.
+    Release {
+        #[command(subcommand)]
+        command: release::Command,
     },
 }
 
@@ -150,6 +158,7 @@ fn main() -> ExitCode {
             members,
             catalog,
         } => new_asset(&root, &catalog, kind, &id, &maintainer, &members),
+        Command::Release { command } => release::run(&root, command),
     });
     match result {
         Ok(code) => code,

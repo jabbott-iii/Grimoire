@@ -1,6 +1,6 @@
 # ADR-0004: Package and binary names
 
-- **Status:** Accepted (maintainer approved all Phase 0 proposals, 2026-11-16). **Nothing has been reserved or registered.**
+- **Status:** Accepted (maintainer approved all Phase 0 proposals, 2026-11-16). **Nothing has been reserved or registered.** Amended by [ADR-0009](0009-release-pipeline.md) (2026-11-17): the repository stays `jabbott-iii/Grimoire`; the winget identifier is `jabbott-iii.agent-grimoire`, with the command alias `agent-grimoire`, because `CatfinityStudios.Grimoire` already uses `grimoire`; PyPI wheels are written by `cargo xtask`, not maturin.
 - **Date:** 2026-11-16
 
 ## Context

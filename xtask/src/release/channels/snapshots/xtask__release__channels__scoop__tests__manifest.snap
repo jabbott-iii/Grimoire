@@ -1,0 +1,21 @@
+---
+source: xtask/src/release/channels/scoop.rs
+expression: "super::manifest(&input(false)).unwrap()"
+---
+{
+    "version": "1.2.3",
+    "description": "Install only the AI-agent assets you choose (rules, skills, agents, tools, MCP servers) into your repository",
+    "homepage": "https://github.com/jabbott-iii/Grimoire",
+    "license": "MIT|Apache-2.0",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/jabbott-iii/Grimoire/releases/download/v1.2.3/agent-grimoire-1.2.3-x86_64-pc-windows-msvc.zip",
+            "hash": "b8616d900e5165cdc066288852e6c1b100e78e5520260926a0f20f7e33f8e4f8"
+        },
+        "arm64": {
+            "url": "https://github.com/jabbott-iii/Grimoire/releases/download/v1.2.3/agent-grimoire-1.2.3-aarch64-pc-windows-msvc.zip",
+            "hash": "dcd7f6db8776003159f0f672ed64d6b4d00420d2152678c1592145b07bda7fb4"
+        }
+    },
+    "bin": "grimoire.exe"
+}
