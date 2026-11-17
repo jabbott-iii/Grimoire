@@ -1,0 +1,775 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Grimoire asset manifest (asset.toml)",
+  "description": "An `asset.toml` manifest.\n\nUnknown fields are errors. Cross-field rules are checked by\n[`validate::manifest`](crate::validate::manifest).",
+  "type": "object",
+  "properties": {
+    "format": {
+      "description": "Manifest format version; must be 1.",
+      "$ref": "#/$defs/Format"
+    },
+    "id": {
+      "description": "Catalog-wide unique identifier; equals the asset directory name.",
+      "$ref": "#/$defs/AssetId"
+    },
+    "kind": {
+      "description": "Asset kind; must match the parent directory under `catalog/`.",
+      "$ref": "#/$defs/Kind"
+    },
+    "version": {
+      "description": "The asset's own `SemVer` version, independent of the CLI version.",
+      "$ref": "#/$defs/Version"
+    },
+    "summary": {
+      "description": "One-line summary.",
+      "$ref": "#/$defs/Summary"
+    },
+    "description": {
+      "description": "Longer Markdown description.",
+      "$ref": "#/$defs/Description"
+    },
+    "license": {
+      "description": "SPDX license expression for the asset's content.",
+      "$ref": "#/$defs/LicenseExpr"
+    },
+    "maintainers": {
+      "description": "GitHub logins of the maintainers; at least one.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/GithubLogin"
+      }
+    },
+    "tags": {
+      "description": "Catalog tags.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Tag"
+      }
+    },
+    "maturity": {
+      "description": "Maturity.",
+      "$ref": "#/$defs/Maturity"
+    },
+    "deprecated": {
+      "description": "Required when `maturity = \"deprecated\"`; forbidden otherwise.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Deprecation"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "min-cli-version": {
+      "description": "Oldest Grimoire CLI that can install this asset.",
+      "$ref": "#/$defs/Version"
+    },
+    "requires": {
+      "description": "Assets this asset depends on, with version requirements.",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/VersionReq"
+      },
+      "propertyNames": {
+        "$ref": "#/$defs/AssetId"
+      }
+    },
+    "conflicts": {
+      "description": "Assets that must not be installed together with this one.",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/ConflictSpec"
+      },
+      "propertyNames": {
+        "$ref": "#/$defs/AssetId"
+      }
+    },
+    "permissions": {
+      "description": "What the asset can cause at runtime.",
+      "$ref": "#/$defs/Permissions",
+      "default": {
+        "filesystem": "none",
+        "network": false,
+        "shell": false,
+        "hooks": false
+      }
+    },
+    "rule": {
+      "description": "Rule settings; only for `kind = \"rule\"`.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RuleSpec"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "skill": {
+      "description": "Skill settings; only for `kind = \"skill\"`.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SkillSpec"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "agent": {
+      "description": "Agent settings; required for `kind = \"agent\"`.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/AgentSpec"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "tool": {
+      "description": "Tool settings; required for `kind = \"tool\"`.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ToolSpec"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "mcp-server": {
+      "description": "MCP server settings; required for `kind = \"mcp-server\"`.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/McpServerSpec"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "clients": {
+      "description": "Outputs per supported client. A client is supported iff its table is present.",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/ClientOutputs"
+      },
+      "propertyNames": {
+        "$ref": "#/$defs/ClientId"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "id",
+    "kind",
+    "version",
+    "summary",
+    "description",
+    "license",
+    "maintainers",
+    "maturity",
+    "min-cli-version",
+    "clients"
+  ],
+  "$defs": {
+    "Format": {
+      "description": "Document format version. Grimoire currently reads and writes format 1.",
+      "type": "integer",
+      "const": 1
+    },
+    "AssetId": {
+      "description": "Asset or bundle identifier: 1-64 characters of [a-z0-9-], no leading, trailing or doubled '-'. Must not start with claude-, anthropic-, anthropics- or cc-plugin-, and must not be 'synced'.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "Kind": {
+      "description": "An asset kind (`architecture.md` §3).",
+      "oneOf": [
+        {
+          "description": "Instructions loaded into context automatically, always or for matching paths.",
+          "type": "string",
+          "const": "rule"
+        },
+        {
+          "description": "An Agent Skills directory, loaded on demand.",
+          "type": "string",
+          "const": "skill"
+        },
+        {
+          "description": "A subagent definition with an explicit tool allow-list.",
+          "type": "string",
+          "const": "agent"
+        },
+        {
+          "description": "A standalone Rust executable, optionally bound to client hooks.",
+          "type": "string",
+          "const": "tool"
+        },
+        {
+          "description": "A Rust MCP server.",
+          "type": "string",
+          "const": "mcp-server"
+        }
+      ]
+    },
+    "Version": {
+      "description": "A SemVer 2.0.0 version without build metadata, e.g. \"1.2.3\".",
+      "type": "string",
+      "minLength": 5
+    },
+    "Summary": {
+      "description": "One line, at most 120 characters, no leading or trailing whitespace.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "pattern": "^\\S(.*\\S)?$"
+    },
+    "Description": {
+      "description": "Markdown, at most 4000 characters.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "LicenseExpr": {
+      "description": "SPDX license expression, e.g. \"MIT OR Apache-2.0\".",
+      "type": "string",
+      "minLength": 1
+    },
+    "GithubLogin": {
+      "description": "GitHub login without a leading '@'.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 39,
+      "pattern": "^[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?$"
+    },
+    "Tag": {
+      "description": "Tag: 1-32 characters of [a-z0-9-].",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32,
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "Maturity": {
+      "description": "Maturity of an asset.",
+      "oneOf": [
+        {
+          "description": "May change incompatibly in any release.",
+          "type": "string",
+          "const": "experimental"
+        },
+        {
+          "description": "Follows `SemVer` strictly.",
+          "type": "string",
+          "const": "stable"
+        },
+        {
+          "description": "Kept for existing users; a replacement is named in `deprecated`.",
+          "type": "string",
+          "const": "deprecated"
+        }
+      ]
+    },
+    "Deprecation": {
+      "description": "Deprecation details.",
+      "type": "object",
+      "properties": {
+        "replacement": {
+          "description": "The asset that replaces this one.",
+          "$ref": "#/$defs/AssetId"
+        },
+        "reason": {
+          "description": "Why the asset is deprecated.",
+          "$ref": "#/$defs/Reason"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "replacement",
+        "reason"
+      ]
+    },
+    "Reason": {
+      "description": "Short explanation, at most 500 characters.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "VersionReq": {
+      "description": "A Cargo-style SemVer requirement, e.g. \"^1.2\", \">=1, <3\" or \"*\".",
+      "type": "string",
+      "minLength": 1
+    },
+    "ConflictSpec": {
+      "description": "A declared conflict with another asset.",
+      "type": "object",
+      "properties": {
+        "version": {
+          "description": "Versions of the other asset this one conflicts with; `\"*\"` for all.",
+          "$ref": "#/$defs/VersionReq"
+        },
+        "reason": {
+          "description": "Why the two must not be installed together.",
+          "$ref": "#/$defs/Reason"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "reason"
+      ]
+    },
+    "Permissions": {
+      "description": "What an asset can cause at runtime. Everything defaults to none.",
+      "type": "object",
+      "properties": {
+        "filesystem": {
+          "description": "Filesystem access.",
+          "$ref": "#/$defs/FsAccess",
+          "default": "none"
+        },
+        "network": {
+          "description": "Network access.",
+          "type": "boolean",
+          "default": false
+        },
+        "shell": {
+          "description": "Runs shell commands or other programs.",
+          "type": "boolean",
+          "default": false
+        },
+        "env": {
+          "description": "Environment variables the asset reads, by name.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EnvVarName"
+          }
+        },
+        "hooks": {
+          "description": "Registers client hooks that run automatically.",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "FsAccess": {
+      "description": "Filesystem access an asset can cause.",
+      "oneOf": [
+        {
+          "description": "No filesystem access.",
+          "type": "string",
+          "const": "none"
+        },
+        {
+          "description": "Reads files.",
+          "type": "string",
+          "const": "read"
+        },
+        {
+          "description": "Reads and writes files.",
+          "type": "string",
+          "const": "write"
+        }
+      ]
+    },
+    "EnvVarName": {
+      "description": "Environment variable name (never a value).",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Z_][A-Z0-9_]*$"
+    },
+    "RuleSpec": {
+      "description": "Rule settings.",
+      "type": "object",
+      "properties": {
+        "paths": {
+          "description": "Globs the rule applies to. Empty or absent means always-on.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Glob"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "Glob": {
+      "description": "Glob relative to the project root using '/' separators, e.g. \"**/*.rs\". No '..', '\\\\' or ':'.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "SkillSpec": {
+      "description": "Skill settings. There are none yet; the skill's own `SKILL.md` carries its metadata.",
+      "type": "object",
+      "additionalProperties": false
+    },
+    "AgentSpec": {
+      "description": "Agent settings.",
+      "type": "object",
+      "properties": {
+        "tools": {
+          "description": "The explicit, least-privilege tool allow-list. Required; `[]` grants no tools.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Capability"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "tools"
+      ]
+    },
+    "Capability": {
+      "description": "Client-neutral capability: read, search, edit, execute, web, mcp:<server-asset-id> or mcp:<server-asset-id>/<tool>.",
+      "type": "string",
+      "pattern": "^(read|search|edit|execute|web|mcp:[a-z0-9]+(-[a-z0-9]+)*(/[A-Za-z0-9_.-]{1,128})?)$"
+    },
+    "ToolSpec": {
+      "description": "Tool settings.",
+      "type": "object",
+      "properties": {
+        "binary": {
+          "description": "Executable name: `grimoire-tool-<id>`.",
+          "$ref": "#/$defs/BinaryName"
+        },
+        "hooks": {
+          "description": "Client hooks that run this tool automatically.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/HookBinding"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "binary"
+      ]
+    },
+    "BinaryName": {
+      "description": "Executable name: grimoire-mcp-<id> or grimoire-tool-<id>.",
+      "type": "string",
+      "pattern": "^grimoire-(mcp|tool)-[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "HookBinding": {
+      "description": "A hook that runs the tool's binary on a client event, in exec form.",
+      "type": "object",
+      "properties": {
+        "event": {
+          "description": "The client-neutral event.",
+          "$ref": "#/$defs/HookEvent"
+        },
+        "tools": {
+          "description": "For tool events, the capabilities whose tool calls trigger the hook. Empty means all.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Capability"
+          }
+        },
+        "args": {
+          "description": "Arguments passed to the binary.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/HookArg"
+          }
+        },
+        "timeout-secs": {
+          "description": "Timeout in seconds, 1 to 600.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "event"
+      ]
+    },
+    "HookEvent": {
+      "description": "A client-neutral hook event. Adapters map these to client event names or refuse.",
+      "oneOf": [
+        {
+          "description": "Before a tool call runs.",
+          "type": "string",
+          "const": "pre-tool-use"
+        },
+        {
+          "description": "After a tool call completes.",
+          "type": "string",
+          "const": "post-tool-use"
+        },
+        {
+          "description": "When a session starts.",
+          "type": "string",
+          "const": "session-start"
+        },
+        {
+          "description": "When a session ends.",
+          "type": "string",
+          "const": "session-end"
+        },
+        {
+          "description": "When the user submits a prompt.",
+          "type": "string",
+          "const": "user-prompt-submit"
+        },
+        {
+          "description": "When the agent finishes responding.",
+          "type": "string",
+          "const": "stop"
+        }
+      ]
+    },
+    "HookArg": {
+      "description": "One argv element passed to the tool binary. Never interpreted by a shell.",
+      "type": "string",
+      "maxLength": 1024
+    },
+    "McpServerSpec": {
+      "description": "MCP server settings.",
+      "type": "object",
+      "properties": {
+        "binary": {
+          "description": "Executable name: `grimoire-mcp-<id>`.",
+          "$ref": "#/$defs/BinaryName"
+        },
+        "transports": {
+          "description": "Supported transports; production servers support both.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Transport"
+          }
+        },
+        "env": {
+          "description": "Environment variables the server reads.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EnvVarSpec"
+          }
+        },
+        "tools": {
+          "description": "The tools the server exposes, with explicit annotations.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DeclaredTool"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "binary",
+        "transports",
+        "tools"
+      ]
+    },
+    "Transport": {
+      "description": "An MCP transport (`MCP-SPEC`).",
+      "oneOf": [
+        {
+          "description": "Newline-delimited JSON-RPC over stdin/stdout.",
+          "type": "string",
+          "const": "stdio"
+        },
+        {
+          "description": "The Streamable HTTP transport.",
+          "type": "string",
+          "const": "streamable-http"
+        }
+      ]
+    },
+    "EnvVarSpec": {
+      "description": "An environment variable an MCP server reads.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Variable name.",
+          "$ref": "#/$defs/EnvVarName"
+        },
+        "required": {
+          "description": "Whether the server refuses to start without it.",
+          "type": "boolean"
+        },
+        "secret": {
+          "description": "Whether it holds a secret. Secrets are only ever referenced, never written.",
+          "type": "boolean"
+        },
+        "description": {
+          "description": "What the variable is for.",
+          "$ref": "#/$defs/Summary"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "required",
+        "secret",
+        "description"
+      ]
+    },
+    "DeclaredTool": {
+      "description": "A tool an MCP server exposes, with every annotation stated explicitly (`MCP-SPEC`).",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Tool name.",
+          "$ref": "#/$defs/McpToolName"
+        },
+        "read-only": {
+          "description": "`readOnlyHint`: the tool does not modify its environment.",
+          "type": "boolean"
+        },
+        "destructive": {
+          "description": "`destructiveHint`: the tool may perform destructive updates.",
+          "type": "boolean"
+        },
+        "idempotent": {
+          "description": "`idempotentHint`: repeated identical calls have no additional effect.",
+          "type": "boolean"
+        },
+        "open-world": {
+          "description": "`openWorldHint`: the tool interacts with external entities.",
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "read-only",
+        "destructive",
+        "idempotent",
+        "open-world"
+      ]
+    },
+    "McpToolName": {
+      "description": "MCP tool name: 1-128 characters of [A-Za-z0-9_.-].",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.-]{1,128}$"
+    },
+    "ClientOutputs": {
+      "description": "The outputs of an asset for one client. Presence of the table means the client is supported.",
+      "type": "object",
+      "properties": {
+        "outputs": {
+          "description": "The outputs, in order.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OutputSpec"
+          },
+          "default": []
+        }
+      },
+      "additionalProperties": false
+    },
+    "OutputSpec": {
+      "description": "One output of an asset for one client.",
+      "type": "object",
+      "properties": {
+        "src": {
+          "description": "Source file or directory, relative to the asset directory. Omitted for `entry` outputs.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RelPath"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "to": {
+          "description": "Where the output goes, as an anchor the client adapter resolves.",
+          "$ref": "#/$defs/Destination"
+        },
+        "strategy": {
+          "description": "How the output is written.",
+          "$ref": "#/$defs/Strategy"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "to",
+        "strategy"
+      ]
+    },
+    "RelPath": {
+      "description": "ASCII relative path with '/' separators. No leading '/', no '.', '..' or empty components, no '\\\\', ':', '<', '>', '\"', '|', '?', '*', no Windows reserved names, no component ending in '.' or ' '.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "Destination": {
+      "description": "An anchor resolved by each client adapter: \"rules:<path>\", \"skills:<path>\", \"agents:<path>\", \"instructions\", \"mcp\" or \"hooks\".",
+      "type": "string",
+      "pattern": "^((rules|skills|agents):.+|instructions|mcp|hooks)$"
+    },
+    "Strategy": {
+      "description": "How an output is written (`architecture.md` §6.1, §7.2).",
+      "oneOf": [
+        {
+          "description": "A whole file (or directory tree), byte-for-byte.",
+          "type": "string",
+          "const": "copy"
+        },
+        {
+          "description": "A whole file generated by the adapter, e.g. with client frontmatter.",
+          "type": "string",
+          "const": "render"
+        },
+        {
+          "description": "A managed block in a shared Markdown file.",
+          "type": "string",
+          "const": "block"
+        },
+        {
+          "description": "An owned entry in a JSON or TOML config file.",
+          "type": "string",
+          "const": "entry"
+        }
+      ]
+    },
+    "ClientId": {
+      "description": "A client Grimoire renders for (ADR-0005).",
+      "oneOf": [
+        {
+          "description": "Claude Code.",
+          "type": "string",
+          "const": "claude-code"
+        },
+        {
+          "description": "The portable target: `AGENTS.md` plus `.agents/skills/`.",
+          "type": "string",
+          "const": "agents-md"
+        },
+        {
+          "description": "The Codex CLI.",
+          "type": "string",
+          "const": "codex"
+        },
+        {
+          "description": "Cursor.",
+          "type": "string",
+          "const": "cursor"
+        },
+        {
+          "description": "Gemini CLI.",
+          "type": "string",
+          "const": "gemini-cli"
+        },
+        {
+          "description": "GitHub Copilot.",
+          "type": "string",
+          "const": "copilot"
+        }
+      ]
+    }
+  }
+}

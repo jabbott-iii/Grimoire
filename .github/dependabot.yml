@@ -1,0 +1,50 @@
+# Syntax verified against docs.github.com on 2026-11-16 (DEPENDABOT in docs/specs.md).
+# Every entry sets a cooldown of at least 7 days for version updates; security updates are never delayed.
+version: 2
+updates:
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+    cooldown:
+      default-days: 7
+      semver-major-days: 30
+      semver-minor-days: 7
+      semver-patch-days: 7
+    groups:
+      cargo-minor-patch:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      cargo-security:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+    # The github-actions ecosystem supports default-days only.
+    cooldown:
+      default-days: 7
+    groups:
+      actions-minor-patch:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  # Bumps the pinned toolchain in rust-toolchain.toml. The MSRV (rust-version) is never changed by Dependabot.
+  - package-ecosystem: "rust-toolchain"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+    cooldown:
+      default-days: 7
+
+  # docker: added in Phase 6 together with the Dockerfile.

@@ -1,0 +1,18 @@
+[package]
+name = "agent-grimoire"
+description = "Install only the AI-agent assets you choose (rules, skills, agents, tools, MCP servers) into your repository"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "grimoire"
+path = "src/main.rs"
+
+[dependencies]
+clap.workspace = true
+
+[lints]
+workspace = true

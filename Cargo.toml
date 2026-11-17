@@ -1,0 +1,58 @@
+[workspace]
+resolver = "3"
+# Code-bearing assets (catalog/tools/*, catalog/mcp-servers/*) join the workspace
+# when the first one is added in Phase 3 (architecture.md §4).
+members = ["crates/*", "xtask"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.96"
+license = "MIT OR Apache-2.0"
+# Nothing is published until Phase 5 flips this per published crate (ADR-0003).
+# The `repository` URL is deliberately absent until its spelling is confirmed (PLAN.md C8).
+publish = false
+
+[workspace.dependencies]
+agent-grimoire-catalog = { path = "crates/agent-grimoire-catalog", version = "0.1.0" }
+agent-grimoire-model = { path = "crates/agent-grimoire-model", version = "0.1.0" }
+
+clap = { version = "4.6.8", features = ["derive"] }
+# >= 0.13.6 for RUSTSEC-2026-0414 and RUSTSEC-2026-0433; wikilinks stay disabled.
+pulldown-cmark = { version = "0.13.6", default-features = false }
+# preserve_order: schema key order follows field order and cannot be flipped by feature unification.
+schemars = { version = "1.2.3", features = ["preserve_order"] }
+semver = "1.0.28"
+serde = { version = "1.0.229", features = ["derive"] }
+serde-saphyr = { version = "2.1.1", default-features = false, features = ["deserialize"] }
+serde_json = "1.0.154"
+spdx = { version = "0.13.6", default-features = false }
+toml = "1.2.1"
+
+insta = "1.49.0"
+proptest = "1.12.0"
+tempfile = "3.27.0"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+unreachable_pub = "warn"
+unused_qualifications = "warn"
+
+# Stable and enforced from Cargo 1.100 (the pinned toolchain). Older Cargo ignores the table.
+[workspace.lints.cargo]
+missing_lints_inheritance = "deny"
+unknown_lints = "deny"
+unused_dependencies = "deny"
+unused_workspace_dependencies = "deny"
+unused_workspace_package_fields = "deny"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+dbg_macro = "warn"
+expect_used = "warn"
+print_stderr = "warn"
+print_stdout = "warn"
+todo = "warn"
+unimplemented = "warn"
+unwrap_used = "warn"

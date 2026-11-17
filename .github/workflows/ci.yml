@@ -1,0 +1,186 @@
+# Quality gates for every pull request and every push to main.
+# Hardening rules (zizmor pedantic): permissions {} at the top with minimal per-job grants,
+# full-SHA pins with version comments, persist-credentials: false, no ${{ }} in run: steps,
+# no caches. Action SHAs and tool checksums were verified on 2026-11-16 (GHA-SEC in docs/specs.md), and
+# every pinned action or tool was a release at least 7 days old when adopted (the Dependabot cooldown).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+  # The stable toolchain comes from rust-toolchain.toml. Keep this equal to the
+  # workspace rust-version (Dependabot never changes either).
+  RUST_MSRV: "1.96.0"
+
+jobs:
+  fmt:
+    name: rustfmt
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Rust
+        # Installs the toolchain and components pinned in rust-toolchain.toml.
+        run: rustup toolchain install
+      - name: Check formatting
+        run: cargo fmt --all --check
+
+  clippy:
+    name: clippy and cargo lints
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Rust
+        # Installs the toolchain and components pinned in rust-toolchain.toml.
+        run: rustup toolchain install
+      # A workspace-wide run is required: Cargo's unused-dependency lints only fire when all targets are built.
+      - name: Run clippy with warnings denied
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+
+  test:
+    name: test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15, windows-2025]
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Rust
+        # Installs the toolchain and components pinned in rust-toolchain.toml.
+        run: rustup toolchain install
+      - name: Run tests
+        run: cargo test --workspace --locked
+
+  msrv:
+    name: MSRV build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install the MSRV toolchain
+        run: rustup toolchain install "${RUST_MSRV}" --profile minimal
+      # `+toolchain` overrides rust-toolchain.toml.
+      - name: Check every target on the MSRV
+        run: cargo "+${RUST_MSRV}" check --workspace --all-targets --locked
+
+  catalog:
+    name: catalog and schemas
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # The version-bump check needs the merge base with the target branch.
+          fetch-depth: 0
+      - name: Install Rust
+        # Installs the toolchain and components pinned in rust-toolchain.toml.
+        run: rustup toolchain install
+      - name: Check that generated schemas are up to date
+        run: cargo xtask schema --check
+      - name: Validate the catalog
+        run: cargo xtask validate
+      # Pull requests compare with the target branch; pushes with the previous tip;
+      # manual runs with the parent commit.
+      - name: Require version bumps for changed assets
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          case "${EVENT_NAME}" in
+            pull_request) base="origin/${BASE_REF}" ;;
+            push) base="${BEFORE}" ;;
+            *) base="HEAD^" ;;
+          esac
+          if ! git rev-parse --verify --quiet --end-of-options "${base}^{commit}" >/dev/null; then
+            echo "::notice::no base commit to compare with (${base}); skipping the version-bump check"
+            exit 0
+          fi
+          cargo xtask validate --base "${base}"
+
+  unused-deps:
+    name: unused dependencies
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Rust
+        # Installs the toolchain and components pinned in rust-toolchain.toml.
+        run: rustup toolchain install
+      - name: Install cargo-shear
+        uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3
+        with:
+          tool: cargo-shear@1.14.0
+          # Fail rather than fall back to an unverified cargo-binstall download.
+          fallback: none
+      # Covers dev-dependencies, which Cargo's own unused_dependencies lint does not check.
+      - name: Find unused dependencies
+        run: cargo shear
+
+  links:
+    name: documentation links
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    env:
+      LYCHEE_VERSION: "0.24.2"
+      LYCHEE_SHA256: "1f4e0ef7f6554a6ed33dd7ac144fb2e1bbed98598e7af973042fc5cd43951c9a"
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Tools are unpacked outside the checkout so their own files are never linted.
+      - name: Install lychee (checksum-verified)
+        run: |
+          set -euo pipefail
+          cd "${RUNNER_TEMP}"
+          curl -fsSLo lychee.tar.gz "https://github.com/lycheeverse/lychee/releases/download/lychee-v${LYCHEE_VERSION}/lychee-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${LYCHEE_SHA256}  lychee.tar.gz" | sha256sum -c -
+          tar -xzf lychee.tar.gz
+      # Offline: every relative link and fragment must resolve; external URLs are not fetched.
+      - name: Check links
+        run: '"${RUNNER_TEMP}/lychee-x86_64-unknown-linux-gnu/lychee" --offline --no-progress --include-fragments "./**/*.md" "./.github/**/*.md"'

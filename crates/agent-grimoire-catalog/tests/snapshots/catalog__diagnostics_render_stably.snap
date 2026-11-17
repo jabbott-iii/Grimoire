@@ -1,0 +1,7 @@
+---
+source: crates/agent-grimoire-catalog/tests/catalog.rs
+expression: render(&f.load())
+---
+error[catalog/metadata] agents/security-reviewer/README.md: every asset needs a README.md
+error[manifest/deprecation] rules/rust-errors/asset.toml (deprecated): maturity = "deprecated" requires a [deprecated] table naming the replacement
+error[catalog/unexpected-entry] stray.txt: the catalog root may contain only README.md, bundles/ and one directory per kind (rules, skills, agents, tools, mcp-servers)

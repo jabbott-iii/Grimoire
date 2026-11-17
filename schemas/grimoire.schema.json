@@ -1,0 +1,239 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Grimoire project configuration (grimoire.toml)",
+  "description": "A `grimoire.toml` document: the desired state of a project.",
+  "type": "object",
+  "properties": {
+    "format": {
+      "description": "Configuration format version; must be 1.",
+      "$ref": "#/$defs/Format"
+    },
+    "clients": {
+      "description": "Clients to render for; at least one.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ClientId"
+      }
+    },
+    "bundles": {
+      "description": "Bundles to install.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/AssetId"
+      }
+    },
+    "tags": {
+      "description": "Install every asset carrying any of these tags.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Tag"
+      }
+    },
+    "exclude": {
+      "description": "Never install these, even when a bundle or tag selects them.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/AssetId"
+      }
+    },
+    "assets": {
+      "description": "Directly selected assets.",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/AssetSelection"
+      },
+      "propertyNames": {
+        "$ref": "#/$defs/AssetId"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "clients"
+  ],
+  "$defs": {
+    "Format": {
+      "description": "Document format version. Grimoire currently reads and writes format 1.",
+      "type": "integer",
+      "const": 1
+    },
+    "ClientId": {
+      "description": "A client Grimoire renders for (ADR-0005).",
+      "oneOf": [
+        {
+          "description": "Claude Code.",
+          "type": "string",
+          "const": "claude-code"
+        },
+        {
+          "description": "The portable target: `AGENTS.md` plus `.agents/skills/`.",
+          "type": "string",
+          "const": "agents-md"
+        },
+        {
+          "description": "The Codex CLI.",
+          "type": "string",
+          "const": "codex"
+        },
+        {
+          "description": "Cursor.",
+          "type": "string",
+          "const": "cursor"
+        },
+        {
+          "description": "Gemini CLI.",
+          "type": "string",
+          "const": "gemini-cli"
+        },
+        {
+          "description": "GitHub Copilot.",
+          "type": "string",
+          "const": "copilot"
+        }
+      ]
+    },
+    "AssetId": {
+      "description": "Asset or bundle identifier: 1-64 characters of [a-z0-9-], no leading, trailing or doubled '-'. Must not start with claude-, anthropic-, anthropics- or cc-plugin-, and must not be 'synced'.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "Tag": {
+      "description": "Tag: 1-32 characters of [a-z0-9-].",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32,
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "AssetSelection": {
+      "description": "A directly selected asset: a bare version requirement, or a table of options.",
+      "anyOf": [
+        {
+          "description": "`id = \"^1\"`.",
+          "$ref": "#/$defs/VersionReq"
+        },
+        {
+          "description": "`id = { version = \"^1\", ... }`.",
+          "$ref": "#/$defs/AssetOptions"
+        }
+      ]
+    },
+    "VersionReq": {
+      "description": "A Cargo-style SemVer requirement, e.g. \"^1.2\", \">=1, <3\" or \"*\".",
+      "type": "string",
+      "minLength": 1
+    },
+    "AssetOptions": {
+      "description": "Per-asset options in `grimoire.toml`.",
+      "type": "object",
+      "properties": {
+        "version": {
+          "description": "Version requirement.",
+          "$ref": "#/$defs/VersionReq"
+        },
+        "clients": {
+          "description": "Render only for these clients (a subset of the project's clients).",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/ClientId"
+          }
+        },
+        "allow": {
+          "description": "Permissions the user has accepted for this asset.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Permission"
+          }
+        },
+        "env": {
+          "description": "For MCP servers: maps a variable the server reads to the name it has in the user's environment.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/EnvVarName"
+          },
+          "propertyNames": {
+            "$ref": "#/$defs/EnvVarName"
+          }
+        },
+        "transport": {
+          "description": "For MCP servers: the transport to configure.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Transport"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "version"
+      ]
+    },
+    "Permission": {
+      "description": "A permission a user grants in `grimoire.toml` (`allow = [...]`).",
+      "oneOf": [
+        {
+          "description": "Read files.",
+          "type": "string",
+          "const": "filesystem-read"
+        },
+        {
+          "description": "Read and write files.",
+          "type": "string",
+          "const": "filesystem-write"
+        },
+        {
+          "description": "Use the network.",
+          "type": "string",
+          "const": "network"
+        },
+        {
+          "description": "Run shell commands or other programs.",
+          "type": "string",
+          "const": "shell"
+        },
+        {
+          "description": "Read environment variables.",
+          "type": "string",
+          "const": "env"
+        },
+        {
+          "description": "Register automatic client hooks.",
+          "type": "string",
+          "const": "hooks"
+        }
+      ]
+    },
+    "EnvVarName": {
+      "description": "Environment variable name (never a value).",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Z_][A-Z0-9_]*$"
+    },
+    "Transport": {
+      "description": "An MCP transport (`MCP-SPEC`).",
+      "oneOf": [
+        {
+          "description": "Newline-delimited JSON-RPC over stdin/stdout.",
+          "type": "string",
+          "const": "stdio"
+        },
+        {
+          "description": "The Streamable HTTP transport.",
+          "type": "string",
+          "const": "streamable-http"
+        }
+      ]
+    }
+  }
+}

@@ -50,13 +50,18 @@ All rows were checked 2026-11-16. Section IDs below link each row to its notes.
 | LYCHEE | lychee link checker | 0.24.2; action v2.9.0 | https://github.com/lycheeverse/lychee-action | Verified |
 | RUST | Rust stable toolchain | 1.100.0 (channel 2026-11-12) | https://static.rust-lang.org/dist/channel-rust-stable.toml | Verified |
 | CRATES | Candidate crate versions | see table | https://crates.io | Verified |
+| YAML | Frontmatter YAML parser (serde-saphyr) | 2.1.1 | https://github.com/bourumir-wyngs/serde-saphyr | Verified (Phase 1) |
+| SPDX-CRATE, MARKDOWN | spdx and pulldown-cmark behaviour | 0.13.6 / 0.13.6 | https://github.com/EmbarkStudios/spdx ; https://github.com/pulldown-cmark/pulldown-cmark | Verified (Phase 1) |
+| SCHEMARS | schemars draft, map keys, key order | 1.2.3 | https://docs.rs/schemars/1.2.3 | Verified (Phase 1) |
+| CARGO-LINTS | `[lints.cargo]`, workspace globs, inheritance | Cargo 1.96.0 / 1.99.0 / 1.100.0 | https://doc.rust-lang.org/cargo/reference/lints.html | Verified (Phase 1) |
+| CI-PINS | Pinned actions and CI tool binaries | see table | per pin | Verified (Phase 1) |
+| ZIZMOR | zizmor audits and personas | 1.32.0 | https://docs.zizmor.sh | Verified (Phase 1) |
 
 **Not yet researched, to verify in the phase that needs them:**
 
 | Topic | Phase |
 |---|---|
 | A JSON/JSONC editor that preserves comments | 2 |
-| Whether `gh actions-lock` works with the gh version CI uses | 1 |
 | The exact Fulcio identity string for keyless verification docs | 5 |
 | GHCR OCI 1.1 referrers support for cosign v3 | 6 |
 | `winget validate` availability on GitHub Windows runners | 5 |
@@ -689,7 +694,8 @@ Checked 2026-11-16. Status: Verified.
 - **Source:** https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference; the dependabot-core `cargo` fetcher. Checked 2026-11-16. Status: Verified.
 - **Cargo:** supported. The fetcher resolves workspace members and `workspace.dependencies`.
 - **github-actions:** updates the SHA *and* a same-line `# vX.Y.Z` comment. "Dependabot … will not create alerts for actions pinned to SHA values."
-- **`cooldown`:** default 3 days. Per-semver-level days apply to Cargo only.
+- **`cooldown`:** default 3 days. Per-semver-level days apply to Cargo, `rust-toolchain` and others, but not to GitHub Actions or Docker, which take `default-days` only. (This corrects the Phase 0 entry, which said Cargo only.)
+- **`rust-toolchain` ecosystem:** Dependabot bumps `rust-toolchain.toml`, but it never changes `rust-version`.
 
 ### LYCHEE
 - **Version:** lychee v0.24.2; `lycheeverse/lychee-action` v2.9.0, commit `e7477775783ea5526144ba13e8db5eec57747ce8`.
@@ -710,6 +716,9 @@ Source: the crates.io API (`https://crates.io/api/v1/crates/<name>`), checked 20
 | Crate | Latest | Published | MSRV | Edition | License | Use |
 |---|---|---|---|---|---|---|
 | rmcp | 3.10.0 | 2026-11-12 | 1.88 | 2024 | Apache-2.0 | MCP servers |
+| serde-saphyr | 2.1.1 | 2026-11-05 | 1.89 | 2024 | MIT OR Apache-2.0 | strict YAML for SKILL.md frontmatter (see YAML) |
+| pulldown-cmark | 0.13.6 | 2026-10-30 | 1.71.1 | 2021 | MIT | Markdown reference checks; ≥ 0.13.6 for RUSTSEC-2026-0414/-0433 |
+| spdx | 0.13.6 | 2026-10-02 | 1.85.0 | 2024 | Apache-2.0 | SPDX expression validation |
 | schemars | 1.2.3 | 2026-10-12 | 1.74 | 2021 | MIT | JSON Schema from types |
 | serde | 1.0.229 | 2026-07-18 | 1.56 | 2021 | MIT OR Apache-2.0 | |
 | serde_json | 1.0.154 | 2026-10-11 | 1.71 | 2021 | MIT OR Apache-2.0 | |
@@ -756,3 +765,92 @@ Inspected 2026-11-16 on the maintainer's Linux machine:
 - **Present:** rustc/cargo 1.99.0 (default) and 1.100.0, rustup 1.29.3, gh 2.45.0 (authenticated), Docker 29.9.3 with buildx 0.37.2, syft 1.54.1, node 18.19.1 / npm 9.2.0, Python 3.12.3.
 - **Not installed:** cargo-deny, cargo-machete, cargo-udeps, cargo-dist, release-plz, cargo-nextest, cargo-insta, cargo-binstall, maturin, cosign, gitleaks, trufflehog, actionlint, zizmor, lychee, typos, podman.
 - **Note:** local node 18 / npm 9 is too old for npm trusted publishing (see NPM-TP). This only matters if npm steps are run locally. CI pins its own versions.
+
+---
+
+## Phase 1 additions (checked 2026-11-16)
+
+These facts came from a ten-topic research workflow in which each topic was then re-checked by an independent skeptic. The raw results are not committed. Each fact below is something Phase 1 code or CI now depends on.
+
+### YAML: frontmatter parser choice
+- **Choice:** **serde-saphyr 2.1.1** (`default-features = false, features = ["deserialize"]`).
+- **Source:** https://crates.io/api/v1/crates/serde-saphyr; https://github.com/bourumir-wyngs/serde-saphyr (tag 2.1.1). Status: Verified.
+- **Why:**
+  - It is pure safe Rust (`#![forbid(unsafe_code)]` in it and in its parser, granit-parser) with no RustSec advisories.
+  - It is the only serde YAML crate that rejects **duplicate keys at every nesting level** by default.
+  - With `no_schema`, `strict_booleans`, `merge_keys = Error`, `reject_unsupported_tags` and `reject_tagged_field_names`, an unquoted `123`, `true` or `~` is not accepted as a string.
+  - Its default resource budget stops alias bombs.
+- **One gap:** `Option<String>` fields read an explicit null as `None`, so Grimoire uses a non-null deserializer for them.
+- **Rejected candidates:**
+  - `serde_yaml`: deprecated; its dependency unsafe-libyaml is RUSTSEC-2024-0449.
+  - `serde_yml`: RUSTSEC-2025-0068, and it pulls in noyalib 0.0.5, affected by RUSTSEC-2026-0333.
+  - `serde_yaml_ng`: also depends on unsafe-libyaml.
+  - `serde_norway`: c2rust unsafe code, no commits since 2024-12, duplicate keys inside maps silently resolved last-wins.
+  - `saphyr` and `yaml-rust2`: no serde support.
+
+### SPDX-CRATE and MARKDOWN
+- **spdx 0.13.6:** `Expression::parse` is `ParseMode::STRICT`. It rejects deprecated (`GPL-2.0`), unknown and lowercase identifiers, and `/` used as OR. STRICT still accepts lowercase operators and irregular whitespace, so Grimoire also requires `Expression::canonicalize(s) == Ok(None)`. Status: Verified.
+- **pulldown-cmark 0.13.6:**
+  - It never percent-decodes link destinations, so Grimoire decodes them itself.
+  - Both 2026 advisories (RUSTSEC-2026-0414, -0433) affect only wikilinks, which stay disabled.
+  - Default features (getopts, html) are off.
+
+  Status: Verified.
+
+### SCHEMARS: schema generation
+- **Draft:** schemars 1.2.3 emits draft 2020-12 by default, but its source calls that default "liable to change". Grimoire therefore pins it with `SchemaSettings::draft2020_12()`.
+- **Map keys:** only a key's `pattern` reaches the map schema, so Grimoire adds `propertyNames` to every keyed map.
+- **Key order:** Cargo feature unification can flip key order when some crate enables `serde_json/preserve_order`. Grimoire enables `preserve_order` explicitly, so schema key order follows field order.
+- Status: Verified.
+
+### CARGO-LINTS: Cargo behaviour
+- **`[lints.cargo]` is stable and enforced from Cargo 1.100**, the pinned toolchain. It covers `unused_dependencies`, `unused_workspace_dependencies`, `unused_workspace_package_fields`, `unknown_lints` and `missing_lints_inheritance`.
+  - Cargo 1.96 and 1.99 ignore the table, with an "unused manifest key" warning.
+  - `unused_dependencies` never checks dev-dependencies, so cargo-shear covers those.
+- **Workspace globs:** a `members` glob that matches nothing is an error on Cargo 1.96–1.100. The `catalog/*/*` globs are therefore added with the first code-bearing asset in Phase 3.
+- **Other confirmed behaviour:**
+  - Edition 2024 needs Rust ≥ 1.85, and resolver 3 needs ≥ 1.84.
+  - `publish.workspace = true` inheritance works.
+  - The pedantic group needs `priority = -1`.
+- Status: Verified, using local experiments on 1.96.0, 1.99.0 and 1.100.0.
+
+### CI-PINS: GitHub Actions and CI tools
+
+Every pinned action or tool was a release **at least 7 days old when adopted**, matching the Dependabot cooldown. Each tag was resolved to its commit with `gh api` and re-checked by a skeptic.
+
+| Pin | Version | Commit / SHA-256 | Released |
+|---|---|---|---|
+| actions/checkout | v7.0.1 | `3d3c42e5aac5ba805825da76410c181273ba90b1` | 2026-07-20 |
+| taiki-e/install-action | v2.90.3 | `cfdb7ed4ccc7c7dce37759eae89dc5674b469b39` | 2026-11-08 |
+| zizmorcore/zizmor-action (zizmor 1.32.0) | v0.8.1 | `45d7276c9ca790aabd705e31ca99c6185c3e76dd` | 2026-11-03 |
+| cargo-deny (built with `cargo install --locked`) | 0.20.2 | crates.io checksums | 2026-07-09 |
+| cargo-shear (via install-action, `fallback: none`) | 1.14.0 | install-action manifest checksum | 2026-09-22 |
+| actionlint, linux_amd64 tarball | 1.7.12 | `8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8` | 2026-03-30 |
+| gitleaks, linux_x64 tarball | 8.30.1 | `551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb` | 2026-03-21 |
+| lychee, x86_64-unknown-linux-gnu tarball | 0.24.2 | `1f4e0ef7f6554a6ed33dd7ac144fb2e1bbed98598e7af973042fc5cd43951c9a` | 2026-05-01 |
+| gh-actions-lock, linux-amd64 binary | v0.4.1 | `39deb2fe714dbf74b073d8245fc7f3d50cd0eee18d5c0900e9e849ae933ae17e` | 2026-11-02 |
+
+The actionlint, gitleaks and lychee hashes were checked against each release's own checksum file. The gh-actions-lock hash is the asset digest from the release API.
+
+**Maintenance:** Dependabot updates only the `uses:` action pins (and `actions.lock`). It cannot see the tool versions and checksums in workflow `env:` blocks, the cargo-deny version, or the cargo-shear version passed to install-action. Bump those by hand, keeping the 7-day rule, and re-verify each checksum against its release.
+
+- **Rust toolchains:** installed with plain `rustup` steps rather than a third-party action, which zizmor's pedantic persona flags as superfluous.
+- **No caching** anywhere in CI, so there is no cache-poisoning surface.
+- **cargo-deny-action not used:** it downloads cargo-deny with `curl | tar` and verifies no checksum.
+- **gh-actions-lock:** every write-mode run needs `--no-narrow`, or it rewrites SHA pins to tags. CI runs `--verify`, which reports the expected, non-blocking "pinned to a bare SHA" note.
+- Status: Verified.
+
+### ZIZMOR: workflow audit rules
+- **Persona:** zizmor 1.32.0 runs at the **pedantic** persona with online audits, and `advanced-security: false` keeps failing exit codes.
+- **Rules every workflow follows:**
+  - named workflows and jobs;
+  - `permissions: {}` at the top, with minimal per-job grants;
+  - SHA pins with a `# vX.Y.Z` comment;
+  - `persist-credentials: false`;
+  - no `${{ }}` in `run:`;
+  - a workflow-level `concurrency` mapping;
+  - no caches in publishing workflows;
+  - a Dependabot cooldown of at least 7 days.
+- **Known gap:** zizmor 1.32.0's `dependabot-cooldown` audit stops after the first compliant entry, so cooldowns on every entry are enforced by review.
+- Status: Verified.
+

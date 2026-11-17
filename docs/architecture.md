@@ -56,7 +56,8 @@ A **skill** is a directory that conforms to the Agent Skills specification (`SKI
 
 - **Source:** the asset directory *is* the skill directory: `catalog/skills/<id>/SKILL.md`, with `name: <id>`. The spec allows "any additional files", so `asset.toml`, `README.md`, `CHANGELOG.md` and `evals/` can live alongside. They are not installed.
 - **Rendering:** Grimoire copies the skill payload byte-for-byte into a skills directory each selected client reads (§8). It never transforms or executes it.
-- **Portability:** catalog skills use only open-spec frontmatter fields (`name`, `description`, `license`, `compatibility`, `metadata`, `allowed-tools`). Client extensions are rejected by the catalog lint.
+- **Portability:** catalog skills use only open-spec frontmatter fields (`name`, `description`, `license`, `compatibility`, `metadata`). Client extensions are rejected by the catalog lint.
+- **Permissions:** the spec's experimental `allowed-tools` is refused as well, because it pre-approves tools outside Grimoire's permission consent (§6.3). A skill that bundles `scripts/` must declare `shell = true`.
   - Reason: Claude Code extensions make claude.ai and the Skills API reject the skill (`CC-SKILL`). Other clients ignore unknown keys inconsistently.
 - **Quality bar:**
   - The description says what the skill does and when to use it.
@@ -71,7 +72,7 @@ An **agent** is a subagent definition, a named and delegated specialist with:
 1. a description saying when to delegate to it;
 2. a system prompt (the Markdown body);
 3. an **explicit, least-privilege tool allow-list** in Grimoire's client-neutral capability vocabulary (`read`, `search`, `edit`, `execute`, `web`, `mcp:<server>[/<tool>]`);
-4. an optional model hint.
+4. an optional model hint (deferred; see §6.1).
 
 - **Source:** `catalog/agents/<id>/agent.md`, plus `[agent] tools = [...]`. `tools` is **required**; `[]` is legal.
   - Reason: several clients grant *all* tools when the list is omitted (Claude Code, Gemini CLI, Copilot: `CC-AGENT`, `GEMINI-AGENTS`, `COPILOT-AGENTS`). Grimoire always writes the list out.
@@ -90,7 +91,7 @@ A **tool** is a standalone, non-interactive **Rust executable** built from this 
   - Third-party binaries: not built or signed by us.
 - **Installing a tool asset never installs the binary**, because there is no network and no execution at install time. It does three things:
   1. records the tool in the lock;
-  2. renders the client wiring the tool declares (hook bindings; optional permission allow-list entries such as Claude Code `Bash(<binary> *)`);
+  2. renders the client wiring the tool declares. Today that is hook bindings. Optional permission allow-list entries (such as Claude Code `Bash(<binary> *)`) are not modelled yet, and arrive with the first tool that needs them;
   3. lets `grimoire doctor` check that the binary is on `PATH` at a compatible version.
 
   Binaries arrive through the release channels ([ADR-0002](adr/0002-mcp-server-and-tool-packaging.md)).
@@ -126,7 +127,7 @@ A **bundle**, `catalog/bundles/<id>.toml`, is a named, versioned list of asset r
 ## 4. Repository layout (Proposal: refines the brief)
 
 ```text
-Cargo.toml                 workspace; members = ["crates/*", "xtask", "catalog/tools/*", "catalog/mcp-servers/*"]
+Cargo.toml                 workspace; members = ["crates/*", "xtask"] (+ "catalog/tools/*", "catalog/mcp-servers/*" from Phase 3)
 Cargo.lock
 deny.toml                  cargo-deny policy
 crates/
@@ -156,7 +157,7 @@ Crate directory names above are placeholders. Final package names, and the match
 
 **Refinement 1: code-bearing assets live under `catalog/`, not under `crates/`.**
 
-The brief asks for two things at once: "one crate per MCP server and per tool" in `crates/`, and that "a new asset can be added with files under `catalog/` only" with "no core code changes". Both can't hold if server crates sit in `crates/`. Making each tool and MCP-server asset directory a workspace crate, picked up by the `catalog/*/*` member globs, satisfies both:
+The brief asks for two things at once: "one crate per MCP server and per tool" in `crates/`, and that "a new asset can be added with files under `catalog/` only" with "no core code changes". Both can't hold if server crates sit in `crates/`. Making each tool and MCP-server asset directory a workspace crate, picked up by the `catalog/*/*` member globs, satisfies both. Cargo rejects a member glob that matches nothing (`CARGO-LINTS` in `specs.md`), so the globs are added together with the first code-bearing asset, in Phase 3:
 
 - adding a server is one new directory;
 - `crates/` stays "core".
@@ -220,7 +221,7 @@ outputs = [{ src = "rule.md", to = "instructions", strategy = "block" }]
 
 - **Kind tables:**
   - `[skill]` (no required keys);
-  - `[agent] tools = [...], model = "inherit"`;
+  - `[agent] tools = [...]`. A `model` hint is deferred until an exemplar needs one, so agents currently inherit the session model;
   - `[tool] binary = "…"` plus optional `hooks = [...]` bindings;
   - `[mcp-server] binary = "…", transports = ["stdio","streamable-http"], env = [...]`, plus the declared tool list with annotations, which tests compare against the live server.
 - **Explicit output map per client (Proposal: refines "explicit file map").** Every client an asset supports lists its outputs explicitly: source file → destination → strategy. A reviewer can see exactly what each asset writes for each client.
@@ -255,6 +256,8 @@ Per-asset overrides in v1:
 - a subset of clients;
 - **`allow`**: accepted permissions (§6.3);
 - for MCP servers, an env-var *name* remapping and the transport.
+
+The ADR-0002 override `runtime = "docker"` is added in Phase 6, together with the image it points at. Until then `grimoire.toml` rejects it as an unknown field.
 
 Nothing that could alter destinations outside the anchor rules is overridable.
 
@@ -358,7 +361,7 @@ A conflict is reported with a diff. `--force` overwrites. `--write-new` writes t
 
 ### 7.4 Filesystem safety
 
-- **Paths:** every destination is a normalized relative path under the project root. These are rejected: absolute paths, `..`, drive and UNC prefixes, NUL bytes, Windows reserved names and alternate data streams (`:`), and names that collide case-insensitively within one plan.
+- **Paths:** every destination is a normalized **ASCII** relative path under the project root (`RelPath`). ASCII-only rules out invisible and bidi characters, superscript device names and Unicode-normalization collisions. These are rejected: absolute paths, `..`, drive and UNC prefixes, NUL bytes, Windows reserved names and alternate data streams (`:`), and names that collide case-insensitively within one plan. The catalog validator applies the same rules to every catalog file (Phase 1).
 - **Confinement:** all filesystem access goes through a capability handle on the project root (`cap-std`). The handle refuses escapes, including through symlinks.
 - **Symlinks:** Grimoire never writes through a symlink at a managed path. It refuses (exit 6) rather than follow one.
 - **Atomic writes:** a temp file in the same directory, fsync, then rename over the target. Behaviour differences on Windows are covered by tests.

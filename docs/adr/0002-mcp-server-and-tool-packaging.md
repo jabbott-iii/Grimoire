@@ -74,7 +74,7 @@ Adopt **(A), separate binaries**, with a deliberately narrow v1 distribution sco
 5. **The CLI helps without downloading.**
    - `grimoire doctor` checks that each referenced binary is on `PATH` at a version compatible with the locked asset version (`--version --json`).
    - `apply` and `doctor` print the exact install command.
-   - A per-asset override `runtime = "docker"` lets adapters render the MCP config entry as a pinned-by-digest `docker run` command instead of a local binary.
+   - A per-asset override `runtime = "docker"` lets adapters render the MCP config entry as a pinned-by-digest `docker run` command instead of a local binary. *(Implementation note, Phase 1: deferred to Phase 6, where the image exists.)*
 
    An explicit, opt-in `grimoire fetch` that downloads and verifies binaries is out of scope for v1. It would need its own ADR, because it introduces network code into the CLI.
 6. **Shared server hardening lives in one core crate.** A `crates/` library introduced in Phase 3 contains:

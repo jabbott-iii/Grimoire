@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Grimoire bundle (catalog/bundles/<id>.toml)",
+  "description": "A named, versioned list of asset references. Not an asset kind.",
+  "type": "object",
+  "properties": {
+    "format": {
+      "description": "Bundle format version; must be 1.",
+      "$ref": "#/$defs/Format"
+    },
+    "id": {
+      "description": "Identifier, unique across assets and bundles; equals the file stem.",
+      "$ref": "#/$defs/AssetId"
+    },
+    "version": {
+      "description": "The bundle's `SemVer` version.",
+      "$ref": "#/$defs/Version"
+    },
+    "summary": {
+      "description": "One-line summary.",
+      "$ref": "#/$defs/Summary"
+    },
+    "description": {
+      "description": "Longer Markdown description.",
+      "$ref": "#/$defs/Description"
+    },
+    "maintainers": {
+      "description": "GitHub logins of the maintainers; at least one.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/GithubLogin"
+      }
+    },
+    "assets": {
+      "description": "Member assets with version requirements; at least one.",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/VersionReq"
+      },
+      "propertyNames": {
+        "$ref": "#/$defs/AssetId"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "id",
+    "version",
+    "summary",
+    "description",
+    "maintainers",
+    "assets"
+  ],
+  "$defs": {
+    "Format": {
+      "description": "Document format version. Grimoire currently reads and writes format 1.",
+      "type": "integer",
+      "const": 1
+    },
+    "AssetId": {
+      "description": "Asset or bundle identifier: 1-64 characters of [a-z0-9-], no leading, trailing or doubled '-'. Must not start with claude-, anthropic-, anthropics- or cc-plugin-, and must not be 'synced'.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "Version": {
+      "description": "A SemVer 2.0.0 version without build metadata, e.g. \"1.2.3\".",
+      "type": "string",
+      "minLength": 5
+    },
+    "Summary": {
+      "description": "One line, at most 120 characters, no leading or trailing whitespace.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "pattern": "^\\S(.*\\S)?$"
+    },
+    "Description": {
+      "description": "Markdown, at most 4000 characters.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "GithubLogin": {
+      "description": "GitHub login without a leading '@'.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 39,
+      "pattern": "^[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?$"
+    },
+    "VersionReq": {
+      "description": "A Cargo-style SemVer requirement, e.g. \"^1.2\", \">=1, <3\" or \"*\".",
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

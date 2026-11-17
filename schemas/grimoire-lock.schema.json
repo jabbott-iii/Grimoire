@@ -1,0 +1,294 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Grimoire lockfile (grimoire.lock)",
+  "description": "A `grimoire.lock` document. Never contains the CLI version (ADR-0001).",
+  "type": "object",
+  "properties": {
+    "format": {
+      "description": "Lockfile format version; must be 1.",
+      "$ref": "#/$defs/Format"
+    },
+    "asset": {
+      "description": "Resolved assets, sorted by id.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/LockedAsset"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "format"
+  ],
+  "$defs": {
+    "Format": {
+      "description": "Document format version. Grimoire currently reads and writes format 1.",
+      "type": "integer",
+      "const": 1
+    },
+    "LockedAsset": {
+      "description": "One resolved asset.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Asset id.",
+          "$ref": "#/$defs/AssetId"
+        },
+        "kind": {
+          "description": "Asset kind.",
+          "$ref": "#/$defs/Kind"
+        },
+        "version": {
+          "description": "Resolved version.",
+          "$ref": "#/$defs/Version"
+        },
+        "source": {
+          "description": "Where the asset came from.",
+          "$ref": "#/$defs/SourceId"
+        },
+        "manifest": {
+          "description": "Digest of the asset's manifest as resolved.",
+          "$ref": "#/$defs/Sha256Digest"
+        },
+        "selected-by": {
+          "description": "Why the asset is installed.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Selector"
+          }
+        },
+        "allow": {
+          "description": "Permissions accepted at resolution time.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Permission"
+          }
+        },
+        "output": {
+          "description": "Content Grimoire owns on disk for this asset.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LockedOutput"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "version",
+        "source",
+        "manifest",
+        "selected-by"
+      ]
+    },
+    "AssetId": {
+      "description": "Asset or bundle identifier: 1-64 characters of [a-z0-9-], no leading, trailing or doubled '-'. Must not start with claude-, anthropic-, anthropics- or cc-plugin-, and must not be 'synced'.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "Kind": {
+      "description": "An asset kind (`architecture.md` §3).",
+      "oneOf": [
+        {
+          "description": "Instructions loaded into context automatically, always or for matching paths.",
+          "type": "string",
+          "const": "rule"
+        },
+        {
+          "description": "An Agent Skills directory, loaded on demand.",
+          "type": "string",
+          "const": "skill"
+        },
+        {
+          "description": "A subagent definition with an explicit tool allow-list.",
+          "type": "string",
+          "const": "agent"
+        },
+        {
+          "description": "A standalone Rust executable, optionally bound to client hooks.",
+          "type": "string",
+          "const": "tool"
+        },
+        {
+          "description": "A Rust MCP server.",
+          "type": "string",
+          "const": "mcp-server"
+        }
+      ]
+    },
+    "Version": {
+      "description": "A SemVer 2.0.0 version without build metadata, e.g. \"1.2.3\".",
+      "type": "string",
+      "minLength": 5
+    },
+    "SourceId": {
+      "description": "A catalog source (ADR-0001). v1 has only the catalog embedded in the binary.",
+      "oneOf": [
+        {
+          "description": "The catalog embedded in the `grimoire` binary.",
+          "type": "string",
+          "const": "builtin"
+        }
+      ]
+    },
+    "Sha256Digest": {
+      "description": "SHA-256 digest: \"sha256:\" followed by 64 lowercase hex digits.",
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "Selector": {
+      "description": "Why an asset is installed: direct, bundle:<id>, tag:<tag> or requires:<id>.",
+      "type": "string",
+      "pattern": "^(direct|(bundle|requires):[a-z0-9]+(-[a-z0-9]+)*|tag:[a-z0-9]+(-[a-z0-9]+)*)$"
+    },
+    "Permission": {
+      "description": "A permission a user grants in `grimoire.toml` (`allow = [...]`).",
+      "oneOf": [
+        {
+          "description": "Read files.",
+          "type": "string",
+          "const": "filesystem-read"
+        },
+        {
+          "description": "Read and write files.",
+          "type": "string",
+          "const": "filesystem-write"
+        },
+        {
+          "description": "Use the network.",
+          "type": "string",
+          "const": "network"
+        },
+        {
+          "description": "Run shell commands or other programs.",
+          "type": "string",
+          "const": "shell"
+        },
+        {
+          "description": "Read environment variables.",
+          "type": "string",
+          "const": "env"
+        },
+        {
+          "description": "Register automatic client hooks.",
+          "type": "string",
+          "const": "hooks"
+        }
+      ]
+    },
+    "LockedOutput": {
+      "description": "One unit of content Grimoire owns (`architecture.md` §7.2).",
+      "type": "object",
+      "properties": {
+        "clients": {
+          "description": "Clients this output serves; several when a location is shared.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ClientId"
+          }
+        },
+        "path": {
+          "description": "Path relative to the project root.",
+          "$ref": "#/$defs/RelPath"
+        },
+        "unit": {
+          "description": "What Grimoire owns at that path.",
+          "$ref": "#/$defs/Unit"
+        },
+        "key": {
+          "description": "For `entry` units, the owned key path.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EntryKey"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hash": {
+          "description": "Hash of the content Grimoire owns in the unit.",
+          "$ref": "#/$defs/Sha256Digest"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "clients",
+        "path",
+        "unit",
+        "hash"
+      ]
+    },
+    "ClientId": {
+      "description": "A client Grimoire renders for (ADR-0005).",
+      "oneOf": [
+        {
+          "description": "Claude Code.",
+          "type": "string",
+          "const": "claude-code"
+        },
+        {
+          "description": "The portable target: `AGENTS.md` plus `.agents/skills/`.",
+          "type": "string",
+          "const": "agents-md"
+        },
+        {
+          "description": "The Codex CLI.",
+          "type": "string",
+          "const": "codex"
+        },
+        {
+          "description": "Cursor.",
+          "type": "string",
+          "const": "cursor"
+        },
+        {
+          "description": "Gemini CLI.",
+          "type": "string",
+          "const": "gemini-cli"
+        },
+        {
+          "description": "GitHub Copilot.",
+          "type": "string",
+          "const": "copilot"
+        }
+      ]
+    },
+    "RelPath": {
+      "description": "ASCII relative path with '/' separators. No leading '/', no '.', '..' or empty components, no '\\\\', ':', '<', '>', '\"', '|', '?', '*', no Windows reserved names, no component ending in '.' or ' '.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "Unit": {
+      "description": "The ownership unit of an output.",
+      "oneOf": [
+        {
+          "description": "The whole file.",
+          "type": "string",
+          "const": "file"
+        },
+        {
+          "description": "A delimited managed block inside a Markdown file.",
+          "type": "string",
+          "const": "block"
+        },
+        {
+          "description": "One key or array element inside a JSON or TOML file.",
+          "type": "string",
+          "const": "entry"
+        }
+      ]
+    },
+    "EntryKey": {
+      "description": "Key path of an owned entry inside a JSON or TOML config file.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    }
+  }
+}

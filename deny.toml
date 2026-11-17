@@ -1,0 +1,87 @@
+# cargo-deny 0.21 policy. Keys verified against the 0.21.0 sources on 2026-11-16 (DENY in docs/specs.md).
+# Run locally with `cargo deny check`. Never loosen an entry to get CI green; fix the dependency instead.
+
+[graph]
+# The release targets (PLAN.md §4), so platform-specific dependencies are checked too.
+targets = [
+    "x86_64-unknown-linux-musl",
+    "aarch64-unknown-linux-musl",
+    "x86_64-apple-darwin",
+    "aarch64-apple-darwin",
+    "x86_64-pc-windows-msvc",
+    "aarch64-pc-windows-msvc",
+]
+all-features = true
+
+[output]
+feature-depth = 1
+
+[advisories]
+yanked = "deny"
+unmaintained = "all"
+unsound = "all"
+unused-ignored-advisory = "deny"
+# Entries need a reason, e.g. { id = "RUSTSEC-YYYY-NNNN", reason = "…" }.
+# (Per-entry `expiry` needs cargo-deny 0.21; CI runs 0.20.2.)
+ignore = []
+
+[licenses]
+# Narrow by design; per-crate exceptions name exactly who needs anything else.
+allow = ["Apache-2.0", "MIT"]
+exceptions = [
+    # Through serde-saphyr's deserialize feature: (Apache-2.0 OR MIT) AND BSD-3-Clause.
+    { crate = "encoding_rs", allow = ["BSD-3-Clause"] },
+    # Through serde_json/schemars `preserve_order` (indexmap -> hashbrown). Zlib is OSI-approved and permissive.
+    { crate = "foldhash", allow = ["Zlib"] },
+    { crate = "unicode-ident", allow = ["Unicode-3.0"] },
+]
+confidence-threshold = 0.93
+include-build = true
+include-dev = false
+unused-allowed-license = "deny"
+unused-license-exception = "deny"
+
+[licenses.private]
+ignore = false
+
+[bans]
+multiple-versions = "deny"
+wildcards = "deny"
+allow-wildcard-paths = true
+highlight = "all"
+deny = [
+    { crate = "openssl", reason = "pure-Rust, static musl builds; no system TLS", use-instead = "rustls" },
+    { crate = "openssl-sys", reason = "pure-Rust, static musl builds; no system TLS", use-instead = "rustls" },
+    { crate = "native-tls", reason = "pure-Rust, static musl builds; no system TLS", use-instead = "rustls" },
+    { crate = "serde_yaml", reason = "deprecated upstream; depends on unmaintained unsafe-libyaml (RUSTSEC-2024-0449)", use-instead = "serde-saphyr" },
+    { crate = "serde_yml", reason = "unsound and unmaintained (RUSTSEC-2025-0068)", use-instead = "serde-saphyr" },
+    { crate = "yaml-rust", reason = "unmaintained (RUSTSEC-2024-0320)", use-instead = "serde-saphyr" },
+]
+skip = []
+skip-tree = []
+
+[bans.workspace-dependencies]
+duplicates = "deny"
+include-path-dependencies = true
+unused = "deny"
+
+# Needs network access at run time; when the data cannot be fetched it logs and
+# does not fail, so it is advisory rather than a hard gate.
+[bans.std-replacements]
+scope = "workspace"
+level = "deny"
+
+[bans.build]
+executables = "deny"
+interpreted = "deny"
+enable-builtin-globs = true
+include-archives = true
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []
+required-git-spec = "rev"
+unused-allowed-source = "deny"
+unused-allowed-org = "deny"

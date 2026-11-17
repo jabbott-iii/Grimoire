@@ -1,6 +1,6 @@
 # Grimoire: implementation plan
 
-- **Status:** Phase 0 approved 2026-11-16 (all proposals accepted). Phase 1 in progress.
+- **Status:** Phase 0 approved and committed 2026-11-16. **Phase 1 implemented 2026-11-16, awaiting review** (see §5, Phase 1 outcome).
 - **Date:** 2026-11-16
 
 ## Decisions recorded (2026-11-16)
@@ -92,6 +92,18 @@ Every phase ends with:
 
 ### Phase 1: Workspace skeleton, model, schemas, validation, xtask, CI gates
 
+**Outcome (2026-11-16):** implemented, and every gate passes locally on Linux. CI on macOS and Windows still needs a push.
+
+**Deviations from the plan below**, each recorded where it applies:
+- **Cooldown pins.** Pinned actions and tools are releases at least 7 days old: install-action v2.90.3, cargo-deny 0.20.2, cargo-shear 1.14.0 (`CI-PINS` in `specs.md`).
+- **Workspace globs.** The `catalog/*/*` member globs wait for the first code asset (Phase 3), because Cargo rejects globs that match nothing.
+- **Agent `model` hint deferred.** Neither it, tool permission allow-list outputs, nor `runtime = "docker"` is modelled yet (`architecture.md` §3.4, §6.1, §6.2).
+- **ASCII-only paths.** `RelPath` and all catalog files are ASCII, and case-insensitive collisions are rejected.
+- **No build caching** in CI.
+
+**Review:** an adversarial review (six lenses, each finding re-checked by a skeptic) produced 54 findings. 51 were confirmed, 2 were uncertain and 1 was refuted. Every confirmed or uncertain finding is fixed, and each fix is pinned by a regression test. The highest-severity one: renames and moves bypassed the version-bump gate (now `git diff --no-renames`).
+
+
 - **Workspace and crates:** resolver 3, edition 2024, `rust-version` per Q6. Crates `crates/{model,catalog,resolve,install,adapters,cli}` with names per ADR-0004, plus `xtask`.
 - **Model:** types for `asset.toml`, bundles, `grimoire.toml` and `grimoire.lock`, with `deny_unknown_fields`, a `format` version field, and the validation rules in `architecture.md` §6.4.
 - **Schemas:** `cargo xtask schema [--check]` uses schemars 1.x to write `schemas/*.schema.json`.
@@ -178,6 +190,7 @@ Candidates, to be confirmed at Phase 3 start:
 | When | Action |
 |---|---|
 | Before Phase 1 CI | Enable the repo setting "Require actions to be pinned to a full-length commit SHA"; set `GITHUB_TOKEN` default permissions to read-only; enable secret-scanning push protection. |
+| After the first green CI run | Add a branch ruleset on `main` that requires the CI and Security jobs to pass (and requires pull requests). Without it, failing gates do not block merges. Optionally enable "Require lockfile" for `actions.lock`. |
 | Before Phase 5 | Decide the repo spelling (C8). Create the `release` environment with yourself as required reviewer (and "Prevent self-review" as you prefer). Enable immutable releases. |
 | Phase 5 bootstrap | Create the npm org `agent-grimoire`. Do the first crates.io publish of each published crate (short-lived scoped token, then revoke) and set trusted-publishing-only. Do the first npm publish of each npm package, then configure trusted publishers. Add the PyPI pending publisher. Create the `homebrew-tap` and `scoop-bucket` repos. |
 | Phase 7 | Enable private vulnerability reporting (currently `enabled: false` on this repo). |

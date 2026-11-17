@@ -1,0 +1,10 @@
+# Normalise text to LF in the repository and working tree on every OS. Generated
+# schemas, snapshots and catalog content are compared byte-for-byte in CI, so
+# CRLF conversion on Windows checkouts would break those checks.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.webp binary
