@@ -1,0 +1,36 @@
+format = 1
+id = "project-docs"
+kind = "mcp-server"
+version = "0.1.0"
+summary = "A read-only MCP server that lists, reads and searches a project's docs and ADRs"
+description = """A Rust MCP server that gives an agent read-only access to a project's documentation: Markdown, reStructuredText and AsciiDoc files, and architecture decision records.
+
+Tools: `list_docs`, `read_doc`, `search_docs` (literal text) and `list_adrs` (numbers, titles, statuses and dates). Every read is confined to the project root: symbolic links are never followed, hidden files such as `.env` are never served, and only documentation files are readable.
+
+Grimoire configures it for Claude Code over stdio, where Claude Code sets the project root (`CLAUDE_PROJECT_DIR`). It can also serve Streamable HTTP, on a loopback address or behind OAuth (RFC 9068 access tokens checked against a local JWKS file). Install the `grimoire-mcp-project-docs` binary separately."""
+license = "MIT OR Apache-2.0"
+maintainers = ["jabbott-iii"]
+tags = ["documentation", "adr", "mcp"]
+maturity = "experimental"
+min-cli-version = "0.1.0"
+
+[permissions]
+# Reads documentation files under the project root, and nothing else.
+filesystem = "read"
+# Claude Code sets CLAUDE_PROJECT_DIR for the stdio servers it starts; the server
+# takes the project root from it. The client sets it, so the configuration
+# Grimoire writes forwards no variable from your environment.
+env = ["CLAUDE_PROJECT_DIR"]
+
+[mcp-server]
+binary = "grimoire-mcp-project-docs"
+transports = ["stdio", "streamable-http"]
+tools = [
+    { name = "list_docs", read-only = true, destructive = false, idempotent = true, open-world = false },
+    { name = "read_doc", read-only = true, destructive = false, idempotent = true, open-world = false },
+    { name = "search_docs", read-only = true, destructive = false, idempotent = true, open-world = false },
+    { name = "list_adrs", read-only = true, destructive = false, idempotent = true, open-world = false },
+]
+
+[clients.claude-code]
+outputs = [{ to = "mcp", strategy = "entry" }]

@@ -357,6 +357,23 @@ fn check_asset<'s>(
         .get(id)
         .and_then(|s| s.options())
         .cloned();
+    if let Some(o) = &options
+        && m.kind != Kind::McpServer
+        && (o.transport.is_some() || o.url.is_some() || !o.env.is_empty())
+    {
+        ok = false;
+        out.push(
+            Diagnostic::error(
+                "resolve/options-kind",
+                format!(
+                    "`{id}` is a {}: `transport`, `url` and `env` are only for MCP servers",
+                    m.kind
+                ),
+            )
+            .at(format!("assets.{id}"))
+            .in_file("grimoire.toml"),
+        );
+    }
     let Some(clients) = clients(asset, options.as_ref(), request, out) else {
         if !request.config.assets.contains_key(id) {
             out.push(Diagnostic::error(
@@ -374,9 +391,9 @@ fn check_asset<'s>(
     let missing = m.permissions.missing(&accepted);
     if !missing.is_empty() {
         ok = false;
-        let names: Vec<&str> = missing.iter().map(|p| p.as_str()).collect();
-        let mut all: Vec<&str> = accepted.iter().map(|p| p.as_str()).collect();
-        all.extend(names.iter().copied());
+        let names: Vec<String> = missing.iter().map(ToString::to_string).collect();
+        let mut all: Vec<String> = accepted.iter().map(ToString::to_string).collect();
+        all.extend(names.iter().cloned());
         all.sort_unstable();
         all.dedup();
         let how = if request.config.assets.contains_key(id) {
@@ -624,10 +641,10 @@ fn list(clients: &[ClientId]) -> String {
         .join(", ")
 }
 
-fn quoted(names: &[&str]) -> String {
+fn quoted<S: AsRef<str>>(names: &[S]) -> String {
     names
         .iter()
-        .map(|n| format!("\"{n}\""))
+        .map(|n| format!("\"{}\"", n.as_ref()))
         .collect::<Vec<_>>()
         .join(", ")
 }

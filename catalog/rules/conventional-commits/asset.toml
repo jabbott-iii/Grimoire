@@ -1,0 +1,24 @@
+format = 1
+id = "conventional-commits"
+kind = "rule"
+version = "0.1.0"
+summary = "Write commit messages in the Conventional Commits 1.0.0 format"
+description = """An always-on rule that tells the agent how to write commit messages in the Conventional Commits 1.0.0 format: the `type(scope)!: description` header, `feat` and `fix`, other types as a project convention, body and git-trailer footers, breaking changes, reverts and how each maps to a SemVer release.
+
+It covers only how a message is written. It never asks the agent to commit, and a repository's own stricter commit conventions take precedence."""
+license = "MIT OR Apache-2.0"
+maintainers = ["jabbott-iii"]
+tags = ["git", "commits", "changelog", "semver", "workflow"]
+maturity = "experimental"
+min-cli-version = "0.1.0"
+
+# Rules are pure text and declare no permissions.
+
+[rule]
+# No `paths`: the rule is always on.
+
+[clients.claude-code]
+outputs = [{ src = "rule.md", to = "rules:conventional-commits.md", strategy = "render" }]
+
+[clients.agents-md]
+outputs = [{ src = "rule.md", to = "instructions", strategy = "block" }]

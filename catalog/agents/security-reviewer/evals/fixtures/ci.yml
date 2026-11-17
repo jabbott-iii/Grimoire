@@ -1,0 +1,9 @@
+# Deliberately vulnerable fixture for evaluation case 2. Never use.
+name: greet
+on: pull_request_target
+jobs:
+  greet:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: some-org/some-action@main
+      - run: echo "Thanks for ${{ github.event.pull_request.title }}"

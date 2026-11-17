@@ -156,6 +156,46 @@ pub struct HookBinding {
     /// Timeout in seconds, 1 to 600.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub timeout_secs: Option<u32>,
+    /// What the client does when the hook cannot run: the binary is missing,
+    /// crashes, times out or prints invalid output.
+    #[serde(default, skip_serializing_if = "HookFailure::is_default")]
+    pub on_failure: HookFailure,
+}
+
+/// What a client does when a hook cannot run.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Default,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Serialize,
+    Deserialize,
+    JsonSchema,
+)]
+#[serde(rename_all = "kebab-case")]
+pub enum HookFailure {
+    /// The event goes ahead (the clients' default).
+    #[default]
+    Continue,
+    /// The event is blocked, as if the hook had refused it. For guards that must
+    /// fail closed, such as a secret scanner. Only on `pre-tool-use` and
+    /// `user-prompt-submit`, the events a hook can block.
+    Block,
+}
+
+impl HookFailure {
+    #[allow(
+        clippy::trivially_copy_pass_by_ref,
+        reason = "serde's skip_serializing_if passes a reference"
+    )]
+    fn is_default(&self) -> bool {
+        *self == Self::Continue
+    }
 }
 
 /// A client-neutral hook event. Adapters map these to client event names or refuse.

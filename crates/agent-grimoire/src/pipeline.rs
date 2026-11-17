@@ -62,6 +62,7 @@ pub(crate) fn prepare(
         }
     };
     out.diags(rendered.warnings);
+    fail_closed_hooks(out, &resolution);
     let assets = resolution
         .assets
         .values()
@@ -77,6 +78,45 @@ pub(crate) fn prepare(
         })
         .collect();
     finish(out, project, rendered.desired, old, old_text, assets)
+}
+
+/// Warns when a selected tool's hooks fail closed (`on-failure = "block"`) and
+/// its binary is not on `PATH`: the client would then block every event those
+/// hooks cover, such as every tool call, until the binary is installed.
+fn fail_closed_hooks(out: &mut Out<'_, '_>, resolution: &agent_grimoire_resolve::Resolution<'_>) {
+    for resolved in resolution.assets.values() {
+        let Some(tool) = &resolved.asset.manifest.tool else {
+            continue;
+        };
+        let blocking = tool
+            .hooks
+            .iter()
+            .any(|h| h.on_failure == agent_grimoire_model::HookFailure::Block);
+        if !blocking || on_path(out.ctx.path.as_deref(), tool.binary.as_str()) {
+            continue;
+        }
+        out.diag(Diagnostic::warning(
+            "plan/hook-binary-missing",
+            format!(
+                "`{}`'s hooks fail closed, and `{}` is not on PATH: until it is installed, the client blocks every event those hooks cover (for Claude Code, every tool call or prompt). Install it first; to recover a blocked Claude Code session, start it with `claude --settings '{{\"disableAllHooks\": true}}'`",
+                resolved.id(),
+                tool.binary
+            ),
+        ));
+    }
+}
+
+/// Whether `binary` is a file in one of `path`'s directories. Never runs it.
+pub(crate) fn on_path(path: Option<&std::ffi::OsStr>, binary: &str) -> bool {
+    let Some(path) = path else { return false };
+    std::env::split_paths(path).any(|dir| {
+        let names = if cfg!(windows) {
+            vec![format!("{binary}.exe"), binary.to_owned()]
+        } else {
+            vec![binary.to_owned()]
+        };
+        names.iter().any(|n| dir.join(n).is_file())
+    })
 }
 
 /// Plans removing everything the lock records.

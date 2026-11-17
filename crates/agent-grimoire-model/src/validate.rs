@@ -9,8 +9,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Display;
 
 use crate::{
-    Anchor, AssetManifest, Bundle, Capability, ClientId, Diagnostic, Kind, Lockfile, Maturity,
-    ProjectConfig, Strategy, Transport, Unit,
+    Anchor, AssetManifest, Bundle, Capability, ClientId, Diagnostic, HookEvent, Kind, Lockfile,
+    Maturity, ProjectConfig, Strategy, Transport, Unit,
 };
 
 /// The TOML table name of a kind's settings.
@@ -216,8 +216,8 @@ fn agent(m: &AssetManifest, out: &mut Vec<Diagnostic>) {
     let mut implied = BTreeSet::new();
     for cap in &spec.tools {
         if let Some(needed) = cap.implied_permission() {
-            implied.insert(needed);
-            if !m.permissions.covers(needed) {
+            implied.insert(needed.clone());
+            if !m.permissions.covers(&needed) {
                 out.push(
                     Diagnostic::error(
                         "manifest/agent-permissions",
@@ -287,6 +287,20 @@ fn tool(m: &AssetManifest, out: &mut Vec<Diagnostic>) {
                     "only pre-tool-use and post-tool-use hooks can filter by tool",
                 )
                 .at(format!("{field}.tools")),
+            );
+        }
+        if hook.on_failure == crate::HookFailure::Block
+            && !matches!(
+                hook.event,
+                HookEvent::PreToolUse | HookEvent::UserPromptSubmit
+            )
+        {
+            out.push(
+                Diagnostic::error(
+                    "manifest/hook-on-failure",
+                    "on-failure = \"block\" works only on pre-tool-use and user-prompt-submit: other events cannot be blocked, so the hook would fail open",
+                )
+                .at(format!("{field}.on-failure")),
             );
         }
         if let Some(secs) = hook.timeout_secs
@@ -690,6 +704,7 @@ pub fn project_config(c: &ProjectConfig) -> Vec<Diagnostic> {
         let Some(options) = selection.options() else {
             continue;
         };
+        transport_options(id, options, &mut out);
         if let Some(clients) = &options.clients {
             if clients.is_empty() {
                 out.push(
@@ -718,6 +733,43 @@ pub fn project_config(c: &ProjectConfig) -> Vec<Diagnostic> {
         }
     }
     out
+}
+
+/// `url` goes with `transport = "streamable-http"`, and `env` overrides with
+/// `stdio`: over HTTP the user starts the server, so the client passes it no
+/// environment.
+fn transport_options(
+    id: &crate::AssetId,
+    options: &crate::AssetOptions,
+    out: &mut Vec<Diagnostic>,
+) {
+    let http = options.transport == Some(Transport::StreamableHttp);
+    match (http, options.url.is_some()) {
+        (true, false) => out.push(
+            Diagnostic::error(
+                "config/url-missing",
+                "transport = \"streamable-http\" needs the server's `url`, e.g. url = \"http://127.0.0.1:8931/mcp\"",
+            )
+            .at(format!("assets.{id}.url")),
+        ),
+        (false, true) => out.push(
+            Diagnostic::error(
+                "config/url-transport",
+                "`url` is only for transport = \"streamable-http\"",
+            )
+            .at(format!("assets.{id}.url")),
+        ),
+        _ => {}
+    }
+    if http && !options.env.is_empty() {
+        out.push(
+            Diagnostic::error(
+                "config/env-transport",
+                "`env` overrides apply when the client starts the server over stdio; over streamable-http you start the server, with its environment",
+            )
+            .at(format!("assets.{id}.env")),
+        );
+    }
 }
 
 /// Validates a lockfile on its own.

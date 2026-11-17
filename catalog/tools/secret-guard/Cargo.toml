@@ -1,0 +1,22 @@
+[package]
+name = "grimoire-tool-secret-guard"
+version = "0.1.0"
+description = "Finds likely secrets in files, standard input and Claude Code hook events, and blocks them"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+# Asset crates are never published to crates.io (ADR-0002).
+publish = false
+
+[dependencies]
+clap.workspace = true
+memchr.workspace = true
+regex.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

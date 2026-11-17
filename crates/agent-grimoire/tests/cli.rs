@@ -631,6 +631,63 @@ fn growing_permissions_stop_until_accepted() {
 }
 
 #[test]
+fn reading_one_more_variable_stops_until_that_variable_is_accepted() {
+    let p = installed(&catalog().source());
+    let newer = {
+        let c = catalog();
+        c.edit_manifest("mcp-servers/docs-index", |m| {
+            m.replace("version = \"2.0.0\"", "version = \"2.1.0\"")
+                .replace("env = [\"DOCS_TOKEN\"]", "env = [\"DOCS_HOST\", \"DOCS_TOKEN\"]")
+                .replace(
+                    "env = [{ name = \"DOCS_TOKEN\"",
+                    "env = [{ name = \"DOCS_HOST\", required = false, secret = false, description = \"Host\" }, { name = \"DOCS_TOKEN\"",
+                )
+        })
+        .write("mcp-servers/docs-index/CHANGELOG.md", "# Changelog\n\n## 2.1.0\n\n- Host.\n")
+        .write("mcp-servers/docs-index/Cargo.toml", "[package]\nname = \"grimoire-mcp-docs-index\"\nversion = \"2.1.0\"\nedition = \"2024\"\npublish = false\n\n[dependencies]\nagent-grimoire-mcp.workspace = true\n");
+        c.source()
+    };
+    // The `env:DOCS_TOKEN` grant does not cover a second variable.
+    let update = grimoire(&newer, &p, &["update"]);
+    assert_eq!(update.exit, Exit::Invalid, "{}", update.stderr);
+    assert!(
+        update
+            .stderr
+            .contains("needs permissions you have not accepted: env:DOCS_HOST"),
+        "{}",
+        update.stderr
+    );
+    assert!(
+        update.stderr.contains("--allow env:DOCS_HOST"),
+        "{}",
+        update.stderr
+    );
+    // A bare `env` on the command line is written out name by name.
+    grimoire(&newer, &p, &["add", "docs-index", "--allow", "env"]).ok();
+    let config = p.read("grimoire.toml");
+    assert!(
+        config.contains(
+            "docs-index = { version = \"^2.0.0\", allow = [\"filesystem-read\", \"env:DOCS_HOST\", \"env:DOCS_TOKEN\"] }"
+        ),
+        "{config}"
+    );
+    grimoire(&newer, &p, &["update"]).ok();
+}
+
+#[test]
+fn a_bare_env_grant_in_grimoire_toml_is_refused() {
+    let source = catalog().source();
+    let p = Project::new();
+    p.write(
+        "grimoire.toml",
+        "format = 1\nclients = [\"claude-code\"]\n[assets]\ndocs-index = { version = \"^2\", allow = [\"filesystem-read\", \"env\"] }\n",
+    );
+    let r = grimoire(&source, &p, &["plan"]);
+    assert_eq!(r.exit, Exit::Invalid, "{}", r.stderr);
+    assert!(r.stderr.contains("env:<NAME>"), "{}", r.stderr);
+}
+
+#[test]
 fn tampered_locks_cannot_reach_outside_the_project() {
     let source = catalog().source();
     for bad in [
@@ -770,7 +827,7 @@ fn json_envelopes() {
         .json();
     assert_eq!(
         show["result"]["permissions"],
-        serde_json::json!(["filesystem-read", "env"])
+        serde_json::json!(["filesystem-read", "env:DOCS_TOKEN"])
     );
     assert_eq!(
         show["result"]["clients"]["claude-code"][0],

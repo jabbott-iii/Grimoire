@@ -1,0 +1,16 @@
+[package]
+name = "@@BINARY@@"
+version = "0.1.0"
+description = "One line saying what this tool does"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+# Asset crates are never published to crates.io (ADR-0002).
+publish = false
+
+[dependencies]
+clap.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

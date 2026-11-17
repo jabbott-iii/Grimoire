@@ -139,6 +139,36 @@ jobs:
           fi
           cargo xtask validate --base "${base}"
 
+  scaffold:
+    name: scaffold templates build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Rust
+        # Installs the toolchain and components pinned in rust-toolchain.toml.
+        run: rustup toolchain install
+      # Generates a throwaway tool and MCP server in this checkout only, so the
+      # code templates are proven to build, lint cleanly, pass their own tests and validate.
+      - name: Generate probe assets
+        run: |
+          set -euo pipefail
+          cargo xtask new tool scaffold-probe --maintainer ci-probe
+          cargo xtask new mcp-server scaffold-probe-mcp --maintainer ci-probe
+      - name: Check the generated crates' formatting
+        run: cargo fmt --all --check
+      # Not --locked: the probe crates are new workspace members.
+      - name: Lint the generated crates
+        run: cargo clippy -p grimoire-tool-scaffold-probe -p grimoire-mcp-scaffold-probe-mcp --all-targets -- -D warnings
+      - name: Test the generated crates
+        run: cargo test -p grimoire-tool-scaffold-probe -p grimoire-mcp-scaffold-probe-mcp
+      - name: Validate the catalog with the generated assets
+        run: cargo xtask validate
+
   unused-deps:
     name: unused dependencies
     runs-on: ubuntu-24.04

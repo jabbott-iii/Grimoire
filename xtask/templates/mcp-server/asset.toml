@@ -1,0 +1,27 @@
+format = 1
+id = "@@ID@@"
+kind = "mcp-server"
+version = "0.1.0"
+summary = "One line saying what this MCP server does"
+description = """What the server's tools do, what they can reach, and when an agent should use them."""
+license = "MIT OR Apache-2.0"
+maintainers = ["@@MAINTAINER@@"]
+tags = []
+maturity = "experimental"
+min-cli-version = "0.1.0"
+
+# Declare everything the server can cause. Every environment variable it reads
+# goes in `env`; those the client must forward also go in [mcp-server] env.
+[permissions]
+
+[mcp-server]
+binary = "@@BINARY@@"
+transports = ["stdio", "streamable-http"]
+# Every tool, with every annotation stated. tests/protocol.rs checks these
+# against what the server actually serves.
+tools = [
+    { name = "echo", read-only = true, destructive = false, idempotent = true, open-world = false },
+]
+
+[clients.claude-code]
+outputs = [{ to = "mcp", strategy = "entry" }]

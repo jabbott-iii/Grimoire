@@ -1,0 +1,20 @@
+format = 1
+id = "security-reviewer"
+kind = "agent"
+version = "0.1.0"
+summary = "Read-only security review of code and diffs, reporting each finding with evidence"
+description = """Use this agent to review code, a diff or a pull request for security problems before it is merged, or when asked for a security review, threat check or audit of specific files. It reads and searches the repository only: it never edits files, runs commands or uses the network. Give it the files, diff or change to review and any context about how the code is deployed."""
+license = "MIT OR Apache-2.0"
+maintainers = ["jabbott-iii"]
+tags = ["security", "review"]
+maturity = "experimental"
+min-cli-version = "0.1.0"
+
+[permissions]
+filesystem = "read"
+
+[agent]
+tools = ["read", "search"]
+
+[clients.claude-code]
+outputs = [{ src = "agent.md", to = "agents:security-reviewer.md", strategy = "render" }]

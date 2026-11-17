@@ -8,7 +8,7 @@
 //! | `rules:` | `.claude/rules/<path>` | the rule, with `paths` frontmatter when path-scoped |
 //! | `skills:` | `.claude/skills/<path>` | a byte-for-byte copy |
 //! | `agents:` | `.claude/agents/<path>` | `name`, `description` and an explicit `tools` list |
-//! | `mcp` | `.mcp.json` | `mcpServers.<id>`, stdio, `${VAR}` references only |
+//! | `mcp` | `.mcp.json` | `mcpServers.<id>`: stdio with `${VAR}` references only, or `http` with the configured URL |
 //! | `hooks` | `.claude/settings.json` | one matcher group per binding, exec form |
 
 use std::collections::BTreeSet;
@@ -16,7 +16,8 @@ use std::collections::BTreeSet;
 use agent_grimoire_install::entry::{element_key, member_key};
 use agent_grimoire_install::plan::{Content, Desired, Owner};
 use agent_grimoire_model::{
-    Anchor, Capability, ClientId, Diagnostic, HookEvent, OutputSpec, RelPath, Strategy, Transport,
+    Anchor, Capability, ClientId, Diagnostic, HookEvent, HookFailure, OutputSpec, RelPath,
+    Strategy, Transport,
 };
 use agent_grimoire_resolve::Resolved;
 use serde_json::{Map, Value, json};
@@ -222,31 +223,43 @@ fn mcp(resolved: &Resolved<'_>, report: &mut Report) -> Option<(RelPath, Content
     let id = &manifest.id;
     let server = manifest.mcp_server.as_ref()?;
     let options = resolved.options.as_ref();
+    let key = member_key(&["mcpServers", id.as_str()]).ok()?;
     if let Some(Transport::StreamableHttp) = options.and_then(|o| o.transport) {
-        report.errors.push(
-            Diagnostic::error(
-                "adapter/transport",
-                format!("grimoire configures `{id}` for claude-code over stdio only in this version; remove `transport` from its [assets] entry"),
-            )
-            .at(format!("assets.{id}.transport"))
-            .in_file("grimoire.toml"),
-        );
-        return None;
+        // The user runs the server; Claude Code connects to it (`CC-MCP`).
+        // `grimoire.toml` validation guarantees the URL is present.
+        let url = options.and_then(|o| o.url.as_ref())?;
+        let mut entry = Map::new();
+        entry.insert("type".into(), json!("http"));
+        entry.insert("url".into(), json!(url.as_str()));
+        return Some((
+            RelPath::new(MCP).ok()?,
+            Content::Entry {
+                key,
+                value: Value::Object(entry),
+            },
+        ));
     }
     let remap = options.map(|o| &o.env);
     if let Some(remap) = remap {
         for name in remap.keys() {
             if !server.env.iter().any(|e| e.name == *name) {
-                report.errors.push(
-                    Diagnostic::error(
-                        "adapter/env-unknown",
-                        format!(
-                            "`{id}` does not read `{name}`; it reads {}",
-                            list(server.env.iter().map(|e| e.name.as_str()))
-                        ),
+                // A variable the server reads but the client sets itself, such as
+                // CLAUDE_PROJECT_DIR, is not forwarded, so it cannot be remapped.
+                let message = if manifest.permissions.env.contains(name) {
+                    format!(
+                        "`{id}` reads `{name}`, but the client sets it, so it cannot be remapped; the variables you can remap are {}",
+                        list(server.env.iter().map(|e| e.name.as_str()))
                     )
-                    .at(format!("assets.{id}.env"))
-                    .in_file("grimoire.toml"),
+                } else {
+                    format!(
+                        "`{id}` does not read `{name}`; the variables you can remap are {}",
+                        list(server.env.iter().map(|e| e.name.as_str()))
+                    )
+                };
+                report.errors.push(
+                    Diagnostic::error("adapter/env-unknown", message)
+                        .at(format!("assets.{id}.env"))
+                        .in_file("grimoire.toml"),
                 );
             }
         }
@@ -269,7 +282,6 @@ fn mcp(resolved: &Resolved<'_>, report: &mut Report) -> Option<(RelPath, Content
         }
         entry.insert("env".into(), Value::Object(env));
     }
-    let key = member_key(&["mcpServers", id.as_str()]).ok()?;
     Some((
         RelPath::new(MCP).ok()?,
         Content::Entry {
@@ -344,6 +356,11 @@ fn hooks(resolved: &Resolved<'_>, report: &mut Report) -> Vec<(RelPath, Content)
         if let Some(secs) = binding.timeout_secs {
             handler.insert("timeout".into(), json!(secs));
         }
+        // `onFailure: "block"` makes a hook that cannot start, crashes or times
+        // out block the event instead of letting it through (2.1.295+, `CC-P3`).
+        if binding.on_failure == HookFailure::Block {
+            handler.insert("onFailure".into(), json!("block"));
+        }
         if let Some(problem) = binding.tools.iter().find_map(mcp_name_problem) {
             report.errors.push(Diagnostic::error(
                 "adapter/unsupported",
@@ -385,7 +402,7 @@ fn hooks(resolved: &Resolved<'_>, report: &mut Report) -> Vec<(RelPath, Content)
 fn list<'a>(names: impl Iterator<Item = &'a str>) -> String {
     let names: Vec<String> = names.map(|n| format!("`{n}`")).collect();
     if names.is_empty() {
-        "no variables".to_owned()
+        "none".to_owned()
     } else {
         names.join(", ")
     }

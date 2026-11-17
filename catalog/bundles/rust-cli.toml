@@ -1,0 +1,15 @@
+format = 1
+id = "rust-cli"
+version = "0.1.0"
+summary = "Conventional Commits, architecture decision records and a read-only docs server for Rust CLI projects"
+description = """Project conventions for a Rust command-line project.
+
+- `conventional-commits`: an always-on rule for writing commit messages in the Conventional Commits 1.0.0 format, which release tooling such as release-plz reads.
+- `adr-writer`: a skill for writing, superseding and answering questions from architecture decision records.
+- `project-docs`: a read-only, root-confined MCP server that lists, reads and searches the project's documentation and ADRs. Install its binary separately."""
+maintainers = ["jabbott-iii"]
+
+[assets]
+conventional-commits = "^0.1.0"
+adr-writer = "^0.1.0"
+project-docs = "^0.1.0"

@@ -1,6 +1,6 @@
 # Grimoire architecture
 
-- **Status:** Every Phase 0 proposal was approved (2026-11-16). Sections marked "Phase 2" record what implementation settled or refined.
+- **Status:** Every Phase 0 proposal was approved (2026-11-16). Sections marked "Phase 2" or "Phase 3" record what implementation settled or refined.
 - **Date:** 2026-11-16
 
 Spec facts are cited by their IDs in [`specs.md`](specs.md), e.g. `CC-MEM`. Decisions with lasting consequences are in [`adr/`](adr/).
@@ -107,6 +107,8 @@ Alternatives considered:
 - A `hook` kind with inline commands: rejected for v1.
 - Excluding hooks entirely: viable fallback if you prefer.
 
+**Phase 3: failure behaviour.** A binding may set `on-failure = "block"`: when the hook cannot run (the binary is missing, crashes, times out or prints invalid output), the client blocks the event instead of letting it through. Guards such as `secret-guard` use it so that they fail closed. Claude Code renders it as `onFailure: "block"` (2.1.295 or later, `CC-P3`). The default, `continue`, is every client's own default. Because a missing binary then blocks the session, `plan` and `apply` warn when a fail-closed hook's binary is not on `PATH` (`plan/hook-binary-missing`).
+
 ### 3.5 MCP server
 
 An **MCP server** is a Rust program built on `rmcp` (`RMCP`), with its source in its asset directory. It runs as a separate process and serves MCP tools, resources and prompts over **stdio** and **Streamable HTTP**, targeting protocol **2026-07-28** (`MCP-SPEC`). It declares its permissions in `asset.toml`.
@@ -119,6 +121,14 @@ An **MCP server** is a Rust program built on `rmcp` (`RMCP`), with its source in
   - Origin validation enabled explicitly, because rmcp disables it by default (`RMCP`).
   - HTTP auth follows the spec's OAuth 2.1 resource-server profile when enabled.
   - Protocol-level integration tests.
+- **Phase 3:** the bar is implemented once, in `crates/agent-grimoire-mcp`, and every server must serve through it ([ADR-0007](adr/0007-mcp-server-authorization.md)). It provides:
+  - stdio with a clean stop on end of input, `SIGINT` or `SIGTERM`;
+  - Streamable HTTP, stateless, loopback-only without authorization, with `Host` and `Origin` checked before anything else;
+  - OAuth resource-server checks against a local JWKS file;
+  - concurrency, rate and time limits for tool work;
+  - a test helper that compares a server's live `tools/list` with its `asset.toml`.
+
+  Servers speak MCP 2026-07-28, and 2025-11-25 for clients that still use the earlier handshake, over both transports. Over HTTP the version is checked after authorization, and each connection carries one request and is closed within 75 seconds.
 
 ### 3.6 Bundle (not an asset kind)
 
@@ -127,7 +137,7 @@ A **bundle**, `catalog/bundles/<id>.toml`, is a named, versioned list of asset r
 ## 4. Repository layout (Proposal: refines the brief)
 
 ```text
-Cargo.toml                 workspace; members = ["crates/*", "xtask"] (+ "catalog/tools/*", "catalog/mcp-servers/*" from Phase 3)
+Cargo.toml                 workspace; members = ["crates/*", "xtask", "catalog/tools/*", "catalog/mcp-servers/*"]
 Cargo.lock
 deny.toml                  cargo-deny policy
 crates/
@@ -162,7 +172,7 @@ The brief asks for two things at once: "one crate per MCP server and per tool" i
 - adding a server is one new directory;
 - `crates/` stays "core".
 
-A shared hardening library for servers (transport setup, Origin validation, auth layer, limits) will be introduced in `crates/` with the first server in Phase 3. It is core code that new servers *use*, not code they modify.
+A shared hardening library for servers (transport setup, Origin validation, auth layer, limits) lives in `crates/agent-grimoire-mcp` (Phase 3, `publish = false`). It is core code that new servers *use*, not code they modify. Catalog validation requires every MCP server to depend on it (`crate/hardening`), and forbids asset crates from depending on the installer's crates (`crate/core-dependency`).
 
 **Refinement 2: adapters are one crate with a module per client.** They share the output model and test harness. A crate per client would add publish overhead (see ADR-0004) for no isolation benefit.
 
@@ -228,8 +238,9 @@ outputs = [{ src = "rule.md", to = "instructions", strategy = "block" }]
 - **Kind tables:**
   - `[skill]` (no required keys);
   - `[agent] tools = [...]`. A `model` hint is deferred until an exemplar needs one, so agents currently inherit the session model;
-  - `[tool] binary = "…"` plus optional `hooks = [...]` bindings;
+  - `[tool] binary = "…"` plus optional `hooks = [...]` bindings: `event`, `tools`, `args`, `timeout-secs` and (Phase 3) `on-failure`. `on-failure = "block"` is allowed only on `pre-tool-use` and `user-prompt-submit`, the events whose failure can stop something (`manifest/hook-on-failure`);
   - `[mcp-server] binary = "…", transports = ["stdio","streamable-http"], env = [...]`, plus the declared tool list with annotations, which tests compare against the live server.
+  - **Phase 3, environment variables:** `permissions.env` lists *every* variable the asset reads, and each one needs consent (§6.3). `[mcp-server] env` lists the subset the client configuration forwards from the user's environment. A variable the client sets itself, such as Claude Code's `CLAUDE_PROJECT_DIR` for stdio servers (`CC-P3`), is in `permissions.env` only, so nothing is forwarded for it.
 - **Explicit output map per client (Proposal: refines "explicit file map").** Every client an asset supports lists its outputs explicitly: source file → destination → strategy. A reviewer can see exactly what each asset writes for each client.
   - The destination is written as an **anchor** (`rules:`, `skills:`, `agents:`, `instructions`, `mcp`, `hooks`) plus a relative name, rather than a literal path. Each adapter resolves its anchors.
   - Reason 1: a client changing its layout becomes one adapter change instead of an edit to every manifest.
@@ -255,13 +266,14 @@ exclude = []                       # never select these, even via bundle/tag
 [assets]
 rust-errors = "^1"
 changelog-writer = { version = "^0.3", clients = ["claude-code"], allow = ["shell"] }
-github-insights = { version = "^1", allow = ["network", "env"], env = { GITHUB_TOKEN = "GH_TOKEN" } }
+github-insights = { version = "^1", allow = ["network", "env:GITHUB_TOKEN"], env = { GITHUB_TOKEN = "GH_TOKEN" } }
+project-docs = { version = "^0.1", allow = ["filesystem-read", "env:CLAUDE_PROJECT_DIR"], transport = "streamable-http", url = "http://127.0.0.1:8931/mcp" }
 ```
 
 Per-asset overrides in v1:
 - a subset of clients;
 - **`allow`**: accepted permissions (§6.3);
-- for MCP servers, an env-var *name* remapping and the transport.
+- for MCP servers, an env-var *name* remapping and the transport. `transport = "streamable-http"` needs the server's `url` (Phase 3, below). Setting `transport`, `url` or `env` on any other kind is an error (`resolve/options-kind`).
 
 The ADR-0002 override `runtime = "docker"` is added in Phase 6, together with the image it points at. Until then `grimoire.toml` rejects it as an unknown field.
 
@@ -276,9 +288,16 @@ secret-guard = ["filesystem-read", "hooks"]
 
 Each asset's grants live in exactly one place. An asset listed under `[assets]` takes them there, and an `[allow]` entry for it is an error (`config/allow-direct`). `grimoire add` writes whichever applies, and moves the grant when an asset becomes direct. An `[allow]` entry for an asset that is not installed is a warning.
 
+**HTTP transport (Phase 3, settles §11.8).** With `transport = "streamable-http"` the user runs the server and the client connects to it, so the entry needs the server's `url`:
+- `url` is required with `streamable-http` and refused otherwise (`config/url-missing`, `config/url-transport`). `env` overrides are refused with it (`config/env-transport`): the client does not start the server, so it passes no environment.
+- The URL is checked while parsing (`ServerUrl`): `https://`, or `http://` only for this machine (`localhost`, `127.0.0.0/8`, `[::1]`). User information, a query or a fragment are refused, so no credential can be written into a configuration file (MCP forbids access tokens in URLs, `MCP-SPEC`). So are `$` and `{`, which a client would expand. ASCII only, at most 2048 characters.
+- `claude-code` writes `mcpServers.<id> = {"type": "http", "url": "<url>"}`. Authorization, when the server requires it, is negotiated by the client with the server's OAuth metadata (§11.4); Grimoire writes no headers and no tokens.
+
 ### 6.3 Permission consent
 
 Declared `[permissions]` are not just documentation. Resolution fails if an asset needs a permission that is not in its `allow` list.
+
+**Grant names:** `filesystem-read`, `filesystem-write` (which covers read), `network`, `shell`, `hooks`, and **`env:<NAME>` for each environment variable** (Phase 3, settles §11.7). A bare `env` is refused in `grimoire.toml`. Because each variable is its own grant, a new version that reads one more variable is permission growth like any other, and stops until the user accepts that name. `grimoire add --allow env` is shorthand on the command line only: it accepts every variable the named assets read now and writes each one out by name. The lock records the same names in `allow`.
 
 - `grimoire add` shows the permissions and asks interactively, or requires `--allow …` non-interactively.
 - If a later version of an asset *expands* its permissions, `update`/`apply` stop and ask again. There is no silent escalation.
@@ -299,6 +318,16 @@ Declared `[permissions]` are not just documentation. Resolution fails if an asse
 - Skills: Agent Skills rules (`SKILLS`), spec-only frontmatter, referenced files exist.
 - Agents: `tools` present and consistent with `[permissions]` (e.g. `execute` requires `shell`).
 - Tools and MCP servers: the crate builds, `binary` matches a `[[bin]]`, and the declared tools match the server's `tools/list` in tests.
+  - Phase 3, for every asset crate:
+    - no dependency on Grimoire's core crates (`crate/core-dependency`);
+    - no `path` or `git` dependency except on `agent-grimoire-mcp` (`crate/path-dependency`);
+    - no `Cargo.toml` below the asset's own (`crate/nested-manifest`).
+  - Phase 3, for MCP servers:
+    - a dependency on `agent-grimoire-mcp` (`crate/hardening`);
+    - no direct use of rmcp's stdio or Streamable HTTP transports in `src/` (`crate/raw-transport`);
+    - a test that calls `agent_grimoire_mcp::testing::declared_tools_match` (`crate/declared-tools-test`).
+
+    The last two are text searches that catch the usual mistakes, not proofs; code review still guarantees them.
 - Rules: no permissions, plus duplicate and near-duplicate detection across rules.
 
 **Catalog-wide:**
@@ -495,7 +524,7 @@ Project-scoped Codex config, rules and hooks load only in **trusted** projects (
 | Rule | The rule text. A path-scoped rule first gets `paths` frontmatter, a YAML list of quoted globs. |
 | Agent | Frontmatter `name` (the id), `description` (the manifest `description`, the delegation text) and `tools`, all JSON-quoted so YAML never reads `true` or `123` as non-strings. |
 | MCP server | `mcpServers.<id> = {"type": "stdio", "command": "<binary>", "env": {"VAR": "${VAR}"}}`. |
-| Hook binding | `hooks.<Event>[] = {"matcher": …, "hooks": [{"type": "command", "command": "<binary>", "args": […], "timeout": n}]}`. |
+| Hook binding | `hooks.<Event>[] = {"matcher": …, "hooks": [{"type": "command", "command": "<binary>", "args": […], "timeout": n, "onFailure": "block"}]}`. `onFailure` only with `on-failure = "block"` (Phase 3). |
 
 - **Agent tool mapping:**
   - `read` → `Read`; `search` → `Grep`, `Glob`; `edit` → `Edit`, `Write`, `NotebookEdit`; `execute` → `Bash`, `PowerShell`; `web` → `WebFetch`, `WebSearch`.
@@ -504,7 +533,7 @@ Project-scoped Codex config, rules and hooks load only in **trusted** projects (
 - **MCP servers:**
   - A server started with no arguments speaks stdio, which every Grimoire server must support. Optional variables are written `${VAR:-}`, because an unset variable without a default reaches the server literally.
   - `env` overrides map the server's variable to the user's name (`${GH_TOKEN}`).
-  - The `streamable-http` transport override is refused for now. It needs a server URL, designed with the first MCP server in Phase 3.
+  - With `transport = "streamable-http"`, the entry is `{"type": "http", "url": "<url>"}` (Phase 3, §6.2).
 - **Hook bindings:**
   - They use exec form: `args` selects "no shell involved".
   - Matchers are an exact `A|B` list, or an anchored `^(…)$` regex when an MCP tool is involved.
@@ -579,8 +608,8 @@ Marketplace notes, verified against `CC-PLUGIN` and `CC-MKT`:
 1. ~~**JSON/JSONC editing**~~ **Settled in Phase 2:** `jsonc-parser`'s CST, strict JSON only (§7.2, `EDIT-CRATES`).
 2. **Cross-client planning priorities** (Phase 4). In Phase 2 the only shared location is `AGENTS.md`, reached by Claude Code through the import (§8.2), and it has snapshot tests for each of the three client combinations. The general greedy cover over the read matrix arrives with the clients that share `.claude/skills/` and `.agents/skills/`.
 3. ~~**`.claude/rules/` vs a `CLAUDE.md` block**~~ **Settled in Phase 2:** `.claude/rules/` (§8.2).
-4. **Server-side MCP auth** (Phase 3): rmcp provides client-side OAuth only (`RMCP`). Grimoire needs a resource-server layer covering RFC 9728 metadata, `WWW-Authenticate`, and audience/issuer validation. Choose a JWT/introspection approach. Needs an ADR.
+4. ~~**Server-side MCP auth**~~ **Settled in Phase 3:** RFC 9068 JWT access tokens checked against a local JWKS file, in `crates/agent-grimoire-mcp` ([ADR-0007](adr/0007-mcp-server-authorization.md)).
 5. **Codex AGENTS.md budget** (Phase 4): warn in `plan` when managed blocks push `AGENTS.md` near Codex's 32 KiB default.
 6. **Copilot cloud-agent MCP** can't be configured from repo files. Decide whether `doctor` emits the settings JSON for the user to paste (Phase 4).
-7. **Environment variable consent** (Phase 3): `allow = ["env"]` accepts the `env` permission, not each variable name, so a new version that reads more variables is not stopped. Decide with the first MCP server asset whether the lock records the accepted names.
-8. **HTTP transport configuration** (Phase 3): a Streamable HTTP entry needs the server's URL, so the `transport` override is refused until the first MCP server asset settles how that URL is given.
+7. ~~**Environment variable consent**~~ **Settled in Phase 3:** each variable is its own grant, `env:<NAME>`, recorded in `grimoire.toml` like every other grant (§6.3). Consent stays in the one file users review; the lock only mirrors it.
+8. ~~**HTTP transport configuration**~~ **Settled in Phase 3:** a `url` option next to `transport = "streamable-http"`, validated as `ServerUrl` (§6.2).

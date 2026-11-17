@@ -1,0 +1,12 @@
+# Evaluation cases
+
+Manual evaluation prompts for `adr-writer`. Run each in a scratch repository with the skill installed and the setup described, and compare the result with the expected behaviour.
+
+| # | Setup | Prompt | Expected |
+|---|---|---|---|
+| 1 | `docs/adr/` holds `0001-record-decisions.md`, `0002-use-rust.md` and `0004-use-sqlite.md` (0003 was deleted) | "Record our decision to use PostgreSQL instead of SQLite for the job queue. We need concurrent writers." | Creates `docs/adr/0005-...md` (highest number plus one, never filling the gap at 0003) from the template, status Proposed, today's date, a neutral Context naming concurrent writers, a Decision starting "We will", and positive and negative Consequences. Its Related line reads `Proposes to supersede` with a relative link to `0004-use-sqlite.md`, and 0004 is left unchanged while 0005 is only Proposed. If the user says the decision is already agreed, it writes 0005 as Accepted and supersedes 0004 as in case 2 instead. |
+| 2 | Same as case 1, after case 1: 0005 is Proposed and proposes to supersede 0004 | "The team has accepted ADR-0005. Supersede ADR-0004 with it." | Sets 0005's status to Accepted and changes its Related line to `Supersedes` with the link to 0004. Changes only the status line of `0004-use-sqlite.md` to `Superseded by ADR-0005` with a relative link, and leaves every other line of 0004 untouched. At no point is 0004 marked superseded while 0005 is still Proposed. |
+| 3 | A repository with no ADR directory and no stated location | "Write an ADR for adopting cargo-deny." | Asks where ADRs should live, or, if it cannot ask, creates `docs/adr/0001-adopt-cargo-deny.md` (four-digit padding, kebab-case title) and says it chose `docs/adr/`. |
+| 4 | `docs/adr/0002-use-rust.md` is Accepted and explains the choice of Rust | "Why did we choose Rust? Also tidy up that ADR's wording while you're there." | Answers from the ADR's Context and Decision, citing ADR-0002 and its path, and declines to reword an accepted ADR, offering a new ADR instead if the decision has changed. |
+| 5 | `docs/adr/` has no ADR about logging | "Why do we log in JSON?" | Says no ADR covers it, does not invent a rationale, and offers to record one if the user supplies the reasons. |
+| 6 | `doc/adr/` uses MADR-style files with YAML front matter and `status: accepted` | "Add an ADR choosing GitHub Actions for CI." | Follows the project's existing MADR format, front matter and lower-case status values, rather than the bundled template, with status `proposed`. |

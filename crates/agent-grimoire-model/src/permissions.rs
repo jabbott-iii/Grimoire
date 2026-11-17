@@ -64,7 +64,9 @@ impl Permissions {
         *self == Self::default()
     }
 
-    /// The grants a user must accept before this asset is installed.
+    /// The grants a user must accept before this asset is installed. Each
+    /// environment variable is its own grant, so a new version that reads one
+    /// more variable needs consent again (`architecture.md` §6.3).
     #[must_use]
     pub fn required(&self) -> BTreeSet<Permission> {
         let mut out = BTreeSet::new();
@@ -83,9 +85,7 @@ impl Permissions {
         if self.shell {
             out.insert(Permission::Shell);
         }
-        if !self.env.is_empty() {
-            out.insert(Permission::Env);
-        }
+        out.extend(self.env.iter().cloned().map(Permission::Env));
         if self.hooks {
             out.insert(Permission::Hooks);
         }
@@ -103,16 +103,17 @@ impl Permissions {
 
     /// Whether this declaration covers `needed`.
     #[must_use]
-    pub fn covers(&self, needed: Permission) -> bool {
+    pub fn covers(&self, needed: &Permission) -> bool {
         needed.is_satisfied_by(&self.required())
     }
 }
 
 /// A permission a user grants in `grimoire.toml` (`allow = [...]`).
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema,
-)]
-#[serde(rename_all = "kebab-case")]
+///
+/// Written `filesystem-read`, `filesystem-write`, `network`, `shell`, `hooks`, or
+/// `env:<NAME>` for one environment variable.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(try_from = "String", into = "String")]
 pub enum Permission {
     /// Read files.
     FilesystemRead,
@@ -122,67 +123,119 @@ pub enum Permission {
     Network,
     /// Run shell commands or other programs.
     Shell,
-    /// Read environment variables.
-    Env,
+    /// Read one environment variable, by name.
+    Env(EnvVarName),
     /// Register automatic client hooks.
     Hooks,
 }
 
+/// The `env:` prefix of an environment-variable grant.
+const ENV_PREFIX: &str = "env:";
+
 impl Permission {
+    /// Every permission without a parameter, in `allow` order.
+    pub const FIXED: [Permission; 5] = [
+        Permission::FilesystemRead,
+        Permission::FilesystemWrite,
+        Permission::Network,
+        Permission::Shell,
+        Permission::Hooks,
+    ];
+
     /// Whether `granted` covers this permission. A write grant covers read.
     #[must_use]
-    pub fn is_satisfied_by(self, granted: &BTreeSet<Permission>) -> bool {
-        granted.contains(&self)
-            || (self == Permission::FilesystemRead
+    pub fn is_satisfied_by(&self, granted: &BTreeSet<Permission>) -> bool {
+        granted.contains(self)
+            || (*self == Permission::FilesystemRead
                 && granted.contains(&Permission::FilesystemWrite))
     }
 
-    /// The value used in `allow` lists.
-    #[must_use]
-    pub fn as_str(self) -> &'static str {
-        match self {
+    /// The name of a fixed permission; `None` for `env:<NAME>`.
+    fn fixed_name(&self) -> Option<&'static str> {
+        Some(match self {
             Permission::FilesystemRead => "filesystem-read",
             Permission::FilesystemWrite => "filesystem-write",
             Permission::Network => "network",
             Permission::Shell => "shell",
-            Permission::Env => "env",
             Permission::Hooks => "hooks",
+            Permission::Env(_) => return None,
+        })
+    }
+
+    /// Parses a grant as written in `allow` lists.
+    ///
+    /// # Errors
+    ///
+    /// Fails for unknown permissions, and for a bare `env`: each variable is
+    /// granted by name.
+    pub fn parse(value: &str) -> Result<Self, InvalidValue> {
+        if let Some(name) = value.strip_prefix(ENV_PREFIX) {
+            return EnvVarName::new(name)
+                .map(Permission::Env)
+                .map_err(|e| InvalidValue::new("permission", value, e.reason().to_owned()));
         }
+        if value == "env" {
+            return Err(InvalidValue::new(
+                "permission",
+                value,
+                "environment variables are granted one at a time: write env:<NAME> for each (`grimoire show <id>` lists them)",
+            ));
+        }
+        Permission::FIXED
+            .into_iter()
+            .find(|p| p.fixed_name() == Some(value))
+            .ok_or_else(|| {
+                InvalidValue::new(
+                    "permission",
+                    value,
+                    "must be one of filesystem-read, filesystem-write, network, shell, hooks, or env:<NAME>",
+                )
+            })
     }
 }
 
 impl fmt::Display for Permission {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.as_str())
+        match self {
+            Permission::Env(name) => write!(f, "{ENV_PREFIX}{name}"),
+            fixed => f.write_str(fixed.fixed_name().unwrap_or_default()),
+        }
     }
-}
-
-impl Permission {
-    /// Every permission, in `allow` order.
-    pub const ALL: [Permission; 6] = [
-        Permission::FilesystemRead,
-        Permission::FilesystemWrite,
-        Permission::Network,
-        Permission::Shell,
-        Permission::Env,
-        Permission::Hooks,
-    ];
 }
 
 impl FromStr for Permission {
     type Err = InvalidValue;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
-        Permission::ALL
-            .into_iter()
-            .find(|p| p.as_str() == value)
-            .ok_or_else(|| {
-                InvalidValue::new(
-                    "permission",
-                    value,
-                    "must be one of filesystem-read, filesystem-write, network, shell, env, hooks",
-                )
-            })
+        Self::parse(value)
+    }
+}
+
+impl TryFrom<String> for Permission {
+    type Error = InvalidValue;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Self::parse(&value)
+    }
+}
+
+impl From<Permission> for String {
+    fn from(value: Permission) -> Self {
+        value.to_string()
+    }
+}
+
+impl JsonSchema for Permission {
+    fn schema_name() -> Cow<'static, str> {
+        "Permission".into()
+    }
+
+    fn json_schema(_: &mut SchemaGenerator) -> Schema {
+        json_schema!({
+            "type": "string",
+            "pattern": "^(filesystem-read|filesystem-write|network|shell|hooks|env:[A-Z_][A-Z0-9_]{0,127})$",
+            "description": "A granted permission: filesystem-read, filesystem-write, network, shell, hooks, or env:<NAME> for one environment variable."
+        })
     }
 }
 
@@ -351,7 +404,43 @@ mod tests {
             declared.missing(&granted),
             BTreeSet::from([Permission::Network])
         );
-        assert!(declared.covers(Permission::FilesystemRead));
-        assert!(!declared.covers(Permission::FilesystemWrite));
+        assert!(declared.covers(&Permission::FilesystemRead));
+        assert!(!declared.covers(&Permission::FilesystemWrite));
+    }
+
+    #[test]
+    fn environment_grants_name_each_variable() {
+        let token = Permission::parse("env:GITHUB_TOKEN").unwrap();
+        assert_eq!(token.to_string(), "env:GITHUB_TOKEN");
+        for text in [
+            "filesystem-read",
+            "filesystem-write",
+            "network",
+            "shell",
+            "hooks",
+        ] {
+            assert_eq!(Permission::parse(text).unwrap().to_string(), text);
+        }
+        assert!(
+            Permission::parse("env").is_err(),
+            "a bare env grant is refused"
+        );
+        assert!(Permission::parse("env:lower").is_err());
+        assert!(Permission::parse("env:").is_err());
+        assert!(Permission::parse("write").is_err());
+
+        let declared = Permissions {
+            env: vec![
+                EnvVarName::new("GITHUB_TOKEN").unwrap(),
+                EnvVarName::new("GITHUB_HOST").unwrap(),
+            ],
+            ..Permissions::default()
+        };
+        let granted = BTreeSet::from([token]);
+        assert_eq!(
+            declared.missing(&granted),
+            BTreeSet::from([Permission::Env(EnvVarName::new("GITHUB_HOST").unwrap())]),
+            "one more variable is one more grant"
+        );
     }
 }

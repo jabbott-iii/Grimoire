@@ -488,6 +488,10 @@
           ],
           "format": "uint32",
           "minimum": 0
+        },
+        "on-failure": {
+          "description": "What the client does when the hook cannot run: the binary is missing,\ncrashes, times out or prints invalid output.",
+          "$ref": "#/$defs/HookFailure"
         }
       },
       "additionalProperties": false,
@@ -534,6 +538,21 @@
       "description": "One argv element passed to the tool binary. Never interpreted by a shell.",
       "type": "string",
       "maxLength": 1024
+    },
+    "HookFailure": {
+      "description": "What a client does when a hook cannot run.",
+      "oneOf": [
+        {
+          "description": "The event goes ahead (the clients' default).",
+          "type": "string",
+          "const": "continue"
+        },
+        {
+          "description": "The event is blocked, as if the hook had refused it. For guards that must\nfail closed, such as a secret scanner. Only on `pre-tool-use` and\n`user-prompt-submit`, the events a hook can block.",
+          "type": "string",
+          "const": "block"
+        }
+      ]
     },
     "McpServerSpec": {
       "description": "MCP server settings.",

@@ -1,8 +1,8 @@
 [workspace]
 resolver = "3"
-# Code-bearing assets (catalog/tools/*, catalog/mcp-servers/*) join the workspace
-# when the first one is added in Phase 3 (architecture.md §4).
-members = ["crates/*", "xtask"]
+# Code-bearing assets are crates in their own asset directories (architecture.md §4).
+# Cargo rejects a glob that matches nothing, so each kind's glob arrives with its first asset.
+members = ["crates/*", "xtask", "catalog/tools/*", "catalog/mcp-servers/*"]
 
 [workspace.package]
 version = "0.1.0"
@@ -21,6 +21,8 @@ agent-grimoire-model = { path = "crates/agent-grimoire-model", version = "0.1.0"
 agent-grimoire-resolve = { path = "crates/agent-grimoire-resolve", version = "0.1.0" }
 # Test fixtures shared by the crates' tests; never published.
 agent-grimoire-testkit = { path = "crates/agent-grimoire-testkit" }
+# Shared hardening for MCP server assets; never published (ADR-0002).
+agent-grimoire-mcp = { path = "crates/agent-grimoire-mcp" }
 
 # >= 4.0.3: earlier 4.x releases are affected by RUSTSEC-2026-0482 (sandbox escape).
 cap-fs-ext = "4.0.3"
@@ -31,6 +33,9 @@ clap = { version = "4.6.8", features = ["derive"] }
 libc = "0.2.191"
 # Format-preserving JSON edits; always parsed with every non-standard extension off.
 jsonc-parser = { version = "0.34.0", features = ["cst", "serde_json"] }
+# Secret detection in the secret-guard tool.
+memchr = "2.8.3"
+regex = "1.13.1"
 # >= 0.13.6 for RUSTSEC-2026-0414 and RUSTSEC-2026-0433; wikilinks stay disabled.
 pulldown-cmark = { version = "0.13.6", default-features = false }
 # preserve_order: schema key order follows field order and cannot be flipped by feature unification.
@@ -47,6 +52,24 @@ spdx = { version = "0.13.6", default-features = false }
 toml = "1.2.1"
 # Comment-preserving edits to grimoire.toml.
 toml_edit = "0.25.19"
+
+# --- MCP servers only (ADR-0002, ADR-0007). The grimoire CLI links none of these. ---
+# Unpadded base64url for JWKs in tests.
+base64 = "0.23.1"
+bytes = "1.12.1"
+http = "1.5.0"
+http-body-util = "0.1.5"
+hyper = { version = "1.12.0", features = ["server", "http1"] }
+hyper-util = { version = "0.1.21", features = ["tokio"] }
+# No crypto backend: a verify-only provider over rsa and p256 is installed at startup (ADR-0007).
+jsonwebtoken = { version = "12.0.0", default-features = false }
+p256 = { version = "0.14.0", default-features = false, features = ["ecdsa", "std"] }
+# >= 3.9.0 for every published rmcp advisory; auth* and local features stay off (ADR-0007).
+rmcp = { version = "3.10.0", default-features = false, features = ["server", "transport-io", "transport-streamable-http-server"] }
+# >= 0.10.0: the Marvin attack advisory (RUSTSEC-2023-0071) is patched there. RS256 needs pkcs1v15.
+rsa = { version = "0.10.0", default-features = false, features = ["std", "pkcs1v15"] }
+# >= 1.54.1 for RUSTSEC-2026-0384.
+tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "net", "signal", "time", "io-std", "sync"] }
 
 insta = "1.49.0"
 proptest = "1.12.0"

@@ -1,0 +1,24 @@
+format = 1
+id = "@@ID@@"
+kind = "tool"
+version = "0.1.0"
+summary = "One line saying what this tool does"
+description = """What the tool does, when an agent or a human runs it, and how its output is used."""
+license = "MIT OR Apache-2.0"
+maintainers = ["@@MAINTAINER@@"]
+tags = []
+maturity = "experimental"
+min-cli-version = "0.1.0"
+
+# Declare everything the binary can cause. A tool with hooks declares hooks = true.
+[permissions]
+
+[tool]
+binary = "@@BINARY@@"
+# Hook bindings run the binary automatically on client events, in exec form, e.g.
+# hooks = [{ event = "pre-tool-use", tools = ["edit"], args = ["check"], timeout-secs = 30 }]
+# and then: [clients.claude-code] outputs = [{ to = "hooks", strategy = "entry" }]
+
+# A tool without hooks writes nothing; listing a client records that it supports it.
+[clients.claude-code]
+outputs = []

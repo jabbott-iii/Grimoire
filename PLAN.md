@@ -1,7 +1,7 @@
 # Grimoire: implementation plan
 
-- **Status:** Phases 0 and 1 approved and committed 2026-11-16. **Phase 2 implemented 2026-11-16, awaiting review** (see §5, Phase 2 outcome).
-- **Date:** 2026-11-16
+- **Status:** Phases 0, 1 and 2 approved and committed 2026-11-16. **Phase 3 implemented, awaiting review** (2026-11-17).
+- **Date:** 2026-11-17
 
 ## Decisions recorded (2026-11-16)
 
@@ -12,6 +12,10 @@
 - **Local tooling approved:** Rust 1.96 (MSRV), cargo-deny, cargo-shear, zizmor, actionlint, gitleaks, and the `gh-actions-lock` extension.
 - **Phase 2, filesystem layer:** cap-std with scoped deny.toml entries (the maintainer's choice when asked, [ADR-0006](docs/adr/0006-filesystem-confinement.md)).
 - **Phase rules:** each phase ends with a report and a stop. Nothing is committed, pushed, tagged, published or registered by the agent; the maintainer does all of that.
+- **Phase 2 approved** (2026-11-16), and Phase 3 started.
+- **Phase 3 exemplars confirmed as proposed** (§5). The MCP server is named `project-docs`.
+- **Phase 3, MCP server auth:** RFC 9068 JWT access tokens verified locally against an operator-supplied JWKS file, with no outbound network (the maintainer's choice when asked; ADR-0007). This needs one `subtle` (BSD-3-Clause) license exception.
+- **Phase 3, rmcp policy entries:** skip exactly `syn@2.0.119`, and allow rmcp 3.10.0's six test-fixture files, each pinned by SHA-256, rather than trusting its build script (the maintainer's choice).
 
 ## Where things are
 
@@ -198,7 +202,48 @@ Deviations and refinements, each recorded where it applies:
 
 ### Phase 3: One exemplar per kind, end to end, plus scaffolding
 
-Candidates, to be confirmed at Phase 3 start:
+**Outcome (2026-11-17):** implemented and reviewed. Every gate that runs locally passes on Linux (329 tests). CI on macOS and Windows still needs a push.
+
+What was built:
+- **Exemplars** (all `0.1.0`, `experimental`), each installed from the embedded catalog end to end in `crates/agent-grimoire/tests/builtin.rs`:
+  - `conventional-commits` (rule);
+  - `adr-writer` (skill, with two references and a template);
+  - `security-reviewer` (agent; `read` and `search`);
+  - `secret-guard` (tool with fail-closed Claude Code hooks; 16 vendor-format rules);
+  - `project-docs` (MCP server: `list_docs`, `read_doc`, `search_docs`, `list_adrs`).
+- **Bundles:** `security-baseline` and `rust-cli`.
+- **MCP hardening:** `crates/agent-grimoire-mcp`, used by every server; the auth decision is [ADR-0007](docs/adr/0007-mcp-server-authorization.md).
+- **Scaffolding:** `cargo xtask new <kind> <id>`, with templates in `xtask/templates/`. A CI job generates a tool and a server and builds, lints, tests and validates them.
+- **Specs:** five research topics, each re-checked by a skeptic. They are recorded in `docs/specs.md` (Phase 3 additions).
+- **Docs:** `docs/security-model.md` gains MCP servers, tool hooks and model-facing content (prompt injection).
+
+Design settled, each recorded where it applies:
+- **Environment consent per variable** (`env:<NAME>`; `architecture.md` §6.3, settles §11.7).
+- **HTTP transport `url`** (`ServerUrl`; §6.2, settles §11.8).
+- **Server-side auth** (ADR-0007, settles §11.4).
+- **`on-failure = "block"`** for hook bindings (§3.4).
+- **`permissions.env` vs `[mcp-server] env`:** what a server reads versus what the client forwards (§6.1).
+- **New catalog checks** (§6.4):
+  - for every asset crate: `crate/core-dependency`, `crate/path-dependency` and `crate/nested-manifest`;
+  - for MCP servers: `crate/hardening`, `crate/raw-transport` and `crate/declared-tools-test`;
+  - in manifests and configs: `manifest/hook-on-failure` and `resolve/options-kind`.
+
+**Review (2026-11-17).** A multi-agent review of the Phase 3 change raised 43 findings. Each was checked by an independent verifier: 41 were confirmed and 2 were uncertain, and all 43 are fixed. The main ones:
+- **2025-11-25 clients over HTTP** were refused, which included the stable Claude Code release. The server now checks the protocol version itself, after authorization, and serves both versions statelessly (ADR-0007).
+- **A client could keep a connection slot forever** by pipelining requests or stalling. Keep-alive is now off, and every connection is closed after 75 seconds. A test that sends its body slowly pins this; the test was checked against the old code, where it fails.
+- **The docs claimed checks that did not exist.** `crate/raw-transport` and `crate/declared-tools-test` now exist, and the docs say they are text searches and that review is the guarantee.
+- **Token checks:** an `iss` array that merely contained the issuer was accepted; a non-Bearer scheme got 400 instead of 401; a well-formed but empty key set did not revoke the previous keys.
+- **`secret-guard`:** fixed-length patterns missed longer tokens; secrets in object keys and target paths went unscanned; a label could echo a secret.
+- **`project-docs`:** dependency and build directories were skipped only in listings, not in reads; search offsets were wrong after case folding; a search could read past its budget.
+- **Docs and templates:** the server template now requires `--no-auth`, `cargo xtask new` formats what it generates, and the CI scaffold job checks formatting.
+
+Deviations from the candidate list:
+- `secret-guard` uses subcommands: `scan`, `hook` and `rules`.
+- `secret-guard`'s hooks check every tool call, not only edits.
+- `project-docs` serves tools only, not resources.
+- `project-docs` takes its root from `--root` or `CLAUDE_PROJECT_DIR`, and refuses to start without one.
+
+Candidates, as confirmed at Phase 3 start:
 
 | Kind | Candidate |
 |---|---|

@@ -401,6 +401,11 @@ fn tool_and_hook_rules() {
             "manifest/hook-timeout",
         ),
         (
+            "event = \"pre-tool-use\"",
+            "event = \"post-tool-use\", on-failure = \"block\"",
+            "manifest/hook-on-failure",
+        ),
+        (
             "outputs = [{ to = \"hooks\", strategy = \"entry\" }]",
             "outputs = []",
             "manifest/tool-outputs",
@@ -475,7 +480,7 @@ bundles = ["security-baseline"]
 [assets]
 rust-errors = "^1"
 changelog-writer = { version = "^0.3", clients = ["claude-code"], allow = ["shell"] }
-github-insights = { version = "^1", allow = ["network", "env"], env = { GITHUB_TOKEN = "GH_TOKEN" }, transport = "stdio" }
+github-insights = { version = "^1", allow = ["network", "env:GITHUB_TOKEN"], env = { GITHUB_TOKEN = "GH_TOKEN" }, transport = "stdio" }
 "#;
     let c = ProjectConfig::from_toml(text).unwrap();
     assert!(
@@ -814,6 +819,21 @@ fn project_config_rules() {
             "clients = [\"claude-code\", \"claude-code\"] }",
             "config/asset-clients",
         ),
+        (
+            "clients = [\"claude-code\"] }",
+            "clients = [\"claude-code\"], transport = \"streamable-http\" }",
+            "config/url-missing",
+        ),
+        (
+            "clients = [\"claude-code\"] }",
+            "clients = [\"claude-code\"], url = \"http://127.0.0.1:8931/mcp\" }",
+            "config/url-transport",
+        ),
+        (
+            "clients = [\"claude-code\"] }",
+            "clients = [\"claude-code\"], transport = \"streamable-http\", url = \"http://127.0.0.1:8931/mcp\", env = { A = \"B\" } }",
+            "config/env-transport",
+        ),
     ] {
         let c = ProjectConfig::from_toml(&CONFIG.replacen(from, to, 1)).unwrap();
         let found: Vec<_> = validate::project_config(&c)
@@ -824,6 +844,29 @@ fn project_config_rules() {
             found.contains(&code),
             "expected {code} for `{to}`, got {found:?}"
         );
+    }
+}
+
+#[test]
+fn server_urls_are_checked_while_parsing() {
+    let with_url = |url: &str| {
+        CONFIG.replacen(
+            "clients = [\"claude-code\"] }",
+            &format!(
+                "clients = [\"claude-code\"], transport = \"streamable-http\", url = {url:?} }}"
+            ),
+            1,
+        )
+    };
+    let c = ProjectConfig::from_toml(&with_url("http://127.0.0.1:8931/mcp")).unwrap();
+    assert_eq!(validate::project_config(&c), Vec::new());
+    for bad in [
+        "http://docs.example.com/mcp",
+        "https://docs.example.com/mcp?access_token=x",
+        "https://me:secret@docs.example.com/mcp",
+    ] {
+        let e = ProjectConfig::from_toml(&with_url(bad)).unwrap_err();
+        assert!(e.to_string().contains("server URL"), "{bad}: {e}");
     }
 }
 
@@ -939,4 +982,20 @@ fn canonicalize_sorts_assets_outputs_and_selectors() {
         .map(ToString::to_string)
         .collect();
     assert_eq!(selectors, ["direct", "tag:rust"]);
+}
+
+#[test]
+fn fail_closed_hooks_are_allowed_where_events_can_be_blocked() {
+    for event in ["pre-tool-use", "user-prompt-submit"] {
+        let text = TOOL.replace(
+            "event = \"pre-tool-use\"",
+            &format!("event = \"{event}\", on-failure = \"block\""),
+        );
+        let text = if event == "user-prompt-submit" {
+            text.replace("tools = [\"edit\"], ", "")
+        } else {
+            text
+        };
+        assert_eq!(codes(&parse(&text)), Vec::<&str>::new(), "{event}");
+    }
 }

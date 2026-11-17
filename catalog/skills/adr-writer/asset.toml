@@ -1,0 +1,36 @@
+format = 1
+id = "adr-writer"
+kind = "skill"
+version = "0.1.0"
+summary = "Writes, numbers and supersedes architecture decision records, and answers why a decision was made"
+description = """An Agent Skills skill for architecture decision records (ADRs). The agent uses it when it records an architecture or technical decision, supersedes or deprecates an ADR, answers why a past decision was made, or keeps an ADR log in order.
+
+It finds the project's ADR directory (`docs/adr`, `doc/adr`, `docs/decisions` or `adr`), picks the next number, and fills a bundled template with value-neutral context, a "We will" decision and every consequence. It sets new ADRs to Proposed, and changes only the status line of an ADR it supersedes. When the `project-docs` MCP server is installed, the skill uses its `list_adrs` tool to see the existing ADRs.
+
+It ships no scripts: the agent edits ADR files with its own tools."""
+license = "MIT OR Apache-2.0"
+maintainers = ["jabbott-iii"]
+tags = ["adr", "architecture", "decisions", "documentation"]
+maturity = "experimental"
+min-cli-version = "0.1.0"
+
+# No scripts/, so no shell permission. The agent writes ADR files with its own
+# tools, under the permissions the user has given the agent.
+[permissions]
+
+[skill]
+
+# Every client installs SKILL.md and everything under references/ and assets/.
+[clients.claude-code]
+outputs = [
+    { src = "SKILL.md", to = "skills:adr-writer/SKILL.md", strategy = "copy" },
+    { src = "references", to = "skills:adr-writer/references", strategy = "copy" },
+    { src = "assets", to = "skills:adr-writer/assets", strategy = "copy" },
+]
+
+[clients.agents-md]
+outputs = [
+    { src = "SKILL.md", to = "skills:adr-writer/SKILL.md", strategy = "copy" },
+    { src = "references", to = "skills:adr-writer/references", strategy = "copy" },
+    { src = "assets", to = "skills:adr-writer/assets", strategy = "copy" },
+]

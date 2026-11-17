@@ -1,0 +1,23 @@
+format = 1
+id = "@@ID@@"
+kind = "rule"
+version = "0.1.0"
+summary = "One line saying what this rule makes the agent do"
+description = """What the rule covers, when it applies, and why. Shown by `grimoire show`."""
+license = "MIT OR Apache-2.0"
+maintainers = ["@@MAINTAINER@@"]
+tags = []
+maturity = "experimental"
+min-cli-version = "0.1.0"
+
+# Rules are pure text and declare no permissions.
+
+[rule]
+# Globs the rule applies to. Leave empty for a rule that is always on.
+paths = []
+
+[clients.claude-code]
+outputs = [{ src = "rule.md", to = "rules:@@ID@@.md", strategy = "render" }]
+
+[clients.agents-md]
+outputs = [{ src = "rule.md", to = "instructions", strategy = "block" }]

@@ -33,6 +33,9 @@ exceptions = [
     { crate = "encoding_rs", allow = ["BSD-3-Clause"] },
     # Through serde_json/schemars `preserve_order` (indexmap -> hashbrown). Zlib is OSI-approved and permissive.
     { crate = "foldhash", allow = ["Zlib"] },
+    # Constant-time primitives under every pure-Rust signature verifier (crypto-bigint, elliptic-curve),
+    # used by the MCP servers' JWT checks (ADR-0007). BSD-3-Clause is OSI-approved and permissive.
+    { crate = "subtle", allow = ["BSD-3-Clause"] },
     { crate = "unicode-ident", allow = ["Unicode-3.0"] },
     # Windows-only, through cap-primitives (ADR-0006). Apache-2.0 plus the LLVM exception,
     # which only relaxes Apache-2.0's terms.
@@ -70,6 +73,9 @@ skip = [
     { crate = "windows-targets@0.53.5", reason = "pulled in by windows-sys 0.60.2 (see above)" },
     { crate = "windows_x86_64_msvc@0.52.6", reason = "pulled in by windows-targets 0.52.6 (see above)" },
     { crate = "windows_aarch64_msvc@0.52.6", reason = "pulled in by windows-targets 0.52.6 (see above)" },
+    # ADR-0007: two crates in the MCP servers' graph still require syn 2: tracing-attributes 0.1.31
+    # (rmcp -> tracing, default features) and zeroize_derive 1.5.0 (jsonwebtoken -> zeroize "derive").
+    { crate = "syn@2.0.119", reason = "tracing-attributes 0.1.31 (via rmcp) and zeroize_derive 1.5.0 (via jsonwebtoken) require syn 2; the rest of the graph uses syn 3" },
 ]
 skip-tree = []
 
@@ -96,6 +102,17 @@ bypass = [
     { crate = "windows_aarch64_msvc@0.52.6", allow = [{ path = "lib/windows.0.52.0.lib", checksum = "ca85dd7757f338ba00d0bc19229f176ee426a707425ee4fcf205ec491a95bd5a" }] },
     { crate = "windows_x86_64_msvc@0.53.1", allow = [{ path = "lib/windows.0.53.0.lib", checksum = "34b8a86432177dc82c1fe0d34a941502e27a3b3f36bd7e54d6b96a70530bb285" }] },
     { crate = "windows_aarch64_msvc@0.53.1", allow = [{ path = "lib/windows.0.53.0.lib", checksum = "823c9f94849453e83268d226660c74a9d655c8891ce95331054c40da5ae02a04" }] },
+    # ADR-0007: the published rmcp 3.10.0 ships its own JS and Python interop tests, which are never
+    # built or run. Each is pinned to the exact bytes checked on 2026-11-16. Its build.rs (a git-hook
+    # installer that acts only next to a .githooks directory) is not trusted as a whole.
+    { crate = "rmcp@3.10.0", allow = [
+        { path = "tests/test_with_js/client.js", checksum = "1f1b26431e26706dc2d380f9fc3475bc78ada1c0c0ebe7302c1c59267a64b123" },
+        { path = "tests/test_with_js/server.js", checksum = "760f0721c1b9f44272cc3416a71172a9163044c12d2b58310c72d3286081df81" },
+        { path = "tests/test_with_js/streamable_client.js", checksum = "af4ccaf89ec0b34cda1b2af71edf9acd04924410a4ed4f579a0ccbd1360ec18a" },
+        { path = "tests/test_with_js/streamable_server.js", checksum = "01074613ae942d99028c3f31b1ff35e64817c6de30ab8beabeb3823cb97e7498" },
+        { path = "tests/test_with_python/client.py", checksum = "522e2401016ad7d87efa6b13a113c618cc1c1ee568b8f51bd1b92a605668b0ab" },
+        { path = "tests/test_with_python/server.py", checksum = "d27a404deb187a66f6b521d2deea4743bb8dc1e64179f2bf2e3a6cfb58aaa4d9" },
+    ] },
 ]
 
 [sources]

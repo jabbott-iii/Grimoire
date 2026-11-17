@@ -109,7 +109,7 @@ bundles = ["security-baseline"]
 commit-style = "^1.0.0"
 rust-errors = "^1.2.0"
 adr-writer = "^0.3.1"
-docs-index = { version = "^2.0.0", allow = ["filesystem-read", "env"] }
+docs-index = { version = "^2.0.0", allow = ["filesystem-read", "env:DOCS_TOKEN"] }
 
 [allow]
 secret-guard = ["filesystem-read", "hooks"]

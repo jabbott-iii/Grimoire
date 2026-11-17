@@ -8,7 +8,8 @@ use serde::de::{self, MapAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::{
-    AssetId, ClientId, EnvVarName, Format, ParseError, Permission, Tag, Transport, VersionReq,
+    AssetId, ClientId, EnvVarName, Format, ParseError, Permission, ServerUrl, Tag, Transport,
+    VersionReq,
 };
 
 /// A `grimoire.toml` document: the desired state of a project.
@@ -136,7 +137,12 @@ pub struct AssetOptions {
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     #[schemars(schema_with = "crate::schema::keyed_map::<EnvVarName, EnvVarName>")]
     pub env: BTreeMap<EnvVarName, EnvVarName>,
-    /// For MCP servers: the transport to configure.
+    /// For MCP servers: the transport to configure. `stdio` (the default) has
+    /// the client start the server; `streamable-http` connects to a server the
+    /// user runs, at `url`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub transport: Option<Transport>,
+    /// For MCP servers with `transport = "streamable-http"`: the server's endpoint.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub url: Option<ServerUrl>,
 }

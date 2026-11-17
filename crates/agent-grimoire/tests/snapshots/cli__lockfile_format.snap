@@ -58,7 +58,7 @@ version = "2.0.0"
 source = "builtin"
 manifest = "sha256:…"
 selected-by = ["direct"]
-allow = ["filesystem-read", "env"]
+allow = ["filesystem-read", "env:DOCS_TOKEN"]
 
 [[asset.output]]
 clients = ["claude-code"]

@@ -222,7 +222,8 @@ fn string_array<'a>(values: impl IntoIterator<Item = &'a str>) -> Array {
 }
 
 fn permissions_array(perms: &BTreeSet<Permission>) -> Array {
-    string_array(perms.iter().map(|p| p.as_str()))
+    let names: Vec<String> = perms.iter().map(ToString::to_string).collect();
+    string_array(names.iter().map(String::as_str))
 }
 
 impl ConfigEdit {

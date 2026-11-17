@@ -103,14 +103,24 @@ min-cli-version = "0.1.0"
             } else {
                 format!("grimoire-mcp-{id}")
             };
+            // MCP servers must serve through the shared hardening crate.
+            let deps = if kind == "mcp-server" {
+                "\n[dependencies]\nagent-grimoire-mcp.workspace = true\n"
+            } else {
+                ""
+            };
             self.write(
                 &format!("{dir}/Cargo.toml"),
                 format!(
-                    "[package]\nname = \"{binary}\"\nversion = \"{version}\"\nedition = \"2024\"\npublish = false\n"
+                    "[package]\nname = \"{binary}\"\nversion = \"{version}\"\nedition = \"2024\"\npublish = false\n{deps}"
                 ),
             );
             self.write(&format!("{dir}/src/main.rs"), "fn main() {}\n");
-            self.write(&format!("{dir}/tests/cli.rs"), "#[test]\nfn works() {}\n");
+            // Fixture tests are never built; a server's must name the declared-tools check.
+            self.write(
+                &format!("{dir}/tests/cli.rs"),
+                "#[test]\nfn works() {\n    // agent_grimoire_mcp::testing::declared_tools_match\n}\n",
+            );
         } else {
             self.write(&format!("{dir}/evals/cases.md"), "- behaves\n");
         }

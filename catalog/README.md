@@ -11,8 +11,10 @@ Every asset lives in its own directory, `catalog/<kind>/<id>/`. Bundles live in 
 | rule | `rules/<id>/` | `rule.md`: Markdown instructions loaded automatically |
 | skill | `skills/<id>/` | An [Agent Skills](https://agentskills.io/specification) directory: `SKILL.md` and optional `scripts/`, `references/`, `assets/` |
 | agent | `agents/<id>/` | `agent.md`: the subagent's system prompt |
-| tool | `tools/<id>/` | A Rust crate building `grimoire-tool-<id>` (from Phase 3) |
-| mcp-server | `mcp-servers/<id>/` | A Rust crate building `grimoire-mcp-<id>` on rmcp (from Phase 3) |
+| tool | `tools/<id>/` | A Rust crate building `grimoire-tool-<id>` |
+| mcp-server | `mcp-servers/<id>/` | A Rust crate building `grimoire-mcp-<id>` on rmcp, through `agent-grimoire-mcp` |
+
+Start a new asset with `cargo xtask new <kind> <id> --maintainer <login>` (or `cargo xtask new bundle <id> --maintainer <login> <asset>...`). Every template validates as generated, and the code templates build and pass their own tests. The exemplars show a finished asset of each kind: `rules/conventional-commits`, `skills/adr-writer`, `agents/security-reviewer`, `tools/secret-guard` and `mcp-servers/project-docs`.
 
 ## Every asset needs
 
@@ -41,12 +43,13 @@ Every asset lives in its own directory, `catalog/<kind>/<id>/`. Bundles live in 
   - A rule for both `claude-code` and `agents-md` uses the same `src` for both, because Claude Code also reads `AGENTS.md`.
 - **Rule and agent files are named `<id>.md`.** Claude Code discovers only `.md` files.
 - **Hook bindings list each capability once.** Avoid `search` in hooks: Claude Code's main session searches with Bash on macOS, Linux and WSL.
+- **Guards fail closed.** A hook that must never be skipped, such as a secret scanner, sets `on-failure = "block"`, so a missing or broken binary blocks the event. Say so in the README, with the way out. Only `pre-tool-use` and `user-prompt-submit` bindings may block.
 - **MCP tool names used in `mcp:<server>/<tool>` capabilities avoid `.`.** Claude Code may rename such tools, so the claude-code adapter refuses them.
 - **An agent's `description` is its delegation text.** Clients show it to decide when to hand work to the agent, so say when to use it.
 - **Agents list their tools explicitly.** `[agent] tools = [...]` is required; `[]` is legal. Capabilities that imply a permission must be declared under `[permissions]`: `read`/`search` imply filesystem `read`, `edit` implies filesystem `write`, `execute` implies `shell`, and `web` implies `network`. An `mcp:<server>` capability needs that server in `[requires]`.
 - **Permissions match behaviour.**
   - A tool with `hooks` declares `hooks = true`, and a tool without hooks must not.
-  - Every environment variable an MCP server reads is listed in `permissions.env`.
+  - Every environment variable an MCP server reads is listed in `permissions.env`, and needs consent by name (`env:<NAME>`). `[mcp-server] env` lists only the variables the client must forward from the user's environment; one the client sets itself, such as `CLAUDE_PROJECT_DIR`, is in `permissions.env` alone.
   - A skill that bundles `scripts/` declares `shell = true`.
 - **Skill references.**
   - Links (`[text](path)`, images, HTML `src`/`href`) must name a file inside the skill that every client installs. `file:` URLs are refused.
@@ -56,5 +59,10 @@ Every asset lives in its own directory, `catalog/<kind>/<id>/`. Bundles live in 
 - **Removing an asset** is allowed only if it was already `maturity = "deprecated"` (with a named `replacement`) at the comparison base: on `main` for a pull request, or at the previous tip for a push. Deprecate it in an earlier change first.
 - **Versions** are SemVer without build metadata (`1.2.3`, `1.2.3-rc.1`). The ids `synced` and `grimoire` are reserved, as are the prefixes above. MCP servers can't be named `workspace` or `computer-use`, which Claude Code reserves for built-in servers.
 - **An MCP server started with no arguments speaks stdio.** That is how clients are configured to start it.
+- **MCP servers serve through `agent-grimoire-mcp`**, which holds the transport, limit and authorization defaults ([ADR-0007](../docs/adr/0007-mcp-server-authorization.md)).
+  - The crate must depend on it, and `src/` must not use rmcp's stdio or Streamable HTTP transports directly.
+  - A test must call `agent_grimoire_mcp::testing::declared_tools_match`, so the declared tools stay true.
+  - These source checks are plain text searches. Review still decides.
+- **Asset crates stand alone.** No dependency on Grimoire's core crates, no `path` or `git` dependency except on `agent-grimoire-mcp`, and no `Cargo.toml` below the asset's own.
 - **The catalog is embedded in the binary.** After changing anything here, run `cargo xtask pack-catalog`; CI fails if the pack is stale.
 - **No symlinks**, and no files over 1 MiB. Every path must be portable across Linux, macOS and Windows: ASCII only, no Windows reserved names, and no two paths that differ only in letter case.

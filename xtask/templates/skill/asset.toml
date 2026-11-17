@@ -1,0 +1,23 @@
+format = 1
+id = "@@ID@@"
+kind = "skill"
+version = "0.1.0"
+summary = "One line saying what this skill does"
+description = """What the skill does and when an agent should use it."""
+license = "MIT OR Apache-2.0"
+maintainers = ["@@MAINTAINER@@"]
+tags = []
+maturity = "experimental"
+min-cli-version = "0.1.0"
+
+# A skill that bundles scripts/ declares shell = true.
+[permissions]
+
+[skill]
+
+# Every client installs SKILL.md and everything under scripts/, references/ and assets/.
+[clients.claude-code]
+outputs = [{ src = "SKILL.md", to = "skills:@@ID@@/SKILL.md", strategy = "copy" }]
+
+[clients.agents-md]
+outputs = [{ src = "SKILL.md", to = "skills:@@ID@@/SKILL.md", strategy = "copy" }]

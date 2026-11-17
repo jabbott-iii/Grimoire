@@ -220,10 +220,13 @@ outputs = [{{ to = "mcp", strategy = "entry" }}]
     )
     .write(
         &format!("{dir}/Cargo.toml"),
-        "[package]\nname = \"grimoire-mcp-docs-index\"\nversion = \"1.0.0\"\nedition = \"2024\"\npublish = false\n",
+        "[package]\nname = \"grimoire-mcp-docs-index\"\nversion = \"1.0.0\"\nedition = \"2024\"\npublish = false\n\n[dependencies]\nagent-grimoire-mcp.workspace = true\n",
     )
     .write(&format!("{dir}/src/main.rs"), "fn main() {}\n")
-    .write(&format!("{dir}/tests/protocol.rs"), "#[test]\nfn lists_tools() {}\n");
+    .write(
+        &format!("{dir}/tests/protocol.rs"),
+        "#[test]\nfn lists_tools() {\n    // agent_grimoire_mcp::testing::declared_tools_match\n}\n",
+    );
     metadata(&f, dir);
 
     // Tool with a hook.
@@ -590,6 +593,34 @@ fn code_assets_are_checked_as_crates() {
     let f = valid();
     f.remove("tools/secret-guard/Cargo.toml");
     f.assert_code("crate/missing");
+}
+
+#[test]
+fn servers_use_the_hardening_crate_and_no_asset_uses_core_crates() {
+    let f = valid();
+    f.edit("mcp-servers/docs-index/Cargo.toml", |t| {
+        t.replace("agent-grimoire-mcp.workspace = true\n", "")
+    });
+    f.assert_code("crate/hardening");
+
+    // Only a normal dependency counts.
+    let f = valid();
+    f.edit("mcp-servers/docs-index/Cargo.toml", |t| {
+        t.replace("[dependencies]", "[dev-dependencies]")
+    });
+    f.assert_code("crate/hardening");
+
+    for dependency in [
+        "[dependencies]\nagent-grimoire-model.workspace = true\n",
+        "[dev-dependencies]\nagent-grimoire-catalog = { path = \"../../../crates/agent-grimoire-catalog\" }\n",
+        "[target.'cfg(unix)'.dependencies]\nalias = { package = \"agent-grimoire-install\", path = \"x\" }\n",
+    ] {
+        let f = valid();
+        f.edit("tools/secret-guard/Cargo.toml", |t| {
+            format!("{t}\n{dependency}")
+        });
+        f.assert_code("crate/core-dependency");
+    }
 }
 
 #[test]
@@ -1264,4 +1295,52 @@ fn rules_cannot_carry_markers_or_frontmatter() {
         "Use typed errors:\n\n```rust\nfn f() {}\n",
     );
     f.assert_code("rule/unclosed-fence");
+}
+
+#[test]
+fn deprecated_dependency_tables_are_read_too() {
+    let f = valid();
+    f.edit("tools/secret-guard/Cargo.toml", |t| {
+        format!("{t}\n[build_dependencies]\nagent-grimoire-install.workspace = true\n")
+    });
+    f.assert_code("crate/core-dependency");
+}
+
+#[test]
+fn asset_crates_cannot_hide_dependencies() {
+    // A helper crate inside the asset directory.
+    let f = valid();
+    f.write(
+        "tools/secret-guard/helper/Cargo.toml",
+        "[package]\nname = \"helper\"\n[dependencies]\nagent-grimoire-model.workspace = true\n",
+    );
+    f.assert_code("crate/nested-manifest");
+    // Path and git dependencies.
+    for dependency in [
+        "[dependencies]\nhelper = { path = \"helper\" }\n",
+        "[dev-dependencies]\nx = { path = \"../../../xtask\" }\n",
+        "[dependencies]\ny = { git = \"https://example.com/y\", rev = \"abc\" }\n",
+    ] {
+        let f = valid();
+        f.edit("tools/secret-guard/Cargo.toml", |t| {
+            format!("{t}\n{dependency}")
+        });
+        f.assert_code("crate/path-dependency");
+    }
+}
+
+#[test]
+fn servers_serve_through_the_hardening_crate_and_test_their_declared_tools() {
+    let f = valid();
+    f.write(
+        "mcp-servers/docs-index/src/main.rs",
+        "fn main() { let _ = rmcp::transport::stdio(); }\n",
+    );
+    f.assert_code("crate/raw-transport");
+    let f = valid();
+    f.write(
+        "mcp-servers/docs-index/tests/protocol.rs",
+        "#[test]\nfn lists_tools() {}\n",
+    );
+    f.assert_code("crate/declared-tools-test");
 }

@@ -72,8 +72,10 @@ pub(crate) enum Command {
         #[arg(required = true, value_name = "ID|bundle:ID|tag:TAG")]
         specs: Vec<String>,
         /// Accept these permissions for the assets being added (comma-separated).
-        #[arg(long, value_delimiter = ',', value_parser = parse_permission)]
-        allow: Vec<Permission>,
+        /// `env:NAME` accepts one environment variable; a bare `env` accepts every
+        /// variable they read now, and grimoire.toml records each one by name.
+        #[arg(long, value_delimiter = ',', value_parser = parse_allow)]
+        allow: Vec<AllowArg>,
         /// Also run `apply`.
         #[arg(long)]
         apply: bool,
@@ -130,9 +132,23 @@ pub(crate) struct ApplyArgs {
     pub(crate) write_new: bool,
 }
 
-fn parse_permission(value: &str) -> Result<Permission, String> {
+/// One `--allow` value.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum AllowArg {
+    /// A permission, including `env:NAME` for one variable.
+    Grant(Permission),
+    /// A bare `env`: every environment variable the named assets read now.
+    /// It is written to grimoire.toml as one `env:NAME` grant per variable.
+    AllEnv,
+}
+
+fn parse_allow(value: &str) -> Result<AllowArg, String> {
+    if value == "env" {
+        return Ok(AllowArg::AllEnv);
+    }
     value
         .parse()
+        .map(AllowArg::Grant)
         .map_err(|e: agent_grimoire_model::InvalidValue| e.reason().to_owned())
 }
 

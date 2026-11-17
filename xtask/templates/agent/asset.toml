@@ -1,0 +1,24 @@
+format = 1
+id = "@@ID@@"
+kind = "agent"
+version = "0.1.0"
+summary = "One line saying what this agent does"
+description = """Use this agent to … (this is the delegation text: say when the main agent should hand work to it, and what to give it)."""
+license = "MIT OR Apache-2.0"
+maintainers = ["@@MAINTAINER@@"]
+tags = []
+maturity = "experimental"
+min-cli-version = "0.1.0"
+
+# Every capability in agent.tools implies a permission declared here:
+# read/search -> filesystem = "read", edit -> filesystem = "write",
+# execute -> shell = true, web -> network = true.
+[permissions]
+filesystem = "read"
+
+[agent]
+# The least-privilege tool allow-list. [] grants no tools.
+tools = ["read", "search"]
+
+[clients.claude-code]
+outputs = [{ src = "agent.md", to = "agents:@@ID@@.md", strategy = "render" }]

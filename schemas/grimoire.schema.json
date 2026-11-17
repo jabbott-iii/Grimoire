@@ -122,39 +122,9 @@
       "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
     },
     "Permission": {
-      "description": "A permission a user grants in `grimoire.toml` (`allow = [...]`).",
-      "oneOf": [
-        {
-          "description": "Read files.",
-          "type": "string",
-          "const": "filesystem-read"
-        },
-        {
-          "description": "Read and write files.",
-          "type": "string",
-          "const": "filesystem-write"
-        },
-        {
-          "description": "Use the network.",
-          "type": "string",
-          "const": "network"
-        },
-        {
-          "description": "Run shell commands or other programs.",
-          "type": "string",
-          "const": "shell"
-        },
-        {
-          "description": "Read environment variables.",
-          "type": "string",
-          "const": "env"
-        },
-        {
-          "description": "Register automatic client hooks.",
-          "type": "string",
-          "const": "hooks"
-        }
-      ]
+      "description": "A granted permission: filesystem-read, filesystem-write, network, shell, hooks, or env:<NAME> for one environment variable.",
+      "type": "string",
+      "pattern": "^(filesystem-read|filesystem-write|network|shell|hooks|env:[A-Z_][A-Z0-9_]{0,127})$"
     },
     "AssetSelection": {
       "description": "A directly selected asset: a bare version requirement, or a table of options.",
@@ -211,10 +181,21 @@
           }
         },
         "transport": {
-          "description": "For MCP servers: the transport to configure.",
+          "description": "For MCP servers: the transport to configure. `stdio` (the default) has\nthe client start the server; `streamable-http` connects to a server the\nuser runs, at `url`.",
           "anyOf": [
             {
               "$ref": "#/$defs/Transport"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "url": {
+          "description": "For MCP servers with `transport = \"streamable-http\"`: the server's endpoint.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ServerUrl"
             },
             {
               "type": "null"
@@ -248,6 +229,12 @@
           "const": "streamable-http"
         }
       ]
+    },
+    "ServerUrl": {
+      "description": "Streamable HTTP endpoint: https://, or http:// only for localhost, 127.0.0.0/8 or [::1]. No user information, query or fragment.",
+      "type": "string",
+      "maxLength": 2048,
+      "pattern": "^https?://[A-Za-z0-9.:\\[\\]-]+(/[A-Za-z0-9/._~%-]*)?$"
     }
   }
 }

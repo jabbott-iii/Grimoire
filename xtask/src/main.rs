@@ -6,12 +6,15 @@
 //!   base with `REV`.
 //! - `pack-catalog [--check]`: write or check the catalog pack embedded in the
 //!   binary (ADR-0001).
+//! - `new <kind> <id> --maintainer LOGIN [MEMBER]...`: scaffold an asset, or a
+//!   bundle of existing assets, that validates as generated.
 //!
 //! Diagnostics go to stderr. Exit status: 0 success, 1 validation failure or
 //! stale files, 2 usage error.
 
 mod bumps;
 mod git;
+mod new;
 mod pack;
 mod schema;
 
@@ -50,6 +53,31 @@ enum Command {
         #[arg(long)]
         check: bool,
     },
+    /// Scaffold a new asset or bundle under catalog/.
+    New {
+        /// rule, skill, agent, tool, mcp-server or bundle.
+        #[arg(value_parser = new::What::parse)]
+        kind: new::What,
+        /// The new id, unique across the catalog.
+        #[arg(value_parser = parse_id)]
+        id: agent_grimoire_model::AssetId,
+        /// GitHub login of the maintainer.
+        #[arg(long, value_parser = parse_login)]
+        maintainer: agent_grimoire_model::GithubLogin,
+        /// For bundles: the member assets.
+        members: Vec<String>,
+        /// Catalog directory, relative to the repository root.
+        #[arg(long, default_value = "catalog")]
+        catalog: PathBuf,
+    },
+}
+
+fn parse_id(value: &str) -> Result<agent_grimoire_model::AssetId, String> {
+    agent_grimoire_model::AssetId::new(value).map_err(|e| e.to_string())
+}
+
+fn parse_login(value: &str) -> Result<agent_grimoire_model::GithubLogin, String> {
+    agent_grimoire_model::GithubLogin::new(value).map_err(|e| e.to_string())
 }
 
 /// The repository root: the nearest ancestor of the current directory that holds
@@ -106,6 +134,13 @@ fn main() -> ExitCode {
         Command::Schema { check } => schema::run(&root, check),
         Command::Validate { catalog, base } => validate(&root, &catalog, base.as_deref()),
         Command::PackCatalog { check } => pack::run(&root, &root.join("catalog"), check),
+        Command::New {
+            kind,
+            id,
+            maintainer,
+            members,
+            catalog,
+        } => new_asset(&root, &catalog, kind, &id, &maintainer, &members),
     });
     match result {
         Ok(code) => code,
@@ -114,6 +149,45 @@ fn main() -> ExitCode {
             ExitCode::FAILURE
         }
     }
+}
+
+#[allow(clippy::print_stderr, reason = "xtask reports results on stderr")]
+fn new_asset(
+    root: &Path,
+    catalog: &Path,
+    kind: new::What,
+    id: &agent_grimoire_model::AssetId,
+    maintainer: &agent_grimoire_model::GithubLogin,
+    members: &[String],
+) -> Result<ExitCode, String> {
+    let (catalog_dir, display) = catalog_location(root, catalog)?;
+    let written = new::scaffold(&catalog_dir, kind, id, maintainer, members)?;
+    for file in &written {
+        eprintln!("new: wrote {display}/{file}");
+    }
+    // Line wrapping depends on the id's length, so format what was generated.
+    let rust: Vec<PathBuf> = written
+        .iter()
+        .filter(|f| {
+            Path::new(f.as_str())
+                .extension()
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("rs"))
+        })
+        .map(|f| catalog_dir.join(f))
+        .collect();
+    if !rust.is_empty() {
+        let formatted = std::process::Command::new("rustfmt")
+            .args(["--edition", "2024"])
+            .args(&rust)
+            .status();
+        if !formatted.is_ok_and(|s| s.success()) {
+            eprintln!("new: could not run rustfmt; run `cargo fmt` before committing");
+        }
+    }
+    eprintln!(
+        "new: fill in the content, then run `cargo xtask validate` and `cargo xtask pack-catalog`"
+    );
+    Ok(ExitCode::SUCCESS)
 }
 
 #[allow(clippy::print_stderr, reason = "xtask reports diagnostics on stderr")]

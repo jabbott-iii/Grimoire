@@ -50,7 +50,7 @@ adr-writer = "^0.3"
 security-reviewer = { version = "^1", allow = ["filesystem-read"] }
 silent-reviewer = "^1"
 secret-guard = { version = "^1", allow = ["filesystem-read", "hooks"] }
-docs-index = { version = "^2", allow = ["filesystem-read", "env"], env = { DOCS_TOKEN = "GH_TOKEN" } }
+docs-index = { version = "^2", allow = ["filesystem-read", "env:DOCS_CACHE", "env:DOCS_TOKEN"], env = { DOCS_TOKEN = "GH_TOKEN" } }
 "#;
 
 const PORTABLE_ASSETS: &str = r#"
@@ -164,37 +164,38 @@ enum Field {
 }
 
 #[test]
-fn unknown_env_overrides_and_http_are_refused() {
-    let source = catalog();
-    let version = Version::parse("0.1.0").unwrap();
-    for (text, code) in [
-        (
-            "docs-index = { version = \"^2\", allow = [\"filesystem-read\", \"env\"], env = { NOPE = \"X\" } }",
-            "adapter/env-unknown",
-        ),
-        (
-            "docs-index = { version = \"^2\", allow = [\"filesystem-read\", \"env\"], transport = \"streamable-http\" }",
-            "adapter/transport",
-        ),
-    ] {
-        let config = ProjectConfig::from_toml(&format!(
-            "format = 1\nclients = [\"claude-code\"]\n[assets]\n{text}\n"
-        ))
+fn streamable_http_entries_carry_only_the_url() {
+    let r = render_config(
+        &catalog(),
+        "format = 1\nclients = [\"claude-code\"]\n[assets]\ndocs-index = { version = \"^2\", allow = [\"filesystem-read\", \"env:DOCS_CACHE\", \"env:DOCS_TOKEN\"], transport = \"streamable-http\", url = \"http://127.0.0.1:8931/mcp\" }\n",
+    )
+    .unwrap();
+    let entry = r
+        .desired
+        .iter()
+        .find(|d| d.path.as_str() == ".mcp.json")
         .unwrap();
-        let resolution = resolve(
-            &source,
-            &Request {
-                config: &config,
-                lock: None,
-                cli_version: &version,
-                update: &Update::None,
-                available_clients: &AVAILABLE,
-            },
-        )
-        .unwrap();
-        let errors = render(&resolution).unwrap_err();
-        assert!(errors.iter().any(|d| d.code == code), "{errors:?}");
-    }
+    let Content::Entry { key, value } = &entry.content else {
+        panic!("an entry")
+    };
+    assert_eq!(key.as_str(), "/mcpServers/docs-index");
+    assert_eq!(
+        value,
+        &serde_json::json!({ "type": "http", "url": "http://127.0.0.1:8931/mcp" })
+    );
+}
+
+#[test]
+fn unknown_env_overrides_are_refused() {
+    let errors = render_config(
+        &catalog(),
+        "format = 1\nclients = [\"claude-code\"]\n[assets]\ndocs-index = { version = \"^2\", allow = [\"filesystem-read\", \"env:DOCS_CACHE\", \"env:DOCS_TOKEN\"], env = { NOPE = \"X\" } }\n",
+    )
+    .unwrap_err();
+    assert!(
+        errors.iter().any(|d| d.code == "adapter/env-unknown"),
+        "{errors:?}"
+    );
 }
 
 fn render_config(source: &Source, text: &str) -> Result<Rendered, Vec<Diagnostic>> {
@@ -301,4 +302,43 @@ fn managed_locations() {
     ] {
         assert!(!is_managed_location(&RelPath::new(bad).unwrap()), "{bad}");
     }
+}
+
+#[test]
+fn fail_closed_hooks_render_on_failure_block() {
+    let c = FixtureCatalog::new();
+    c.tool("guard", "1.0.0").edit_manifest("tools/guard", |m| {
+        m.replace(
+            "timeout-secs = 10 }",
+            "timeout-secs = 10, on-failure = \"block\" }, { event = \"user-prompt-submit\", args = [\"hook\"] }",
+        )
+    });
+    let r = render_config(
+        &c.source(),
+        "format = 1\nclients = [\"claude-code\"]\n[assets]\nguard = { version = \"^1\", allow = [\"filesystem-read\", \"hooks\"] }\n",
+    )
+    .unwrap();
+    let handlers: Vec<(String, serde_json::Value)> = r
+        .desired
+        .iter()
+        .filter_map(|d| match &d.content {
+            Content::Entry { key, value } => Some((key.as_str().to_owned(), value.clone())),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(handlers.len(), 2, "{handlers:?}");
+    let (_, pre) = handlers
+        .iter()
+        .find(|(k, _)| k.starts_with("/hooks/PreToolUse"))
+        .unwrap();
+    assert_eq!(pre["hooks"][0]["onFailure"], "block");
+    let (_, prompt) = handlers
+        .iter()
+        .find(|(k, _)| k.starts_with("/hooks/UserPromptSubmit"))
+        .unwrap();
+    assert!(prompt["hooks"][0].get("onFailure").is_none(), "{prompt}");
+    assert!(
+        prompt.get("matcher").is_none(),
+        "prompt hooks have no matcher: {prompt}"
+    );
 }

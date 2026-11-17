@@ -153,39 +153,9 @@
       "pattern": "^(direct|(bundle|requires):[a-z0-9]+(-[a-z0-9]+)*|tag:[a-z0-9]+(-[a-z0-9]+)*)$"
     },
     "Permission": {
-      "description": "A permission a user grants in `grimoire.toml` (`allow = [...]`).",
-      "oneOf": [
-        {
-          "description": "Read files.",
-          "type": "string",
-          "const": "filesystem-read"
-        },
-        {
-          "description": "Read and write files.",
-          "type": "string",
-          "const": "filesystem-write"
-        },
-        {
-          "description": "Use the network.",
-          "type": "string",
-          "const": "network"
-        },
-        {
-          "description": "Run shell commands or other programs.",
-          "type": "string",
-          "const": "shell"
-        },
-        {
-          "description": "Read environment variables.",
-          "type": "string",
-          "const": "env"
-        },
-        {
-          "description": "Register automatic client hooks.",
-          "type": "string",
-          "const": "hooks"
-        }
-      ]
+      "description": "A granted permission: filesystem-read, filesystem-write, network, shell, hooks, or env:<NAME> for one environment variable.",
+      "type": "string",
+      "pattern": "^(filesystem-read|filesystem-write|network|shell|hooks|env:[A-Z_][A-Z0-9_]{0,127})$"
     },
     "LockedOutput": {
       "description": "One unit of content Grimoire owns (`architecture.md` §7.2).",

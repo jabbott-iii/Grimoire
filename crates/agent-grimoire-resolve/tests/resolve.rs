@@ -314,21 +314,23 @@ fn permissions_must_be_accepted() {
         ["resolve/permission"]
     );
     let text = errors[0].to_string();
-    assert!(text.contains("filesystem-read, env"), "{text}");
+    assert!(text.contains("filesystem-read, env:DOCS_TOKEN"), "{text}");
     assert!(
-        text.contains("grimoire add docs-index --allow filesystem-read,env"),
+        text.contains("grimoire add docs-index --allow filesystem-read,env:DOCS_TOKEN"),
         "{text}"
     );
 
     // Write covers read.
-    let ok = config(&config_text(", allow = [\"filesystem-write\", \"env\"]"));
+    let ok = config(&config_text(
+        ", allow = [\"filesystem-write\", \"env:DOCS_TOKEN\"]",
+    ));
     let r = run(&source, &ok, None, &Update::None).unwrap();
-    let allow: Vec<&str> = r.assets[&id("docs-index")]
+    let allow: Vec<String> = r.assets[&id("docs-index")]
         .allow
         .iter()
-        .map(|p| p.as_str())
+        .map(ToString::to_string)
         .collect();
-    assert_eq!(allow, ["filesystem-read", "env"]);
+    assert_eq!(allow, ["filesystem-read", "env:DOCS_TOKEN"]);
 
     // Bundle members take their grants from [allow].
     let bundled =

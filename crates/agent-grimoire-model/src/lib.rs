@@ -37,7 +37,7 @@ pub use license::LicenseExpr;
 pub use lock::{LockedAsset, LockedOutput, Lockfile, Selector, SourceId, Unit};
 pub use manifest::{
     AgentSpec, AssetManifest, ConflictSpec, DeclaredTool, Deprecation, EnvVarSpec, HookBinding,
-    HookEvent, McpServerSpec, RuleSpec, SkillSpec, ToolSpec,
+    HookEvent, HookFailure, McpServerSpec, RuleSpec, SkillSpec, ToolSpec,
 };
 pub use output::{Anchor, ClientId, ClientOutputs, Destination, OutputSpec, Strategy};
 pub use path::{MAX_REL_PATH, RelPath};
@@ -45,7 +45,7 @@ pub use permissions::{Capability, FsAccess, Permission, Permissions};
 pub use scalars::{Format, Kind, Maturity, Sha256Digest, Transport};
 pub use values::{
     AssetId, BinaryName, Description, EntryKey, EnvVarName, GithubLogin, Glob, HookArg,
-    McpToolName, Reason, Summary, Tag,
+    McpToolName, Reason, ServerUrl, Summary, Tag,
 };
 pub use version::{Version, VersionReq};
 

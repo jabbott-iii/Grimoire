@@ -12,7 +12,7 @@ use agent_grimoire_model::{
 use agent_grimoire_resolve::{Request, Update, missing_permissions, resolve};
 use serde_json::{Value, json};
 
-use crate::cli::{ApplyArgs, Cli, Command};
+use crate::cli::{AllowArg, ApplyArgs, Cli, Command};
 use crate::out::{Exit, Out};
 use crate::pipeline::{Caller, prepare, prepare_uninstall, run_apply, show};
 use crate::project::{CONFIG, ConfigEdit, LOCK, Project, new_config, parse_config};
@@ -307,11 +307,11 @@ fn show_bundle(out: &mut Out<'_, '_>, bundle: &agent_grimoire_model::Bundle) -> 
 
 fn show_asset(out: &mut Out<'_, '_>, asset: &agent_grimoire_catalog::SourceAsset) -> Exit {
     let m = &asset.manifest;
-    let required: Vec<&str> = m
+    let required: Vec<String> = m
         .permissions
         .required()
         .into_iter()
-        .map(Permission::as_str)
+        .map(|p| p.to_string())
         .collect();
     out.line(format!(
         "{} {} ({}, {})",
@@ -428,7 +428,7 @@ fn add(
     out: &mut Out<'_, '_>,
     dir: Option<&PathBuf>,
     specs: &[String],
-    allow: &[Permission],
+    allow: &[AllowArg],
     then_apply: bool,
 ) -> Exit {
     let project = match Project::open(out, dir) {
@@ -496,11 +496,14 @@ fn add(
         .map(|(id, p)| {
             out.line(format!(
                 "add: allowed {} for {id}",
-                p.iter().map(|x| x.as_str()).collect::<Vec<_>>().join(", ")
+                p.iter()
+                    .map(ToString::to_string)
+                    .collect::<Vec<_>>()
+                    .join(", ")
             ));
             (
                 id.as_str().to_owned(),
-                json!(p.iter().map(|x| x.as_str()).collect::<Vec<_>>()),
+                json!(p.iter().map(ToString::to_string).collect::<Vec<_>>()),
             )
         })
         .collect();
@@ -644,30 +647,37 @@ fn consent(
     out: &mut Out<'_, '_>,
     edit: &mut ConfigEdit,
     config: &agent_grimoire_model::ProjectConfig,
-    allow: &[Permission],
+    allow: &[AllowArg],
     scope: &BTreeSet<AssetId>,
 ) -> Result<BTreeMap<AssetId, BTreeSet<Permission>>, Exit> {
     let source = out.ctx.source;
-    let offered: BTreeSet<Permission> = allow.iter().copied().collect();
+    let offered: BTreeSet<Permission> = allow
+        .iter()
+        .filter_map(|a| match a {
+            AllowArg::Grant(p) => Some(p.clone()),
+            AllowArg::AllEnv => None,
+        })
+        .collect();
+    let all_env = allow.contains(&AllowArg::AllEnv);
+    let is_offered = |p: &Permission| {
+        p.is_satisfied_by(&offered) || (all_env && matches!(p, Permission::Env(_)))
+    };
     let mut granted = BTreeMap::new();
     let mut refused = Vec::new();
     for (id, missing) in missing_permissions(source, config) {
         if !scope.contains(&id) {
             continue;
         }
-        let all: Vec<&str> = missing.iter().map(|p| p.as_str()).collect();
-        let mut grant: BTreeSet<Permission> = missing
-            .iter()
-            .copied()
-            .filter(|p| p.is_satisfied_by(&offered))
-            .collect();
+        let all: Vec<String> = missing.iter().map(ToString::to_string).collect();
+        let mut grant: BTreeSet<Permission> =
+            missing.iter().filter(|p| is_offered(p)).cloned().collect();
         let rest: Vec<Permission> = missing
             .iter()
-            .copied()
-            .filter(|p| !grant.contains(p))
+            .filter(|p| !grant.contains(*p))
+            .cloned()
             .collect();
         if !rest.is_empty() {
-            let names: Vec<&str> = rest.iter().map(|p| p.as_str()).collect();
+            let names: Vec<String> = rest.iter().map(ToString::to_string).collect();
             let summary = source
                 .asset(&id)
                 .map(|a| a.manifest.summary.to_string())
@@ -681,7 +691,7 @@ fn consent(
             }
         }
         let mut accepted = config.allowed(&id);
-        accepted.extend(grant.iter().copied());
+        accepted.extend(grant.iter().cloned());
         if config.assets.contains_key(&id) {
             edit.set_inline_allow(&id, &accepted);
         } else {
@@ -1104,7 +1114,13 @@ fn doctor(out: &mut Out<'_, '_>, dir: Option<&PathBuf>) -> Exit {
         config_checks(out, &project, config, &mut checks);
     }
     if let Some((lock, _)) = &lock {
-        lock_checks(out, &project, lock, &mut checks);
+        lock_checks(
+            out,
+            &project,
+            lock,
+            config.as_ref().map(|(c, _)| c),
+            &mut checks,
+        );
     }
     let ok = checks.iter().all(|(_, ok, _)| *ok);
     for (name, good, detail) in &checks {
@@ -1177,7 +1193,13 @@ fn config_checks(
     }
 }
 
-fn lock_checks(out: &mut Out<'_, '_>, project: &Project, lock: &Lockfile, checks: &mut Vec<Check>) {
+fn lock_checks(
+    out: &mut Out<'_, '_>,
+    project: &Project,
+    lock: &Lockfile,
+    config: Option<&agent_grimoire_model::ProjectConfig>,
+    checks: &mut Vec<Check>,
+) {
     let source = out.ctx.source;
     match apply::verify(&project.root, lock) {
         Ok(m) => checks.push((
@@ -1199,8 +1221,20 @@ fn lock_checks(out: &mut Out<'_, '_>, project: &Project, lock: &Lockfile, checks
                 .map(|t| t.binary.to_string())
                 .or_else(|| a.manifest.mcp_server.as_ref().map(|s| s.binary.to_string()))
         });
-        if let Some(binary) = binary {
-            let found = on_path(out.ctx.path.as_deref(), &binary);
+        // A server configured over Streamable HTTP runs wherever the user runs
+        // it; the client only connects, so no local binary is needed.
+        let over_http = config
+            .and_then(|c| c.assets.get(&asset.id))
+            .and_then(agent_grimoire_model::AssetSelection::options)
+            .is_some_and(|o| o.transport == Some(agent_grimoire_model::Transport::StreamableHttp));
+        if let Some(binary) = binary.as_ref().filter(|_| over_http) {
+            checks.push((
+                format!("binary {binary}"),
+                true,
+                "not needed here: configured over Streamable HTTP".into(),
+            ));
+        } else if let Some(binary) = binary {
+            let found = crate::pipeline::on_path(out.ctx.path.as_deref(), &binary);
             checks.push((
                 format!("binary {binary}"),
                 found,
@@ -1212,19 +1246,6 @@ fn lock_checks(out: &mut Out<'_, '_>, project: &Project, lock: &Lockfile, checks
             ));
         }
     }
-}
-
-/// Whether `binary` is a file in one of `path`'s directories. Never runs it.
-fn on_path(path: Option<&std::ffi::OsStr>, binary: &str) -> bool {
-    let Some(path) = path else { return false };
-    std::env::split_paths(path).any(|dir| {
-        let names = if cfg!(windows) {
-            vec![format!("{binary}.exe"), binary.to_owned()]
-        } else {
-            vec![binary.to_owned()]
-        };
-        names.iter().any(|n| dir.join(n).is_file())
-    })
 }
 
 #[cfg(test)]

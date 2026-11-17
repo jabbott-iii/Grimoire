@@ -275,6 +275,185 @@ constrained_string! {
     }
 }
 
+/// The longest URL a client entry may hold.
+const MAX_URL: usize = 2048;
+
+/// Whether `host` (as written in a URL authority) names this machine.
+fn is_loopback_host(host: &str) -> bool {
+    host.eq_ignore_ascii_case("localhost")
+        || host == "[::1]"
+        || host
+            .strip_prefix("127.")
+            .is_some_and(|rest| check_ipv4_tail(rest, 3))
+}
+
+/// Whether `rest` is `count` dot-separated decimal octets.
+fn check_ipv4_tail(rest: &str, count: usize) -> bool {
+    let parts: Vec<&str> = rest.split('.').collect();
+    parts.len() == count
+        && parts.iter().all(|p| {
+            !p.is_empty()
+                && p.len() <= 3
+                && p.bytes().all(|b| b.is_ascii_digit())
+                && p.parse::<u16>().is_ok_and(|n| n <= 255)
+        })
+}
+
+fn check_host(host: &str) -> Result<(), String> {
+    if host.is_empty() {
+        return Err("needs a host".into());
+    }
+    if let Some(inner) = host.strip_prefix('[') {
+        let inner = inner
+            .strip_suffix(']')
+            .ok_or("an IPv6 host must be enclosed in [ ]")?;
+        return if inner.parse::<std::net::Ipv6Addr>().is_ok() {
+            Ok(())
+        } else {
+            Err(format!("`[{inner}]` is not an IPv6 address"))
+        };
+    }
+    if host.bytes().all(|b| b.is_ascii_digit() || b == b'.') {
+        return if check_ipv4_tail(host, 4) {
+            Ok(())
+        } else {
+            Err(format!("`{host}` is not an IPv4 address"))
+        };
+    }
+    // URL parsers read a name whose last label is all digits as an IPv4 address.
+    if host
+        .rsplit('.')
+        .next()
+        .is_some_and(|last| !last.is_empty() && last.bytes().all(|b| b.is_ascii_digit()))
+    {
+        return Err(format!(
+            "`{host}` is neither a host name nor an IPv4 address"
+        ));
+    }
+    for label in host.split('.') {
+        let ok = !label.is_empty()
+            && label.len() <= 63
+            && label
+                .bytes()
+                .all(|b| b.is_ascii_alphanumeric() || b == b'-')
+            && !label.starts_with('-')
+            && !label.ends_with('-');
+        if !ok {
+            return Err(format!("`{host}` is not a valid host name"));
+        }
+    }
+    Ok(())
+}
+
+/// The characters allowed in a URL path: RFC 3986 unreserved characters,
+/// `/`, and `%` escapes. Anything that could expand (`$`, `{`) or start a
+/// query or fragment is refused.
+fn check_url_path(path: &str) -> Result<(), String> {
+    let bytes = path.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        let b = bytes[i];
+        if b == b'%' {
+            let hex = bytes.get(i + 1..i + 3);
+            if !hex.is_some_and(|h| h.iter().all(u8::is_ascii_hexdigit)) {
+                return Err("a `%` must start a two-digit hex escape".into());
+            }
+            i += 3;
+            continue;
+        }
+        if !(b.is_ascii_alphanumeric() || matches!(b, b'/' | b'-' | b'.' | b'_' | b'~')) {
+            return Err(format!(
+                "the path may contain only letters, digits, `/ - . _ ~` and %-escapes (found {:?})",
+                char::from(b)
+            ));
+        }
+        i += 1;
+    }
+    Ok(())
+}
+
+fn check_server_url(value: &str) -> Result<(), String> {
+    if value.len() > MAX_URL {
+        return Err(format!("must be at most {MAX_URL} characters"));
+    }
+    let (secure, rest) = if let Some(rest) = value.strip_prefix("https://") {
+        (true, rest)
+    } else if let Some(rest) = value.strip_prefix("http://") {
+        (false, rest)
+    } else {
+        return Err("must start with https:// or http://".into());
+    };
+    if rest.contains(['?', '#']) {
+        return Err("must not have a query or fragment: MCP access tokens never go in URLs".into());
+    }
+    let (authority, path) = rest.find('/').map_or((rest, ""), |i| rest.split_at(i));
+    if authority.contains('@') {
+        return Err(
+            "must not contain user information (`user@`): credentials never go in URLs".into(),
+        );
+    }
+    // Split a trailing `:port`, minding the colons inside `[IPv6]`.
+    let (host, port) = match authority.rfind(':') {
+        Some(i) if !authority[i..].contains(']') => (&authority[..i], Some(&authority[i + 1..])),
+        _ => (authority, None),
+    };
+    check_host(host)?;
+    if let Some(port) = port
+        && !(!port.is_empty()
+            && port.len() <= 5
+            && port.bytes().all(|b| b.is_ascii_digit())
+            && port.parse::<u16>().is_ok_and(|p| p > 0))
+    {
+        return Err(format!("`{port}` is not a port number (1-65535)"));
+    }
+    check_url_path(path)?;
+    if !secure && !is_loopback_host(host) {
+        return Err(
+            "plain http:// is allowed only for this machine (localhost, 127.0.0.1, [::1]); use https://"
+                .into(),
+        );
+    }
+    Ok(())
+}
+
+constrained_string! {
+    /// The URL of a Streamable HTTP MCP server, as written into a client's MCP
+    /// configuration.
+    ///
+    /// `https://`, or `http://` for this machine only (`localhost`, `127.0.0.0/8`,
+    /// `[::1]`). No user information, query or fragment, so no credential can be
+    /// written into a configuration file, and no characters a client would expand
+    /// (`$`, `{`). ASCII, at most 2048 characters.
+    pub struct ServerUrl {
+        what: "server URL",
+        check: check_server_url,
+        schema: {
+            "type": "string",
+            "maxLength": 2048,
+            "pattern": "^https?://[A-Za-z0-9.:\\[\\]-]+(/[A-Za-z0-9/._~%-]*)?$",
+            "description": "Streamable HTTP endpoint: https://, or http:// only for localhost, 127.0.0.0/8 or [::1]. No user information, query or fragment."
+        },
+    }
+}
+
+impl ServerUrl {
+    /// Whether the URL names this machine.
+    #[must_use]
+    pub fn is_loopback(&self) -> bool {
+        let rest = self
+            .0
+            .strip_prefix("https://")
+            .or_else(|| self.0.strip_prefix("http://"))
+            .unwrap_or_default();
+        let authority = rest.split('/').next().unwrap_or_default();
+        let host = match authority.rfind(':') {
+            Some(i) if !authority[i..].contains(']') => &authority[..i],
+            _ => authority,
+        };
+        is_loopback_host(host)
+    }
+}
+
 fn check_hook_arg(value: &str) -> Result<(), String> {
     if value.chars().count() > 1024 {
         return Err("must be at most 1024 characters".into());
@@ -386,5 +565,62 @@ mod tests {
         assert!(McpToolName::new("a.b-c").is_ok());
         assert!(McpToolName::new("has space").is_err());
         assert!(McpToolName::new("a".repeat(129)).is_err());
+    }
+
+    #[test]
+    fn server_urls() {
+        for ok in [
+            "http://127.0.0.1:8931/mcp",
+            "http://localhost:8931/mcp",
+            "http://LOCALHOST/mcp",
+            "http://[::1]:8931/mcp",
+            "http://127.1.2.3/",
+            "https://docs.example.com/mcp",
+            "https://docs.example.com",
+            "https://10.0.0.7:443/a%2Fb/c-d_e~f.g",
+            "https://[2001:db8::1]:8443/mcp",
+        ] {
+            assert!(ServerUrl::new(ok).is_ok(), "{ok}");
+        }
+        for bad in [
+            "ftp://127.0.0.1/mcp",
+            "HTTP://127.0.0.1/mcp",
+            "http://docs.example.com/mcp",
+            "http://10.0.0.7/mcp",
+            "http://127.0.0.1.evil.example/mcp",
+            "http://user:pass@127.0.0.1/mcp",
+            "https://token@docs.example.com/mcp",
+            "https://docs.example.com/mcp?token=abc",
+            "https://docs.example.com/mcp#x",
+            "https://docs.example.com/${TOKEN}",
+            "https://docs.example.com/a b",
+            "https://docs.example.com/%zz",
+            "https://:8443/mcp",
+            "https://docs.example.com:0/mcp",
+            "https://docs.example.com:65536/mcp",
+            "https://-bad.example.com/mcp",
+            "https://256.1.1.1/mcp",
+            "https://[::1/mcp",
+            "https://[abc]/mcp",
+            "https://[:]/mcp",
+            "https://[1.2.3.4]/mcp",
+            "https://[:::::]/mcp",
+            "https://docs.123/mcp",
+            "https://docs.example.com/\u{e9}",
+        ] {
+            assert!(ServerUrl::new(bad).is_err(), "{bad}");
+        }
+        assert!(
+            ServerUrl::new("http://127.0.0.1:1/mcp")
+                .unwrap()
+                .is_loopback()
+        );
+        assert!(ServerUrl::new("http://[::1]:1/mcp").unwrap().is_loopback());
+        assert!(
+            !ServerUrl::new("https://docs.example.com/mcp")
+                .unwrap()
+                .is_loopback()
+        );
+        assert!(ServerUrl::new(format!("https://a.example/{}", "x".repeat(2048))).is_err());
     }
 }

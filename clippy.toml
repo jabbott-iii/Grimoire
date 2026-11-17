@@ -1,3 +1,5 @@
 allow-expect-in-tests = true
 allow-print-in-tests = true
 allow-unwrap-in-tests = true
+# Product names written as they are spelled; ".." keeps clippy's default list.
+doc-valid-idents = ["AsciiDoc", ".."]
