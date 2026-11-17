@@ -4,12 +4,15 @@
 //! - `validate [--catalog DIR] [--base REV]`: validate the catalog. With
 //!   `--base`, also require version bumps for assets changed since the merge
 //!   base with `REV`.
+//! - `pack-catalog [--check]`: write or check the catalog pack embedded in the
+//!   binary (ADR-0001).
 //!
 //! Diagnostics go to stderr. Exit status: 0 success, 1 validation failure or
 //! stale files, 2 usage error.
 
 mod bumps;
 mod git;
+mod pack;
 mod schema;
 
 use std::path::{Path, PathBuf};
@@ -40,6 +43,12 @@ enum Command {
         /// Also require version bumps for assets changed since the merge base with this git revision.
         #[arg(long, value_name = "REV")]
         base: Option<String>,
+    },
+    /// Pack catalog/ into the archive embedded in the grimoire binary.
+    PackCatalog {
+        /// Fail if the pack on disk differs from a fresh one instead of writing it.
+        #[arg(long)]
+        check: bool,
     },
 }
 
@@ -96,6 +105,7 @@ fn main() -> ExitCode {
     let result = repo_root().and_then(|root| match cli.command {
         Command::Schema { check } => schema::run(&root, check),
         Command::Validate { catalog, base } => validate(&root, &catalog, base.as_deref()),
+        Command::PackCatalog { check } => pack::run(&root, &root.join("catalog"), check),
     });
     match result {
         Ok(code) => code,

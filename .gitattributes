@@ -8,3 +8,5 @@
 *.gif binary
 *.ico binary
 *.webp binary
+# The packed catalog embedded in the binary (cargo xtask pack-catalog). Never convert or diff it.
+*.pack binary

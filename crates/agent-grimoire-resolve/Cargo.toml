@@ -7,5 +7,12 @@ rust-version.workspace = true
 license.workspace = true
 publish.workspace = true
 
+[dependencies]
+agent-grimoire-catalog.workspace = true
+agent-grimoire-model.workspace = true
+
+[dev-dependencies]
+agent-grimoire-testkit.workspace = true
+
 [lints]
 workspace = true

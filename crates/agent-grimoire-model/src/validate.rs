@@ -300,6 +300,12 @@ fn tool(m: &AssetManifest, out: &mut Vec<Diagnostic>) {
                 .at(format!("{field}.timeout-secs")),
             );
         }
+        push_duplicates(
+            out,
+            "manifest/hook-tools",
+            &format!("{field}.tools"),
+            &hook.tools,
+        );
         let key = (hook.event, &hook.tools, &hook.args);
         if !seen.insert(key) {
             out.push(
@@ -309,8 +315,25 @@ fn tool(m: &AssetManifest, out: &mut Vec<Diagnostic>) {
     }
 }
 
+/// Server names Claude Code reserves for its built-in servers; a configured server
+/// with one of them is skipped (`CC-MCP`). `claude-in-chrome` is already excluded
+/// by the `claude-` prefix.
+const RESERVED_MCP_NAMES: [&str; 2] = ["workspace", "computer-use"];
+
 fn mcp_server(m: &AssetManifest, out: &mut Vec<Diagnostic>) {
     let Some(spec) = &m.mcp_server else { return };
+    if RESERVED_MCP_NAMES.contains(&m.id.as_str()) {
+        out.push(
+            Diagnostic::error(
+                "manifest/mcp-reserved-name",
+                format!(
+                    "`{}` is a server name Claude Code reserves for a built-in server",
+                    m.id
+                ),
+            )
+            .at("id"),
+        );
+    }
     let expected = format!("grimoire-mcp-{}", m.id);
     if spec.binary.as_str() != expected {
         out.push(
@@ -398,6 +421,34 @@ fn clients(m: &AssetManifest, out: &mut Vec<Diagnostic>) {
         let base = format!("clients.{client}");
         client_outputs(m, *client, &outputs.outputs, &base, out);
     }
+    rule_sources(m, out);
+}
+
+/// Claude Code reads `AGENTS.md` through the `CLAUDE.md` import, or natively when
+/// there is no `CLAUDE.md` (`CC-MEM`), so a rule shipped to both `claude-code` and
+/// `agents-md` must say the same thing in both: otherwise Claude Code loads two
+/// different versions of it.
+fn rule_sources(m: &AssetManifest, out: &mut Vec<Diagnostic>) {
+    if m.kind != Kind::Rule {
+        return;
+    }
+    let src = |client: ClientId| {
+        m.clients
+            .get(&client)
+            .and_then(|o| o.outputs.first())
+            .and_then(|o| o.src.as_ref())
+    };
+    if let (Some(a), Some(b)) = (src(ClientId::ClaudeCode), src(ClientId::AgentsMd))
+        && a != b
+    {
+        out.push(
+            Diagnostic::error(
+                "manifest/rule-src",
+                format!("the claude-code and agents-md outputs must use the same `src` (`{a}` and `{b}` differ); Claude Code also reads AGENTS.md"),
+            )
+            .at("clients"),
+        );
+    }
 }
 
 #[allow(clippy::too_many_lines)]
@@ -477,8 +528,10 @@ fn client_outputs(
         // Per-kind naming and layout.
         match m.kind {
             Kind::Rule | Kind::Agent => {
+                // Claude Code discovers only `.md` files in `.claude/rules/` and `.claude/agents/`.
                 if let Some(path) = o.to.path()
-                    && (path.file_stem() != m.id.as_str() || path.components().count() != 1)
+                    && (path.file_name() != format!("{}.md", m.id)
+                        || path.components().count() != 1)
                 {
                     out.push(
                         Diagnostic::error(
@@ -604,6 +657,26 @@ pub fn project_config(c: &ProjectConfig) -> Vec<Diagnostic> {
     push_duplicates(&mut out, "config/tags", "tags", &c.tags);
     push_duplicates(&mut out, "config/exclude", "exclude", &c.exclude);
     let project_clients: BTreeSet<ClientId> = c.clients.iter().copied().collect();
+    for (id, grants) in &c.allow {
+        if c.assets.contains_key(id) {
+            out.push(
+                Diagnostic::error(
+                    "config/allow-direct",
+                    format!("`{id}` has an [assets] entry; accept its permissions there with `allow = [...]`"),
+                )
+                .at(format!("allow.{id}")),
+            );
+        }
+        if grants.is_empty() {
+            out.push(
+                Diagnostic::error(
+                    "config/allow-empty",
+                    "omit the entry instead of listing none",
+                )
+                .at(format!("allow.{id}")),
+            );
+        }
+    }
     for (id, selection) in &c.assets {
         if c.exclude.contains(id) {
             out.push(
@@ -658,32 +731,54 @@ pub fn lockfile(l: &Lockfile) -> Vec<Diagnostic> {
         l.assets.iter().map(|a| &a.id),
     );
     let mut by_path: BTreeMap<&str, Vec<Owner<'_>>> = BTreeMap::new();
-    for asset in &l.assets {
-        for (i, o) in asset.outputs.iter().enumerate() {
-            let field = format!("asset.{}.output[{i}]", asset.id);
-            if (o.unit == Unit::Entry) != o.key.is_some() {
-                out.push(
-                    Diagnostic::error(
-                        "lock/output-key",
-                        "an output has a `key` exactly when its unit is `entry`",
-                    )
-                    .at(&field),
-                );
-            }
-            if o.clients.is_empty() {
-                out.push(
-                    Diagnostic::error(
-                        "lock/output-clients",
-                        "an output serves at least one client",
-                    )
-                    .at(&field),
-                );
-            }
-            by_path
-                .entry(o.path.as_str())
-                .or_default()
-                .push((&asset.id, o, field));
+    let asset_outputs = l.assets.iter().flat_map(|asset| {
+        asset.outputs.iter().enumerate().map(move |(i, o)| {
+            (
+                asset.id.as_str(),
+                o,
+                format!("asset.{}.output[{i}]", asset.id),
+            )
+        })
+    });
+    let project_outputs = l
+        .outputs
+        .iter()
+        .enumerate()
+        .map(|(i, o)| (Lockfile::PROJECT_OWNER, o, format!("output[{i}]")));
+    for (owner, o, field) in asset_outputs.chain(project_outputs) {
+        if (o.unit == Unit::Entry) != o.key.is_some() {
+            out.push(
+                Diagnostic::error(
+                    "lock/output-key",
+                    "an output has a `key` exactly when its unit is `entry`",
+                )
+                .at(&field),
+            );
         }
+        if o.clients.is_empty() {
+            out.push(
+                Diagnostic::error(
+                    "lock/output-clients",
+                    "an output serves at least one client",
+                )
+                .at(&field),
+            );
+        }
+        if (o.created_file && o.unit == Unit::File)
+            || (!o.created_keys.is_empty() && o.unit != Unit::Entry)
+        {
+            out.push(
+                Diagnostic::error(
+                    "lock/output-created",
+                    "`created-file` is only for block and entry units, and `created-keys` only for entry units",
+                )
+                .at(&field),
+            );
+        }
+        by_path
+            .entry(o.path.as_str())
+            .or_default()
+            .push((owner, o, field));
     }
     for (path, owners) in by_path {
         ownership(path, &owners, &mut out);
@@ -691,8 +786,9 @@ pub fn lockfile(l: &Lockfile) -> Vec<Diagnostic> {
     out
 }
 
-/// One owner of a path in a lockfile: the asset, its output, and the output's field name.
-type Owner<'a> = (&'a crate::AssetId, &'a crate::LockedOutput, String);
+/// One owner of a path in a lockfile: the asset id (or [`Lockfile::PROJECT_OWNER`]),
+/// its output, and the output's field name.
+type Owner<'a> = (&'a str, &'a crate::LockedOutput, String);
 
 /// Checks one path's owners: one `file`, or blocks (one per asset), or entries with distinct keys.
 fn ownership(path: &str, owners: &[Owner<'_>], out: &mut Vec<Diagnostic>) {
@@ -707,11 +803,11 @@ fn ownership(path: &str, owners: &[Owner<'_>], out: &mut Vec<Diagnostic>) {
         );
         return;
     }
-    let mut seen: BTreeMap<String, &crate::AssetId> = BTreeMap::new();
+    let mut seen: BTreeMap<String, &str> = BTreeMap::new();
     for (id, o, field) in owners {
         let unit_id = match o.unit {
             Unit::File => String::new(),
-            Unit::Block => id.as_str().to_owned(),
+            Unit::Block => (*id).to_owned(),
             Unit::Entry => o
                 .key
                 .as_ref()

@@ -1,31 +1,48 @@
-//! The `grimoire` command-line interface.
-//!
-//! Phase 1 provides only `--help` and `--version`; the commands in
-//! `docs/architecture.md` §9 arrive in Phase 2.
+//! The `grimoire` binary: the library's [`agent_grimoire::run`] with real streams
+//! and the catalog embedded in this build.
 
+use std::io::{self, IsTerminal as _};
 use std::process::ExitCode;
 
-use clap::Parser;
+use agent_grimoire::{Context, Exit, run};
+use agent_grimoire_catalog::Source;
+use agent_grimoire_model::Version;
 
-/// Install only the AI-agent assets you choose into your repository.
-#[derive(Debug, Parser)]
-#[command(name = "grimoire", version, about, long_about = None)]
-struct Cli {}
-
+#[allow(clippy::print_stderr, reason = "the only way to report a broken build")]
 fn main() -> ExitCode {
-    // `parse` prints help or version and exits with clap's codes (0, or 2 for usage errors).
-    let Cli {} = Cli::parse();
-    ExitCode::SUCCESS
-}
-
-#[cfg(test)]
-mod tests {
-    use clap::CommandFactory;
-
-    use super::Cli;
-
-    #[test]
-    fn command_definition_is_valid() {
-        Cli::command().debug_assert();
-    }
+    let source = match Source::builtin() {
+        Ok(source) => source,
+        Err(e) => {
+            eprintln!("error: this grimoire build is broken: {e}");
+            return ExitCode::from(Exit::Failure.code());
+        }
+    };
+    let Ok(version) = Version::parse(env!("CARGO_PKG_VERSION")) else {
+        eprintln!("error: this grimoire build has an invalid version");
+        return ExitCode::from(Exit::Failure.code());
+    };
+    let cwd = match std::env::current_dir() {
+        Ok(cwd) => cwd,
+        Err(e) => {
+            eprintln!("error: cannot read the current directory: {e}");
+            return ExitCode::from(Exit::Failure.code());
+        }
+    };
+    let ci = std::env::var_os("CI").is_some_and(|v| !v.is_empty());
+    let stdin = io::stdin();
+    let interactive = stdin.is_terminal() && !ci;
+    let mut input = stdin.lock();
+    let mut stdout = io::stdout().lock();
+    let mut stderr = io::stderr().lock();
+    let mut ctx = Context {
+        source: &source,
+        version,
+        cwd,
+        stdin: &mut input,
+        stdout: &mut stdout,
+        stderr: &mut stderr,
+        interactive,
+        path: std::env::var_os("PATH"),
+    };
+    ExitCode::from(run(std::env::args_os(), &mut ctx).code())
 }

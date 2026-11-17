@@ -5,7 +5,13 @@ use proptest::prelude::*;
 
 /// An independent statement of the asset-id rules, to cross-check the implementation.
 fn is_valid_id(s: &str) -> bool {
-    const RESERVED: [&str; 4] = ["claude-", "anthropic-", "anthropics-", "cc-plugin-"];
+    const RESERVED: [&str; 5] = [
+        "claude-",
+        "anthropic-",
+        "anthropics-",
+        "cc-plugin-",
+        "grimoire-",
+    ];
     !s.is_empty()
         && s.len() <= 64
         && s.bytes()
@@ -15,6 +21,7 @@ fn is_valid_id(s: &str) -> bool {
         && !s.contains("--")
         && !RESERVED.iter().any(|p| s.starts_with(p))
         && s != "synced"
+        && s != "grimoire"
 }
 
 fn safe_component() -> impl Strategy<Value = String> {
@@ -31,7 +38,7 @@ fn safe_component() -> impl Strategy<Value = String> {
 
 proptest! {
     #[test]
-    fn asset_id_matches_the_rules(s in "[a-z0-9-]{0,70}|claude-[a-z]{1,5}|synced|[A-Za-z0-9_ .-]{1,10}") {
+    fn asset_id_matches_the_rules(s in "[a-z0-9-]{0,70}|claude-[a-z]{1,5}|grimoire(-[a-z]{1,5})?|synced|[A-Za-z0-9_ .-]{1,10}") {
         prop_assert_eq!(AssetId::new(s.clone()).is_ok(), is_valid_id(&s));
     }
 

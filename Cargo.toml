@@ -14,10 +14,23 @@ license = "MIT OR Apache-2.0"
 publish = false
 
 [workspace.dependencies]
+agent-grimoire-adapters = { path = "crates/agent-grimoire-adapters", version = "0.1.0" }
 agent-grimoire-catalog = { path = "crates/agent-grimoire-catalog", version = "0.1.0" }
+agent-grimoire-install = { path = "crates/agent-grimoire-install", version = "0.1.0" }
 agent-grimoire-model = { path = "crates/agent-grimoire-model", version = "0.1.0" }
+agent-grimoire-resolve = { path = "crates/agent-grimoire-resolve", version = "0.1.0" }
+# Test fixtures shared by the crates' tests; never published.
+agent-grimoire-testkit = { path = "crates/agent-grimoire-testkit" }
 
+# >= 4.0.3: earlier 4.x releases are affected by RUSTSEC-2026-0482 (sandbox escape).
+cap-fs-ext = "4.0.3"
+cap-std = "4.0.3"
+cap-tempfile = "4.0.3"
 clap = { version = "4.6.8", features = ["derive"] }
+# O_NONBLOCK for opening files that might have been swapped for a FIFO (Unix only).
+libc = "0.2.191"
+# Format-preserving JSON edits; always parsed with every non-standard extension off.
+jsonc-parser = { version = "0.34.0", features = ["cst", "serde_json"] }
 # >= 0.13.6 for RUSTSEC-2026-0414 and RUSTSEC-2026-0433; wikilinks stay disabled.
 pulldown-cmark = { version = "0.13.6", default-features = false }
 # preserve_order: schema key order follows field order and cannot be flipped by feature unification.
@@ -25,9 +38,15 @@ schemars = { version = "1.2.3", features = ["preserve_order"] }
 semver = "1.0.28"
 serde = { version = "1.0.229", features = ["derive"] }
 serde-saphyr = { version = "2.1.1", default-features = false, features = ["deserialize"] }
-serde_json = "1.0.154"
+# preserve_order: JSON Grimoire writes keeps the key order adapters chose.
+serde_json = { version = "1.0.154", features = ["preserve_order"] }
+sha2 = "0.11.1"
+# Unified diffs in `grimoire plan`.
+similar = "3.2.1"
 spdx = { version = "0.13.6", default-features = false }
 toml = "1.2.1"
+# Comment-preserving edits to grimoire.toml.
+toml_edit = "0.25.19"
 
 insta = "1.49.0"
 proptest = "1.12.0"

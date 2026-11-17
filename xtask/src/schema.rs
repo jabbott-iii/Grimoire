@@ -28,7 +28,7 @@ pub(crate) fn run(root: &Path, check: bool) -> Result<ExitCode, String> {
                 stale.push(doc.file_name.to_owned());
             }
         } else {
-            write_atomic(&dir, doc.file_name, &text)?;
+            write_atomic(&dir, doc.file_name, text.as_bytes())?;
         }
     }
     // Leftover schema files from renamed or removed types are stale too.
@@ -62,7 +62,7 @@ pub(crate) fn run(root: &Path, check: bool) -> Result<ExitCode, String> {
 }
 
 /// Writes `dir/name` through a temporary file in the same directory, then renames it.
-fn write_atomic(dir: &Path, name: &str, text: &str) -> Result<(), String> {
+pub(crate) fn write_atomic(dir: &Path, name: &str, bytes: &[u8]) -> Result<(), String> {
     fs::create_dir_all(dir).map_err(|e| format!("cannot create {}: {e}", dir.display()))?;
     let mut tmp = tempfile::NamedTempFile::new_in(dir)
         .map_err(|e| format!("cannot create a temporary file: {e}"))?;
@@ -72,12 +72,12 @@ fn write_atomic(dir: &Path, name: &str, text: &str) -> Result<(), String> {
         use std::os::unix::fs::PermissionsExt as _;
         tmp.as_file()
             .set_permissions(fs::Permissions::from_mode(0o644))
-            .map_err(|e| format!("cannot set permissions on schemas/{name}: {e}"))?;
+            .map_err(|e| format!("cannot set permissions on {name}: {e}"))?;
     }
-    tmp.write_all(text.as_bytes())
+    tmp.write_all(bytes)
         .and_then(|()| tmp.as_file().sync_all())
-        .map_err(|e| format!("cannot write schemas/{name}: {e}"))?;
+        .map_err(|e| format!("cannot write {name}: {e}"))?;
     tmp.persist(dir.join(name))
-        .map_err(|e| format!("cannot replace schemas/{name}: {e}"))?;
+        .map_err(|e| format!("cannot replace {name}: {e}"))?;
     Ok(())
 }

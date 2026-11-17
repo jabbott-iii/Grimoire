@@ -307,6 +307,10 @@ outputs = [{ to = "mcp", strategy = "entry" }]
 #[test]
 fn mcp_server_rules() {
     assert_eq!(codes(&parse(MCP)), Vec::<&str>::new());
+    let reserved = MCP
+        .replace("id = \"docs-index\"", "id = \"workspace\"")
+        .replace("grimoire-mcp-docs-index", "grimoire-mcp-workspace");
+    assert_eq!(codes(&parse(&reserved)), ["manifest/mcp-reserved-name"]);
     for (from, to, code) in [
         (
             "[\"stdio\", \"streamable-http\"]",
@@ -581,6 +585,24 @@ fn mutate(base: &str, from: &str, to: &str) -> Vec<&'static str> {
 #[test]
 fn every_manifest_rule_has_a_mutation() {
     for (base, from, to, code) in [
+        (
+            RULE,
+            "to = \"rules:rust-errors.md\"",
+            "to = \"rules:rust-errors.txt\"",
+            "manifest/output-name",
+        ),
+        (
+            TOOL,
+            "tools = [\"edit\"]",
+            "tools = [\"edit\", \"edit\"]",
+            "manifest/hook-tools",
+        ),
+        (
+            RULE,
+            "[clients.agents-md]\noutputs = [{ src = \"rule.md\"",
+            "[clients.agents-md]\noutputs = [{ src = \"other.md\"",
+            "manifest/rule-src",
+        ),
         (
             AGENT,
             "filesystem = \"read\"",

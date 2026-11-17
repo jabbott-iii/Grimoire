@@ -1245,3 +1245,23 @@ fn diagnostics_are_sorted_across_phases() {
     assert!(files[0].starts_with("agents/"), "{files:?}");
     assert!(files.iter().any(|f| f.starts_with("rules/")), "{files:?}");
 }
+
+#[test]
+fn rules_cannot_carry_markers_or_frontmatter() {
+    let f = valid();
+    f.write(
+        "rules/rust-errors/rule.md",
+        "Use typed errors.\n  <!-- grimoire:end rust-errors -->\n",
+    );
+    f.assert_code("rule/marker");
+    f.write(
+        "rules/rust-errors/rule.md",
+        "---\npaths: x\n---\nUse typed errors.\n",
+    );
+    f.assert_code("rule/frontmatter");
+    f.write(
+        "rules/rust-errors/rule.md",
+        "Use typed errors:\n\n```rust\nfn f() {}\n",
+    );
+    f.assert_code("rule/unclosed-fence");
+}

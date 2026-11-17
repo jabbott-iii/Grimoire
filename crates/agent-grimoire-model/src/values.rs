@@ -2,16 +2,30 @@
 
 use crate::constrained::{check_kebab, check_text, constrained_string};
 
-/// Prefixes Claude Code reserves for plugin names. Asset and bundle IDs become
-/// plugin names in the generated marketplace (`CC-PLUGIN` in `docs/specs.md`).
-const RESERVED_ID_PREFIXES: [&str; 4] = ["claude-", "anthropic-", "anthropics-", "cc-plugin-"];
-/// Names Claude Code reserves outright: `synced` is a reserved skill folder name (`CC-SKILL`).
-const RESERVED_IDS: [&str; 1] = ["synced"];
+/// Reserved prefixes.
+///
+/// - `claude-`, `anthropic-`, `anthropics-` and `cc-plugin-`: Claude Code reserves them
+///   for plugin names, and asset and bundle IDs become plugin names in the generated
+///   marketplace (`CC-PLUGIN` in `docs/specs.md`).
+/// - `grimoire-`: kept for content Grimoire itself owns in a project.
+const RESERVED_ID_PREFIXES: [&str; 5] = [
+    "claude-",
+    "anthropic-",
+    "anthropics-",
+    "cc-plugin-",
+    "grimoire-",
+];
+/// Reserved names.
+///
+/// - `synced`: a reserved skill folder name in Claude Code (`CC-SKILL`).
+/// - `grimoire`: the owner of Grimoire's own managed blocks, e.g. the `CLAUDE.md`
+///   import of `AGENTS.md` (`architecture.md` §8.2).
+const RESERVED_IDS: [&str; 2] = ["synced", "grimoire"];
 
 fn check_asset_id(value: &str) -> Result<(), String> {
     check_kebab(value, 64)?;
     if RESERVED_IDS.contains(&value) {
-        return Err(format!("{value:?} is reserved by Claude Code"));
+        return Err(format!("{value:?} is a reserved name"));
     }
     if let Some(prefix) = RESERVED_ID_PREFIXES.iter().find(|p| value.starts_with(**p)) {
         return Err(format!(
@@ -25,8 +39,8 @@ constrained_string! {
     /// An asset or bundle identifier, unique across the whole catalog.
     ///
     /// Follows the Agent Skills `name` rules for every kind: 1–64 characters of
-    /// `[a-z0-9-]`, no leading, trailing or doubled `-`. Claude Code's reserved
-    /// plugin prefixes are rejected.
+    /// `[a-z0-9-]`, no leading, trailing or doubled `-`. Reserved names and
+    /// prefixes are rejected.
     pub struct AssetId {
         what: "asset id",
         check: check_asset_id,
@@ -35,7 +49,7 @@ constrained_string! {
             "minLength": 1,
             "maxLength": 64,
             "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
-            "description": "Asset or bundle identifier: 1-64 characters of [a-z0-9-], no leading, trailing or doubled '-'. Must not start with claude-, anthropic-, anthropics- or cc-plugin-, and must not be 'synced'."
+            "description": "Asset or bundle identifier: 1-64 characters of [a-z0-9-], no leading, trailing or doubled '-'. Must not start with claude-, anthropic-, anthropics-, cc-plugin- or grimoire-, and must not be 'synced' or 'grimoire'."
         },
     }
 }
@@ -319,6 +333,9 @@ mod tests {
         assert!(AssetId::new("anthropic-x").is_err());
         assert!(AssetId::new("cc-plugin-x").is_err());
         assert!(AssetId::new("synced").is_err());
+        assert!(AssetId::new("grimoire").is_err());
+        assert!(AssetId::new("grimoire-x").is_err());
+        assert!(AssetId::new("my-grimoire").is_ok());
         assert!(AssetId::new("synced-notes").is_ok());
         // Only the reserved *prefix* is rejected.
         assert!(AssetId::new("my-claude-helper").is_ok());

@@ -29,6 +29,12 @@ pub struct ProjectConfig {
     /// Never install these, even when a bundle or tag selects them.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub exclude: Vec<AssetId>,
+    /// Permissions accepted for assets that are installed without an `[assets]` entry,
+    /// i.e. brought in by a bundle, a tag or another asset's `requires`.
+    /// An asset listed under `[assets]` takes its grants there instead.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    #[schemars(schema_with = "crate::schema::keyed_map::<AssetId, BTreeSet<Permission>>")]
+    pub allow: BTreeMap<AssetId, BTreeSet<Permission>>,
     /// Directly selected assets.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     #[schemars(schema_with = "crate::schema::keyed_map::<AssetId, AssetSelection>")]
@@ -43,6 +49,15 @@ impl ProjectConfig {
     /// Returns a [`ParseError`] with the TOML location on failure.
     pub fn from_toml(text: &str) -> Result<Self, ParseError> {
         crate::parse_toml(text)
+    }
+
+    /// The permissions the user accepted for `id`, wherever they are recorded.
+    #[must_use]
+    pub fn allowed(&self, id: &AssetId) -> BTreeSet<Permission> {
+        match self.assets.get(id).and_then(AssetSelection::options) {
+            Some(options) => options.allow.clone(),
+            None => self.allow.get(id).cloned().unwrap_or_default(),
+        }
     }
 }
 

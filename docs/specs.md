@@ -56,12 +56,14 @@ All rows were checked 2026-11-16. Section IDs below link each row to its notes.
 | CARGO-LINTS | `[lints.cargo]`, workspace globs, inheritance | Cargo 1.96.0 / 1.99.0 / 1.100.0 | https://doc.rust-lang.org/cargo/reference/lints.html | Verified (Phase 1) |
 | CI-PINS | Pinned actions and CI tool binaries | see table | per pin | Verified (Phase 1) |
 | ZIZMOR | zizmor audits and personas | 1.32.0 | https://docs.zizmor.sh | Verified (Phase 1) |
+| CC-P2 | Claude Code facts the `claude-code` adapter writes against | CLI 2.1.326; docs fetched 2026-11-16 | https://code.claude.com/docs/en/ | Verified (Phase 2), gaps listed |
+| FS-CRATES | cap-std, cap-fs-ext, cap-tempfile | 4.0.3 | https://github.com/sunfishcode/cap-std | Verified (Phase 2) |
+| EDIT-CRATES | jsonc-parser (CST), toml_edit, similar | 0.34.0 / 0.25.19 / 3.2.1 | https://github.com/dprint/jsonc-parser | Verified (Phase 2), with one finding |
 
 **Not yet researched, to verify in the phase that needs them:**
 
 | Topic | Phase |
 |---|---|
-| A JSON/JSONC editor that preserves comments | 2 |
 | The exact Fulcio identity string for keyless verification docs | 5 |
 | GHCR OCI 1.1 referrers support for cosign v3 | 6 |
 | `winget validate` availability on GitHub Windows runners | 5 |
@@ -854,3 +856,77 @@ The actionlint, gitleaks and lychee hashes were checked against each release's o
 - **Known gap:** zizmor 1.32.0's `dependabot-cooldown` audit stops after the first compliant entry, so cooldowns on every entry are enforced by review.
 - Status: Verified.
 
+---
+
+## Phase 2 additions (checked 2026-11-16)
+
+These facts came from a six-topic research workflow (Claude Code rules and imports, subagents, hooks and settings, `.mcp.json`, filesystem crates, editing crates). An independent skeptic re-fetched every source. Of 370 checks, 369 were confirmed. One overstated claim about jsonc-parser's bug history was corrected, and the conclusion stands. The raw results are not committed.
+
+### CC-P2: what the `claude-code` adapter relies on
+Sources: https://code.claude.com/docs/en/memory.md, …/sub-agents.md, …/tools-reference.md, …/errors.md, …/hooks.md, …/settings.md, …/permissions.md, …/mcp.md, …/mcp-quickstart.md, …/headless.md. CHANGELOG at `anthropics/claude-code@1ad046cb01`. CLI `latest` is 2.1.326 and `stable` is 2.1.311 (npm). Status: Verified, except the gaps listed.
+
+- **Rules (`.claude/rules/*.md`):**
+  - `paths` is "the only field Claude Code reads from a rule". It takes a YAML list or a comma-separated string, relative to the directory that contains `.claude`.
+  - The opening `---` must be the file's first line. A rule without `paths` loads at launch. Invalid YAML makes the rule load unscoped.
+  - Grimoire writes a YAML flow list of JSON-quoted strings.
+- **`CLAUDE.md` imports:**
+  - The syntax is `@path`, relative to the importing file. Imports are skipped in code spans and fenced code, and the maximum depth is four hops.
+  - Importing `AGENTS.md` from `CLAUDE.md` is documented explicitly: "Keeping the import never makes Claude read `AGENTS.md` twice, whichever **Project instructions** value you use."
+  - Block-level HTML comments are stripped before injection.
+  - By default `AGENTS.md` is read only when no `CLAUDE.md`, `.claude/CLAUDE.md` or `CLAUDE.local.md` exists in the working directory or above (v2.1.277+).
+- **Subagents (`.claude/agents/*.md`):**
+  - `name` and `description` are required. `description` says "when Claude should delegate to this subagent".
+  - `tools` is a comma string or a YAML list, and an omitted list "inherits every tool".
+  - **No tools at all:** "If you leave the `tools` list empty, or `disallowedTools` removes every entry in it, Claude Code also skips the refusal and launches the subagent without tools" (errors.md). The YAML spelling of an empty list is not documented, so Grimoire writes `tools: ["Read"]` and `disallowedTools: ["Read"]`.
+  - **Tool names:** `Read`, `Grep`, `Glob`, `Edit`, `Write`, `NotebookEdit`, `Bash`, `PowerShell`, `WebFetch`, `WebSearch`. MCP tools are `mcp__<server>__<tool>`, and the only documented wildcard in `tools` is `mcp__<server>__*`.
+  - Glob and Grep are absent by default on macOS, Linux and WSL, but come back for a subagent that lists them without Bash. PowerShell is the shell tool on Windows without Git Bash.
+- **Hooks (`.claude/settings.json`):**
+  - **Shape:** `{"hooks":{"<Event>":[{"matcher","hooks":[{handler}]}]}}`.
+  - **Events:** `PreToolUse`, `PostToolUse`, `SessionStart`, `SessionEnd`, `UserPromptSubmit`, `Stop`.
+  - **Matchers:** letters, digits, `_`, `-`, space, `,` and `|` form an exact list. Anything else is an *unanchored* JavaScript regex, so Grimoire anchors its regexes with `^(…)$`. `UserPromptSubmit` and `Stop` ignore matchers.
+  - **Exec form:** with `args`, "`command` is resolved as an executable and spawned directly with `args` as the argument vector, with no shell involved". `args` was added in 2.1.139 (CHANGELOG). `timeout` is in seconds.
+  - **Strict JSON:** "Settings files are strict JSON: a `//` comment or a trailing comma is a syntax error."
+  - **No trust prompt:** `-p` and SDK sessions run project hooks and connect `.mcp.json` servers without a trust prompt.
+- **`.mcp.json`:**
+  - The shape is `{"mcpServers":{"<name>":{…}}}`. An entry with no `type` is stdio, but Grimoire writes `"type": "stdio"` explicitly.
+  - `${VAR}` and `${VAR:-default}` expand in `command`, `args`, `env`, `url` and `headers`. An unset variable without a default is passed through *literally*, so optional variables get `:-`.
+  - Server names are letters, digits, `-` and `_`. The reserved built-in names are `workspace`, `claude-in-chrome`, `computer-use`, `Claude Preview` and `Claude Browser`.
+- **Not documented (UNVERIFIED):**
+  - Whether an `@import` between two HTML-comment lines is honoured. Grimoire's import line sits on its own line between two block-level marker comments.
+  - The exact YAML spelling of an empty `tools` list (worked around above).
+  - Whether `.mcp.json` accepts comments. Grimoire treats it as strict JSON.
+  - What versions before 2.1.139 do with `args`.
+  - How Claude Code exposes an MCP tool whose name contains characters outside `[A-Za-z0-9_-]`. Model-facing tool names allow only those, and the docs state only that `.` and spaces in *server* names become `_`. The adapter therefore refuses MCP capabilities whose tool name contains `.`, and full names over 128 characters, which Claude Code drops.
+  - How GitHub Copilot in VS Code, which also reads `.claude/agents/` (`COPILOT-AGENTS`), maps Claude Code tool names and whether it honours `disallowedTools`. The `plan/cross-client-agent` warning says so.
+
+### FS-CRATES: cap-std 4.0.3
+Sources: the crates.io API, `sunfishcode/cap-std` at tag `v4.0.3` (commit `b7acf8e8807f`), docs.rs 4.0.3, RustSec advisory-db at `02e2517f457a`, and the Rust 1.100.0 `std::fs::rename` docs and source. Status: Verified.
+
+- **Releases and licenses:**
+  - 4.0.3 was published 2026-08-20. No `rust-version` is declared; the workspace MSRV is 1.70.
+  - The license is `Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT`. `winx` 0.36.4 (Windows) is `Apache-2.0 WITH LLVM-exception` only.
+- **Advisories:**
+  - RUSTSEC-2026-0482 (critical: a trailing-slash `O_NOFOLLOW` bypass that escapes the sandbox) affects `<= 4.0.2` and is fixed in 4.0.3.
+  - RUSTSEC-2026-0486 (rustix, unsound) is fixed in rustix 1.1.6.
+- **Confinement:**
+  - Escapes fail with `PermissionDenied` ("a path led outside of the filesystem").
+  - On Linux, opens use `openat2(RESOLVE_BENEATH | RESOLVE_NO_MAGICLINKS)`, with a manual resolver as fallback.
+  - `FollowSymlinks::No` controls only the final component. `DirExt::open_dir_nofollow` refuses a symlinked directory.
+- **`cap-tempfile`:**
+  - `TempFile::replace` renames within the same `Dir` and **does not fsync**, so Grimoire syncs first.
+  - Named temporary files use mode `0o666` minus umask, with bare UUID names. On Linux it uses `O_TMPFILE` plus `linkat` through `/proc/self/fd`.
+  - On Windows, `rename` and `remove_file` are path-based after the parents are resolved in the sandbox.
+- **The deny.toml entries this needs:** ADR-0006.
+
+### EDIT-CRATES: jsonc-parser, toml_edit, similar
+Sources: the crates.io API, `dprint/jsonc-parser` at tag `0.34.0` (commit `c7d4cf51f772`), `toml-rs/toml` at `toml-v1.2.1`, and `mitsuhiko/similar` at `3.2.1`. Status: Verified.
+
+- **jsonc-parser 0.34.0** (MIT, 2026-09-27):
+  - The `cst` feature has no dependencies and provides `CstRootNode::parse`, object `get`/`append`/`set_value`/`remove`, and array `elements`/`append`/`remove`. Untouched content keeps its comments, whitespace and key order.
+  - Strict mode needs all ten `ParseOptions` fields set to `false`. The struct is not `#[non_exhaustive]`, so Grimoire lists every field and a new one breaks the build.
+  - Strict mode is reliable only from 0.33.1 (issue #84). There is a recursion limit against stack exhaustion from 0.30.0 (#64).
+  - **Finding (checked in source, `src/parse_to_ast.rs`):** `CstRootNode::parse` collects comments `AsTokens`, and that branch skips the `allow_comments` check. A CST parse therefore accepts `//` comments even in strict mode. Grimoire validates every JSON file with `serde_json` (RFC 8259) before building the CST, and a regression test covers it.
+  - Inserting into a single-line object makes it multi-line, and inserts trim blank lines just inside the edited brackets.
+- **toml_edit 0.25.19:** released from the same tag as `toml` 1.2.1, with identical shared dependency requirements, so there are no duplicate versions. `DocumentMut` preserves comments and formatting.
+- **similar 3.2.1:** Apache-2.0, no required dependencies, `TextDiff::from_lines(..).unified_diff()`.
+- **sha2 0.11.1:** MIT OR Apache-2.0, MSRV 1.88.

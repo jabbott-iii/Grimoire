@@ -34,6 +34,9 @@ exceptions = [
     # Through serde_json/schemars `preserve_order` (indexmap -> hashbrown). Zlib is OSI-approved and permissive.
     { crate = "foldhash", allow = ["Zlib"] },
     { crate = "unicode-ident", allow = ["Unicode-3.0"] },
+    # Windows-only, through cap-primitives (ADR-0006). Apache-2.0 plus the LLVM exception,
+    # which only relaxes Apache-2.0's terms.
+    { crate = "winx", allow = ["Apache-2.0 WITH LLVM-exception"] },
 ]
 confidence-threshold = 0.93
 include-build = true
@@ -57,7 +60,17 @@ deny = [
     { crate = "serde_yml", reason = "unsound and unmaintained (RUSTSEC-2025-0068)", use-instead = "serde-saphyr" },
     { crate = "yaml-rust", reason = "unmaintained (RUSTSEC-2024-0320)", use-instead = "serde-saphyr" },
 ]
-skip = []
+# Exact versions only, each forced by cap-std 4.0.3 (ADR-0006). Remove an entry as
+# soon as upstream unifies it; `cargo deny` then reports the entry as unused.
+skip = [
+    { crate = "io-lifetimes@2.0.4", reason = "fs-set-times 0.20.3 (via cap-primitives) still requires io-lifetimes 2; cap-std uses 3" },
+    { crate = "windows-sys@0.59.0", reason = "winx 0.36.4 and fs-set-times 0.20.3 (via cap-primitives) require windows-sys <= 0.59" },
+    { crate = "windows-sys@0.60.2", reason = "io-extras 0.19.0 (via cap-std) requires windows-sys 0.60" },
+    { crate = "windows-targets@0.52.6", reason = "pulled in by windows-sys 0.59.0 (see above)" },
+    { crate = "windows-targets@0.53.5", reason = "pulled in by windows-sys 0.60.2 (see above)" },
+    { crate = "windows_x86_64_msvc@0.52.6", reason = "pulled in by windows-targets 0.52.6 (see above)" },
+    { crate = "windows_aarch64_msvc@0.52.6", reason = "pulled in by windows-targets 0.52.6 (see above)" },
+]
 skip-tree = []
 
 [bans.workspace-dependencies]
@@ -76,6 +89,14 @@ executables = "deny"
 interpreted = "deny"
 enable-builtin-globs = true
 include-archives = true
+# Import libraries that older windows-targets releases ship for linking on Windows
+# (ADR-0006). Each one is pinned to the exact bytes cargo verified from crates.io.
+bypass = [
+    { crate = "windows_x86_64_msvc@0.52.6", allow = [{ path = "lib/windows.0.52.0.lib", checksum = "24d8cbc445955b0d48041948a3c71ce2cddb948c089b25ec7106fadd9f3efde0" }] },
+    { crate = "windows_aarch64_msvc@0.52.6", allow = [{ path = "lib/windows.0.52.0.lib", checksum = "ca85dd7757f338ba00d0bc19229f176ee426a707425ee4fcf205ec491a95bd5a" }] },
+    { crate = "windows_x86_64_msvc@0.53.1", allow = [{ path = "lib/windows.0.53.0.lib", checksum = "34b8a86432177dc82c1fe0d34a941502e27a3b3f36bd7e54d6b96a70530bb285" }] },
+    { crate = "windows_aarch64_msvc@0.53.1", allow = [{ path = "lib/windows.0.53.0.lib", checksum = "823c9f94849453e83268d226660c74a9d655c8891ce95331054c40da5ae02a04" }] },
+]
 
 [sources]
 unknown-registry = "deny"

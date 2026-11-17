@@ -36,6 +36,20 @@
         "$ref": "#/$defs/AssetId"
       }
     },
+    "allow": {
+      "description": "Permissions accepted for assets that are installed without an `[assets]` entry,\ni.e. brought in by a bundle, a tag or another asset's `requires`.\nAn asset listed under `[assets]` takes its grants there instead.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "uniqueItems": true,
+        "items": {
+          "$ref": "#/$defs/Permission"
+        }
+      },
+      "propertyNames": {
+        "$ref": "#/$defs/AssetId"
+      }
+    },
     "assets": {
       "description": "Directly selected assets.",
       "type": "object",
@@ -94,7 +108,7 @@
       ]
     },
     "AssetId": {
-      "description": "Asset or bundle identifier: 1-64 characters of [a-z0-9-], no leading, trailing or doubled '-'. Must not start with claude-, anthropic-, anthropics- or cc-plugin-, and must not be 'synced'.",
+      "description": "Asset or bundle identifier: 1-64 characters of [a-z0-9-], no leading, trailing or doubled '-'. Must not start with claude-, anthropic-, anthropics-, cc-plugin- or grimoire-, and must not be 'synced' or 'grimoire'.",
       "type": "string",
       "minLength": 1,
       "maxLength": 64,
@@ -106,6 +120,41 @@
       "minLength": 1,
       "maxLength": 32,
       "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "Permission": {
+      "description": "A permission a user grants in `grimoire.toml` (`allow = [...]`).",
+      "oneOf": [
+        {
+          "description": "Read files.",
+          "type": "string",
+          "const": "filesystem-read"
+        },
+        {
+          "description": "Read and write files.",
+          "type": "string",
+          "const": "filesystem-write"
+        },
+        {
+          "description": "Use the network.",
+          "type": "string",
+          "const": "network"
+        },
+        {
+          "description": "Run shell commands or other programs.",
+          "type": "string",
+          "const": "shell"
+        },
+        {
+          "description": "Read environment variables.",
+          "type": "string",
+          "const": "env"
+        },
+        {
+          "description": "Register automatic client hooks.",
+          "type": "string",
+          "const": "hooks"
+        }
+      ]
     },
     "AssetSelection": {
       "description": "A directly selected asset: a bare version requirement, or a table of options.",
@@ -176,41 +225,6 @@
       "additionalProperties": false,
       "required": [
         "version"
-      ]
-    },
-    "Permission": {
-      "description": "A permission a user grants in `grimoire.toml` (`allow = [...]`).",
-      "oneOf": [
-        {
-          "description": "Read files.",
-          "type": "string",
-          "const": "filesystem-read"
-        },
-        {
-          "description": "Read and write files.",
-          "type": "string",
-          "const": "filesystem-write"
-        },
-        {
-          "description": "Use the network.",
-          "type": "string",
-          "const": "network"
-        },
-        {
-          "description": "Run shell commands or other programs.",
-          "type": "string",
-          "const": "shell"
-        },
-        {
-          "description": "Read environment variables.",
-          "type": "string",
-          "const": "env"
-        },
-        {
-          "description": "Register automatic client hooks.",
-          "type": "string",
-          "const": "hooks"
-        }
       ]
     },
     "EnvVarName": {

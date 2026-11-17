@@ -14,6 +14,13 @@
       "items": {
         "$ref": "#/$defs/LockedAsset"
       }
+    },
+    "output": {
+      "description": "Content Grimoire itself owns rather than any asset, such as the `CLAUDE.md`\nblock that imports `AGENTS.md` (`architecture.md` §8.2). Its managed blocks\nuse the reserved name [`Lockfile::PROJECT_OWNER`].",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/LockedOutput"
+      }
     }
   },
   "additionalProperties": false,
@@ -84,7 +91,7 @@
       ]
     },
     "AssetId": {
-      "description": "Asset or bundle identifier: 1-64 characters of [a-z0-9-], no leading, trailing or doubled '-'. Must not start with claude-, anthropic-, anthropics- or cc-plugin-, and must not be 'synced'.",
+      "description": "Asset or bundle identifier: 1-64 characters of [a-z0-9-], no leading, trailing or doubled '-'. Must not start with claude-, anthropic-, anthropics-, cc-plugin- or grimoire-, and must not be 'synced' or 'grimoire'.",
       "type": "string",
       "minLength": 1,
       "maxLength": 64,
@@ -213,6 +220,17 @@
         "hash": {
           "description": "Hash of the content Grimoire owns in the unit.",
           "$ref": "#/$defs/Sha256Digest"
+        },
+        "created-file": {
+          "description": "For `block` and `entry` units: Grimoire created the file, so it deletes the\nfile when the last thing in it is removed. A user's own file is never deleted.",
+          "type": "boolean"
+        },
+        "created-keys": {
+          "description": "For `entry` units: the containers (JSON Pointers) Grimoire created for this\nentry, which it removes again once they are empty. Containers that were\nalready there are left alone.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EntryKey"
+          }
         }
       },
       "additionalProperties": false,

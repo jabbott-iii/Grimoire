@@ -1,3 +1,14 @@
-//! The installer: root-confined filesystem access, atomic writes, ownership units,
-//! planning, applying, drift detection and lockfile I/O (`docs/architecture.md` §7).
-//! Implemented in Phase 2.
+//! Root-confined, atomic installation of Grimoire outputs (`architecture.md` §7).
+//!
+//! - [`block`]: managed blocks in shared Markdown files.
+//! - [`entry`]: owned entries in JSON config files.
+//! - [`fs`]: root-confined, symlink-refusing, atomic file access.
+//! - [`plan`]: the pure planner that compares desired outputs, the lock and disk.
+//! - [`apply`]: applying a plan, building the next lock, and verifying a lock.
+
+pub mod apply;
+pub mod block;
+pub mod entry;
+pub mod fs;
+pub mod hash;
+pub mod plan;

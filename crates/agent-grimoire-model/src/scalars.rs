@@ -182,9 +182,36 @@ constrained_string! {
     }
 }
 
+impl Sha256Digest {
+    /// The digest of `bytes`.
+    #[must_use]
+    pub fn of(bytes: &[u8]) -> Self {
+        use sha2::Digest as _;
+        use std::fmt::Write as _;
+        let hash = sha2::Sha256::digest(bytes);
+        let mut text = String::with_capacity(7 + 64);
+        text.push_str("sha256:");
+        for byte in hash {
+            // Writing to a String cannot fail.
+            let _ = write!(text, "{byte:02x}");
+        }
+        Self(text)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn digest_of_bytes() {
+        // FIPS 180-2 test vector for "abc".
+        assert_eq!(
+            Sha256Digest::of(b"abc").as_str(),
+            "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
+        assert!(Sha256Digest::new(Sha256Digest::of(b"").as_str()).is_ok());
+    }
 
     #[test]
     fn kinds_round_trip_through_catalog_dirs() {

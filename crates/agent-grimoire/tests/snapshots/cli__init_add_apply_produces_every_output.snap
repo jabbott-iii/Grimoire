@@ -1,0 +1,116 @@
+---
+source: crates/agent-grimoire/tests/cli.rs
+expression: snapshot_tree(&p)
+---
+== .agents/
+== .agents/skills/
+== .agents/skills/adr-writer/
+== .agents/skills/adr-writer/SKILL.md
+---
+name: adr-writer
+description: Does adr-writer things. Use when testing.
+---
+# adr-writer
+
+See [the notes](references/notes.md).
+== .agents/skills/adr-writer/references/
+== .agents/skills/adr-writer/references/notes.md
+# Notes
+
+Details.
+== .claude/
+== .claude/agents/
+== .claude/agents/security-reviewer.md
+---
+name: "security-reviewer"
+description: "Used by Grimoire's tests."
+tools: ["Read", "Grep", "Glob"]
+---
+
+You review changes carefully. You never edit files.
+== .claude/settings.json
+{
+  "permissions": { "allow": ["Bash(ls)"] },
+  "hooks": {
+    "PreToolUse": [
+      { "matcher": "Bash", "hooks": [{ "type": "command", "command": "theirs" }] },
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "grimoire-tool-secret-guard",
+            "args": ["check", "--stdin"],
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
+== .claude/skills/
+== .claude/skills/adr-writer/
+== .claude/skills/adr-writer/SKILL.md
+---
+name: adr-writer
+description: Does adr-writer things. Use when testing.
+---
+# adr-writer
+
+See [the notes](references/notes.md).
+== .claude/skills/adr-writer/references/
+== .claude/skills/adr-writer/references/notes.md
+# Notes
+
+Details.
+== .mcp.json
+{
+  "mcpServers": {
+    "theirs": { "command": "their-server" },
+    "docs-index": {
+      "type": "stdio",
+      "command": "grimoire-mcp-docs-index",
+      "env": {
+        "DOCS_TOKEN": "${DOCS_TOKEN}"
+      }
+    }
+  }
+}
+== AGENTS.md
+# Our project
+
+Human-written guidance.
+
+<!-- grimoire:begin commit-style -->
+# Commits
+
+Write Conventional Commits.
+<!-- grimoire:end commit-style -->
+<!-- grimoire:begin rust-errors -->
+_Applies when working on files matching `**/*.rs`._
+
+# Errors
+
+Use typed errors.
+<!-- grimoire:end rust-errors -->
+== CLAUDE.md
+<!-- grimoire:begin grimoire -->
+@AGENTS.md
+<!-- grimoire:end grimoire -->
+== grimoire.lock
+== grimoire.toml
+# Grimoire project configuration. `grimoire add` and `grimoire remove` edit it,
+# and you can too; `grimoire apply` makes the project match it.
+format = 1
+clients = ["claude-code", "agents-md"]
+bundles = ["security-baseline"]
+
+[assets]
+commit-style = "^1.0.0"
+rust-errors = "^1.2.0"
+adr-writer = "^0.3.1"
+docs-index = { version = "^2.0.0", allow = ["filesystem-read", "env"] }
+
+[allow]
+secret-guard = ["filesystem-read", "hooks"]
+security-reviewer = ["filesystem-read"]

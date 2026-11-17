@@ -104,6 +104,7 @@ pub(crate) fn load(
         Kind::Rule => {
             for (src, text) in &texts {
                 rule_length(text, &format!("{rel_dir}/{src}"), out);
+                rule_markers(text, &format!("{rel_dir}/{src}"), out);
                 rule_texts.push(RuleText {
                     id: manifest.id.clone(),
                     file: format!("{rel_dir}/{src}"),
@@ -281,6 +282,74 @@ fn sources(
     texts
 }
 
+/// Rules become managed blocks in shared files, delimited by `<!-- grimoire:… -->`
+/// marker lines. Rule text holding such a line would break the block around it,
+/// and leading frontmatter would be read as the client's own.
+fn rule_markers(text: &str, file: &str, out: &mut Vec<Diagnostic>) {
+    if let Some((n, _)) = text
+        .lines()
+        .enumerate()
+        .find(|(_, line)| line.trim_start().starts_with("<!-- grimoire:"))
+    {
+        out.push(
+            Diagnostic::error(
+                "rule/marker",
+                format!(
+                    "line {} starts with `<!-- grimoire:`, which is reserved for Grimoire's managed-block markers",
+                    n + 1
+                ),
+            )
+            .in_file(file.to_owned()),
+        );
+    }
+    if ends_in_open_fence(text) {
+        out.push(
+            Diagnostic::error(
+                "rule/unclosed-fence",
+                "the text ends inside an unclosed code fence, which would turn everything after its block in AGENTS.md into code",
+            )
+            .in_file(file.to_owned()),
+        );
+    }
+    if text.starts_with("---") {
+        out.push(
+            Diagnostic::error(
+                "rule/frontmatter",
+                "rules carry no frontmatter; Grimoire generates each client's frontmatter from asset.toml",
+            )
+            .in_file(file.to_owned()),
+        );
+    }
+}
+
+/// Whether `text` ends inside a `CommonMark` fenced code block: an opening line of
+/// three or more backticks or tildes (indented at most three spaces, and for
+/// backticks with no backtick after the run) without a matching closing line.
+pub(crate) fn ends_in_open_fence(text: &str) -> bool {
+    let mut open: Option<(char, usize)> = None;
+    for line in text.lines() {
+        let indent = line.len() - line.trim_start_matches(' ').len();
+        if indent > 3 {
+            continue;
+        }
+        let rest = &line[indent..];
+        let Some(c) = rest.chars().next().filter(|c| *c == '`' || *c == '~') else {
+            continue;
+        };
+        let run = rest.chars().take_while(|x| *x == c).count();
+        if run < 3 {
+            continue;
+        }
+        let after = &rest[run..];
+        match open {
+            None if !(c == '`' && after.contains('`')) => open = Some((c, run)),
+            Some((oc, on)) if oc == c && run >= on && after.trim().is_empty() => open = None,
+            _ => {}
+        }
+    }
+    open.is_some()
+}
+
 fn rule_length(text: &str, file: &str, out: &mut Vec<Diagnostic>) {
     let lines = text.lines().count();
     if lines >= RULE_MAX_LINES {
@@ -305,6 +374,18 @@ fn rule_length(text: &str, file: &str, out: &mut Vec<Diagnostic>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn open_fences() {
+        assert!(ends_in_open_fence("Run:\n\n```sh\ncargo test\n"));
+        assert!(!ends_in_open_fence("Run:\n\n```sh\ncargo test\n```\n"));
+        assert!(!ends_in_open_fence("A span: ```` ``` ```` here.\n"));
+        assert!(!ends_in_open_fence("    ```\nindented code\n"));
+        assert!(
+            ends_in_open_fence("~~~~\n~~~\n"),
+            "a shorter run does not close"
+        );
+    }
 
     #[test]
     fn changelog_headings() {

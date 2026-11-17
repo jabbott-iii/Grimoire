@@ -117,6 +117,8 @@ jobs:
         run: cargo xtask schema --check
       - name: Validate the catalog
         run: cargo xtask validate
+      - name: Check that the embedded catalog pack is up to date
+        run: cargo xtask pack-catalog --check
       # Pull requests compare with the target branch; pushes with the previous tip;
       # manual runs with the parent commit.
       - name: Require version bumps for changed assets

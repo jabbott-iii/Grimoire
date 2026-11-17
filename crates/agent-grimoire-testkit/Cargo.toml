@@ -1,0 +1,16 @@
+[package]
+name = "agent-grimoire-testkit"
+description = "Fixture catalogs and projects for Grimoire's own tests"
+version = "0.0.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+agent-grimoire-catalog.workspace = true
+agent-grimoire-model.workspace = true
+tempfile.workspace = true
+
+[lints]
+workspace = true

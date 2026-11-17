@@ -1,6 +1,6 @@
 # Grimoire: implementation plan
 
-- **Status:** Phase 0 approved and committed 2026-11-16. **Phase 1 implemented 2026-11-16, awaiting review** (see §5, Phase 1 outcome).
+- **Status:** Phases 0 and 1 approved and committed 2026-11-16. **Phase 2 implemented 2026-11-16, awaiting review** (see §5, Phase 2 outcome).
 - **Date:** 2026-11-16
 
 ## Decisions recorded (2026-11-16)
@@ -10,6 +10,7 @@
 - **Q2–Q10:** as proposed below.
 - **Still open: repository spelling (C8).** Until you decide, the `repository` URL is left out of every config, including the Cargo metadata. Decide before Phase 5.
 - **Local tooling approved:** Rust 1.96 (MSRV), cargo-deny, cargo-shear, zizmor, actionlint, gitleaks, and the `gh-actions-lock` extension.
+- **Phase 2, filesystem layer:** cap-std with scoped deny.toml entries (the maintainer's choice when asked, [ADR-0006](docs/adr/0006-filesystem-confinement.md)).
 - **Phase rules:** each phase ends with a report and a stop. Nothing is committed, pushed, tagged, published or registered by the agent; the maintainer does all of that.
 
 ## Where things are
@@ -126,6 +127,59 @@ Every phase ends with:
 - **Exit:** all gates pass locally on Linux, with an exact report. You push to confirm macOS and Windows.
 
 ### Phase 2: Resolver, installer, lockfile, CLI core, `claude-code` + `agents-md`
+
+**Outcome (2026-11-16):** implemented, and every gate passes locally on Linux. CI on macOS and Windows still needs a push.
+
+What was built:
+- **Crates:**
+  - `agent-grimoire-resolve`: selection, versions, lock pins, conflicts, clients, consent.
+  - `agent-grimoire-install`: confined filesystem, managed blocks, JSON entries, the pure planner, apply and verify.
+  - `agent-grimoire-adapters`: `claude-code`, `agents-md` and rule sharing.
+  - The `grimoire` CLI, with all eleven commands.
+  - `agent-grimoire-testkit`, test-only.
+- **Generated:** the embedded catalog pack, with `cargo xtask pack-catalog [--check]` in CI.
+- **Specs:** the Claude Code formats were re-verified (`CC-P2`), and the filesystem and editing crates were evaluated (`FS-CRATES`, `EDIT-CRATES`).
+
+Deviations and refinements, each recorded where it applies:
+- **`[allow]` table** for assets brought in by bundles, tags or `requires` (`architecture.md` §6.2).
+- **Lock additions:**
+  - a top-level `[[output]]` for Grimoire's own `CLAUDE.md` import block;
+  - `created-file` and `created-keys`, so removal deletes only what Grimoire created (§6.5);
+  - the reserved id `grimoire` and prefix `grimoire-`.
+- **Path-scoped rules shared via `AGENTS.md`** when both clients are selected, instead of also writing `.claude/rules/` (avoids double loading; §8.2).
+- **Pinned versions:** `plan` and `apply` stop whenever a locked version differs from the catalog's, not only when content is needed (§7.5, ADR-0001).
+- **Strict JSON only.** jsonc-parser's CST accepts comments even in strict mode, so files are validated with serde_json first (`EDIT-CRATES`).
+- **`Source` is a type, not a trait** (§4).
+- **Deferred to Phase 3:** HTTP transport configuration; per-name env-var consent (§11.7, §11.8).
+- **MCP server ids** `workspace` and `computer-use` are rejected; Claude Code reserves them.
+
+**Review:** an adversarial review (six lenses, each finding re-checked by a skeptic) produced 51 findings: 44 confirmed, 1 uncertain and 6 refuted. The confirmed and uncertain ones, 37 distinct after duplicates across lenses, are all fixed. Most have a regression test; one was settled by documentation (JSON layout, below). Three of the fixes were mutation-checked: each test fails without its fix. The most important:
+- **High: second-apply conflict.** A rule whose text did not end in exactly one newline was hashed before normalisation but written after it, so the second `apply` reported a permanent conflict. Blocks are now hashed exactly as written.
+- **Consent.**
+  - `add --allow` granted the offered permissions to every selected asset that lacked them, including an installed asset whose new version grew permissions. Consent now covers only what the command names.
+  - `remove` of an asset that something else still selects dropped its grant and wrote a config that no longer resolved. It now keeps the grant, resolves before writing, and suggests `exclude`.
+- **Lock confinement.** A tampered lock could make `plan` print, or `apply` delete, any project file (`.git/HEAD`). Lock paths are now limited to the locations Grimoire writes.
+- **Hooks and sidecars.**
+  - An edited hook element was silently "forgotten" on removal. It is now a conflict.
+  - `--write-new` overwrote an existing `.new` (a merge in progress). It now never replaces a different one.
+- **Platform cases.**
+  - A case-only rename between versions deleted the file on macOS and Windows. It is now refused.
+  - CRLF checkouts of `grimoire.lock` made `plan --check` fail forever.
+  - `doctor` exited 0 on an unresolvable project.
+- **Hardening:**
+  - non-blocking, re-checked reads (FIFO swap);
+  - permissions applied before content;
+  - partial applies recorded in the lock;
+  - "in the way" files as conflicts (exit 4);
+  - markers only at column 0;
+  - BOM support;
+  - unclosed fences rejected in rules;
+  - rule and agent files must be `<id>.md`;
+  - MCP tool names Claude Code would rename are refused.
+- **Documented rather than changed:**
+  - JSON containers written on one line are reflowed when Grimoire inserts into them.
+  - Empty directories are pruned after a file Grimoire owns is removed.
+
 
 - **Resolver:** bundles, tags and exclude; dependencies; conflicts; client support; `min-cli-version`; permission consent; clear diagnostics (`architecture.md` §7.5).
 - **Installer:**

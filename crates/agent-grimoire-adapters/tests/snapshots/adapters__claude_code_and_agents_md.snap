@@ -1,0 +1,85 @@
+---
+source: crates/agent-grimoire-adapters/tests/adapters.rs
+expression: dump(&r)
+---
+== .agents/skills/adr-writer/SKILL.md [adr-writer] (agents-md) file
+---
+name: adr-writer
+description: Does adr-writer things. Use when testing.
+---
+# adr-writer
+
+See [the notes](references/notes.md).
+== .agents/skills/adr-writer/references/notes.md [adr-writer] (agents-md) file
+# Notes
+
+Details.
+== .claude/agents/security-reviewer.md [security-reviewer] (claude-code) file
+---
+name: "security-reviewer"
+description: "Used by Grimoire's tests."
+tools: ["Read", "Grep", "Glob"]
+---
+
+You review changes carefully. You never edit files.
+== .claude/agents/silent-reviewer.md [silent-reviewer] (claude-code) file
+---
+name: "silent-reviewer"
+description: "Used by Grimoire's tests."
+tools: ["Read"]
+disallowedTools: ["Read"]
+---
+
+You review changes carefully. You never edit files.
+== .claude/settings.json [secret-guard] (claude-code) entry /hooks/PreToolUse|secret-guard#0
+{
+  "matcher": "Edit|Write|NotebookEdit",
+  "hooks": [
+    {
+      "type": "command",
+      "command": "grimoire-tool-secret-guard",
+      "args": [
+        "check",
+        "--stdin"
+      ],
+      "timeout": 10
+    }
+  ]
+}
+== .claude/skills/adr-writer/SKILL.md [adr-writer] (claude-code) file
+---
+name: adr-writer
+description: Does adr-writer things. Use when testing.
+---
+# adr-writer
+
+See [the notes](references/notes.md).
+== .claude/skills/adr-writer/references/notes.md [adr-writer] (claude-code) file
+# Notes
+
+Details.
+== .mcp.json [docs-index] (claude-code) entry /mcpServers/docs-index
+{
+  "type": "stdio",
+  "command": "grimoire-mcp-docs-index",
+  "env": {
+    "DOCS_CACHE": "${DOCS_CACHE:-}",
+    "DOCS_TOKEN": "${GH_TOKEN}"
+  }
+}
+== AGENTS.md [commit-style] (claude-code, agents-md) block commit-style
+# Commits
+
+Write Conventional Commits.
+== AGENTS.md [rust-errors] (claude-code, agents-md) block rust-errors
+_Applies when working on files matching `**/*.rs`, `` src/`odd`/** ``._
+
+# Errors
+
+Use typed errors.
+== CLAUDE.md [grimoire] (claude-code) block grimoire
+@AGENTS.md
+!! warning[plan/cross-client-agent]: Cursor also loads `security-reviewer` from .claude/agents/, and Cursor has no per-tool allow-list (only `readonly`), so it does not enforce this agent's tools; GitHub Copilot in VS Code also reads .claude/agents/, and how it maps Claude Code tool names is not verified
+!! warning[plan/cross-client-agent]: Cursor also loads `silent-reviewer` from .claude/agents/, and Cursor has no per-tool allow-list (only `readonly`), so it does not enforce this agent's tools; GitHub Copilot in VS Code also reads .claude/agents/, and how it maps Claude Code tool names is not verified
+!! warning[plan/cross-client-hooks]: Cursor and GitHub Copilot also run hooks from .claude/settings.json, so `secret-guard`'s hooks run there too
+!! warning[plan/cross-client-mcp]: GitHub Copilot (VS Code and CLI) also starts servers listed in .mcp.json, so `docs-index` is available there too

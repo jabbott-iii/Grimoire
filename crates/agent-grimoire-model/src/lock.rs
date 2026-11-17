@@ -23,6 +23,11 @@ pub struct Lockfile {
     /// Resolved assets, sorted by id.
     #[serde(default, rename = "asset", skip_serializing_if = "Vec::is_empty")]
     pub assets: Vec<LockedAsset>,
+    /// Content Grimoire itself owns rather than any asset, such as the `CLAUDE.md`
+    /// block that imports `AGENTS.md` (`architecture.md` §8.2). Its managed blocks
+    /// use the reserved name [`Lockfile::PROJECT_OWNER`].
+    #[serde(default, rename = "output", skip_serializing_if = "Vec::is_empty")]
+    pub outputs: Vec<LockedOutput>,
 }
 
 impl Lockfile {
@@ -32,8 +37,13 @@ impl Lockfile {
         Self {
             format: Format::CURRENT,
             assets: Vec::new(),
+            outputs: Vec::new(),
         }
     }
+
+    /// The owner name of outputs that belong to Grimoire rather than an asset.
+    /// It is a reserved asset id, so no asset can claim it.
+    pub const PROJECT_OWNER: &'static str = "grimoire";
 
     /// Parses a `grimoire.lock` document.
     ///
@@ -46,18 +56,20 @@ impl Lockfile {
 
     /// Sorts everything into the canonical order, so serialization is deterministic.
     pub fn canonicalize(&mut self) {
+        fn sort_outputs(outputs: &mut [LockedOutput]) {
+            for output in outputs.iter_mut() {
+                output.clients.sort();
+                output.clients.dedup();
+            }
+            outputs.sort_by(|a, b| (&a.path, &a.key).cmp(&(&b.path, &b.key)));
+        }
         self.assets.sort_by(|a, b| a.id.cmp(&b.id));
         for asset in &mut self.assets {
             asset.selected_by.sort();
             asset.selected_by.dedup();
-            for output in &mut asset.outputs {
-                output.clients.sort();
-                output.clients.dedup();
-            }
-            asset
-                .outputs
-                .sort_by(|a, b| (&a.path, &a.key).cmp(&(&b.path, &b.key)));
+            sort_outputs(&mut asset.outputs);
         }
+        sort_outputs(&mut self.outputs);
     }
 }
 
@@ -114,6 +126,15 @@ pub struct LockedOutput {
     pub key: Option<EntryKey>,
     /// Hash of the content Grimoire owns in the unit.
     pub hash: Sha256Digest,
+    /// For `block` and `entry` units: Grimoire created the file, so it deletes the
+    /// file when the last thing in it is removed. A user's own file is never deleted.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub created_file: bool,
+    /// For `entry` units: the containers (JSON Pointers) Grimoire created for this
+    /// entry, which it removes again once they are empty. Containers that were
+    /// already there are left alone.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub created_keys: Vec<EntryKey>,
 }
 
 /// The ownership unit of an output.

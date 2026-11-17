@@ -157,6 +157,35 @@ impl fmt::Display for Permission {
     }
 }
 
+impl Permission {
+    /// Every permission, in `allow` order.
+    pub const ALL: [Permission; 6] = [
+        Permission::FilesystemRead,
+        Permission::FilesystemWrite,
+        Permission::Network,
+        Permission::Shell,
+        Permission::Env,
+        Permission::Hooks,
+    ];
+}
+
+impl FromStr for Permission {
+    type Err = InvalidValue;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        Permission::ALL
+            .into_iter()
+            .find(|p| p.as_str() == value)
+            .ok_or_else(|| {
+                InvalidValue::new(
+                    "permission",
+                    value,
+                    "must be one of filesystem-read, filesystem-write, network, shell, env, hooks",
+                )
+            })
+    }
+}
+
 /// A client-neutral tool capability granted to an agent or matched by a hook.
 ///
 /// Written `read`, `search`, `edit`, `execute`, `web`, `mcp:<server-id>` or

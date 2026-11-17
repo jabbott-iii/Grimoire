@@ -11,13 +11,19 @@
 //! - duplicate rules.
 //!
 //! Version-bump checks need git history and live in `xtask`.
+//!
+//! [`pack`] turns a validated catalog into the deterministic pack embedded in the
+//! binary, and [`Source`] loads a pack into the index the resolver and installer
+//! read (ADR-0001).
 
 mod asset;
 mod code;
 mod cross;
 mod fs;
+mod pack;
 mod rules;
 mod skill;
+mod source;
 mod yaml;
 
 use std::collections::BTreeMap;
@@ -27,6 +33,8 @@ use agent_grimoire_model::{AssetId, AssetManifest, Bundle, Diagnostic, Kind, val
 
 pub use asset::changelog_has;
 pub use fs::MAX_FILE_BYTES;
+pub use pack::pack;
+pub use source::{Source, SourceAsset, SourceError};
 
 /// A loaded catalog. It may be partial when validation found errors.
 #[derive(Debug, Default)]

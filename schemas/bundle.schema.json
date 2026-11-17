@@ -59,7 +59,7 @@
       "const": 1
     },
     "AssetId": {
-      "description": "Asset or bundle identifier: 1-64 characters of [a-z0-9-], no leading, trailing or doubled '-'. Must not start with claude-, anthropic-, anthropics- or cc-plugin-, and must not be 'synced'.",
+      "description": "Asset or bundle identifier: 1-64 characters of [a-z0-9-], no leading, trailing or doubled '-'. Must not start with claude-, anthropic-, anthropics-, cc-plugin- or grimoire-, and must not be 'synced' or 'grimoire'.",
       "type": "string",
       "minLength": 1,
       "maxLength": 64,

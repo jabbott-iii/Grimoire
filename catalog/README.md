@@ -17,7 +17,7 @@ Every asset lives in its own directory, `catalog/<kind>/<id>/`. Bundles live in 
 ## Every asset needs
 
 - **`asset.toml`**, the manifest. Its schema is [`schemas/asset.schema.json`](../schemas/asset.schema.json).
-  - `id` must equal the directory name. Use 1–64 characters of `[a-z0-9-]`, and don't start with `claude-`, `anthropic-`, `anthropics-` or `cc-plugin-`.
+  - `id` must equal the directory name. Use 1–64 characters of `[a-z0-9-]`, and don't start with `claude-`, `anthropic-`, `anthropics-`, `cc-plugin-` or `grimoire-`.
   - `kind` must match the parent directory.
   - Unknown fields are errors.
 - **`README.md`**, which explains what the asset does, when to use it, and security notes.
@@ -34,6 +34,15 @@ Every asset lives in its own directory, `catalog/<kind>/<id>/`. Bundles live in 
   - Every client must install `SKILL.md` and everything under `scripts/`, `references/` and `assets/`.
   - Only the spec's frontmatter fields are allowed, and `allowed-tools` is refused.
   - Every script must be referenced from `SKILL.md`.
+- **Rules are plain Markdown.**
+  - No frontmatter (Grimoire writes each client's).
+  - No line starting with `<!-- grimoire:`, which is reserved for managed-block markers.
+  - No unclosed code fence, which would turn the rest of a user's `AGENTS.md` into code.
+  - A rule for both `claude-code` and `agents-md` uses the same `src` for both, because Claude Code also reads `AGENTS.md`.
+- **Rule and agent files are named `<id>.md`.** Claude Code discovers only `.md` files.
+- **Hook bindings list each capability once.** Avoid `search` in hooks: Claude Code's main session searches with Bash on macOS, Linux and WSL.
+- **MCP tool names used in `mcp:<server>/<tool>` capabilities avoid `.`.** Claude Code may rename such tools, so the claude-code adapter refuses them.
+- **An agent's `description` is its delegation text.** Clients show it to decide when to hand work to the agent, so say when to use it.
 - **Agents list their tools explicitly.** `[agent] tools = [...]` is required; `[]` is legal. Capabilities that imply a permission must be declared under `[permissions]`: `read`/`search` imply filesystem `read`, `edit` implies filesystem `write`, `execute` implies `shell`, and `web` implies `network`. An `mcp:<server>` capability needs that server in `[requires]`.
 - **Permissions match behaviour.**
   - A tool with `hooks` declares `hooks = true`, and a tool without hooks must not.
@@ -45,5 +54,7 @@ Every asset lives in its own directory, `catalog/<kind>/<id>/`. Bundles live in 
 - **Rules declare no permissions**, and must not duplicate another rule.
 - **Version bumps.** Any change to an installed or built file needs a version bump and a CHANGELOG entry. `README.md`, `CHANGELOG.md`, `evals/` and `tests/` are exempt.
 - **Removing an asset** is allowed only if it was already `maturity = "deprecated"` (with a named `replacement`) at the comparison base: on `main` for a pull request, or at the previous tip for a push. Deprecate it in an earlier change first.
-- **Versions** are SemVer without build metadata (`1.2.3`, `1.2.3-rc.1`). The id `synced` is reserved, as are the prefixes above.
+- **Versions** are SemVer without build metadata (`1.2.3`, `1.2.3-rc.1`). The ids `synced` and `grimoire` are reserved, as are the prefixes above. MCP servers can't be named `workspace` or `computer-use`, which Claude Code reserves for built-in servers.
+- **An MCP server started with no arguments speaks stdio.** That is how clients are configured to start it.
+- **The catalog is embedded in the binary.** After changing anything here, run `cargo xtask pack-catalog`; CI fails if the pack is stale.
 - **No symlinks**, and no files over 1 MiB. Every path must be portable across Linux, macOS and Windows: ASCII only, no Windows reserved names, and no two paths that differ only in letter case.

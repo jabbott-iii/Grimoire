@@ -225,6 +225,11 @@ fn walk_into(
 /// Reads a catalog text file, which must be a regular UTF-8 file of at most
 /// [`MAX_FILE_BYTES`]. The limit is enforced while reading, not only reported.
 pub(crate) fn read_text(path: &Path) -> Result<String, String> {
+    String::from_utf8(read_bytes(path)?).map_err(|_| "must be valid UTF-8".to_owned())
+}
+
+/// Reads a catalog file, which must be a regular file of at most [`MAX_FILE_BYTES`].
+pub(crate) fn read_bytes(path: &Path) -> Result<Vec<u8>, String> {
     // Checked without following links and before opening: opening a FIFO would block.
     let meta = fs::symlink_metadata(path).map_err(|e| format!("cannot read: {e}"))?;
     if !meta.is_file() {
@@ -240,5 +245,5 @@ pub(crate) fn read_text(path: &Path) -> Result<String, String> {
     if u64::try_from(bytes.len()).unwrap_or(u64::MAX) > MAX_FILE_BYTES {
         return Err(format!("is larger than the {MAX_FILE_BYTES}-byte limit"));
     }
-    String::from_utf8(bytes).map_err(|_| "must be valid UTF-8".to_owned())
+    Ok(bytes)
 }

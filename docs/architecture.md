@@ -1,6 +1,6 @@
 # Grimoire architecture
 
-- **Status:** Draft for Phase 0 review. Everything marked **Proposal** needs maintainer approval before Phase 1.
+- **Status:** Every Phase 0 proposal was approved (2026-11-16). Sections marked "Phase 2" record what implementation settled or refined.
 - **Date:** 2026-11-16
 
 Spec facts are cited by their IDs in [`specs.md`](specs.md), e.g. `CC-MEM`. Decisions with lasting consequences are in [`adr/`](adr/).
@@ -170,6 +170,12 @@ A shared hardening library for servers (transport setup, Origin validation, auth
 
 **Dependency direction.** `model` ← `catalog` ← `resolve`, then `model` + `install` ← `adapters` (adapters construct install's output values), then everything ← `cli`. Tool and server crates depend on none of the core crates.
 
+**Phase 2 notes:**
+- **The `Source` abstraction is a type, not a trait.** `agent_grimoire_catalog::Source` is the in-memory index of manifests, digests and installed files. The builtin pack builds it today, and a remote index would build the same type. A trait with a single implementation added nothing.
+- **The pack** is `crates/agent-grimoire-catalog/catalog.pack`, a deterministic length-prefixed list of files (asset manifests, READMEs, changelogs, installed files and bundles). `cargo xtask pack-catalog` writes it from a catalog that validates cleanly, and CI runs `--check`.
+- **The CLI** is a library (`agent_grimoire::run`) plus a thin binary, so tests can drive it with fixture catalogs.
+- **Test fixtures** live in `crates/agent-grimoire-testkit` (`publish = false`).
+
 ## 5. Identifiers and versions
 
 - **Asset IDs are unique across the whole catalog**, not just per kind. That gives simple CLI UX (`grimoire add rust-errors`), unambiguous lock keys, and one-to-one plugin names in the generated marketplace.
@@ -261,6 +267,15 @@ The ADR-0002 override `runtime = "docker"` is added in Phase 6, together with th
 
 Nothing that could alter destinations outside the anchor rules is overridable.
 
+**Consent for assets without an `[assets]` entry (Phase 2).** An asset brought in by a bundle, a tag or another asset's `requires` has no `[assets]` table to hold `allow`. Its grants go in a top-level table instead:
+
+```toml
+[allow]
+secret-guard = ["filesystem-read", "hooks"]
+```
+
+Each asset's grants live in exactly one place. An asset listed under `[assets]` takes them there, and an `[allow]` entry for it is an error (`config/allow-direct`). `grimoire add` writes whichever applies, and moves the grant when an asset becomes direct. An `[allow]` entry for an asset that is not installed is a warning.
+
 ### 6.3 Permission consent
 
 Declared `[permissions]` are not just documentation. Resolution fails if an asset needs a permission that is not in its `allow` list.
@@ -315,6 +330,10 @@ allow = []
 
 The lock is sorted deterministically and uses normalized `/` paths, so it diffs cleanly and is identical across operating systems.
 
+**Phase 2 additions to the lock:**
+- A top-level `[[output]]` list holds content Grimoire itself owns rather than an asset. Today that is only the `CLAUDE.md` block that imports `AGENTS.md` (§8.2). Its block markers use the reserved name `grimoire`. The asset id `grimoire` and the prefix `grimoire-` are reserved so that no asset can collide with it.
+- `created-file = true` records that adding an output created its (shared) file. `created-keys = ["/mcpServers"]` records the JSON containers it created. Removal deletes exactly those, once empty. A file or container that existed before Grimoire is never deleted. When the creating output is removed while others remain, the record moves to one of them.
+
 ## 7. Install model
 
 ### 7.1 Desired state, plan, apply
@@ -343,6 +362,13 @@ Details:
 - **Blocks** sit in a deterministic order. User text outside blocks is never touched. HTML comments are stripped by Claude Code before injection, so markers cost no context there (`CC-MEM`).
 - **Entries** use format-preserving editing: `toml_edit` for TOML, and a comment- and order-preserving JSON/JSONC editor for JSON (choice in Phase 2). Unrelated keys and the user's formatting are preserved. Property tests cover merge, unmerge, and round-trips with arbitrary surrounding content.
 - **Removal** deletes only owned units. Grimoire deletes a file it created only when the file is now empty of anything Grimoire didn't write. Otherwise it removes its blocks or entries and leaves the file. Directories Grimoire created are removed if empty.
+  - Phase 2 implementation:
+    - Creation is recorded in the lock (`created-file`, `created-keys`; §6.5).
+    - After deleting a file, Grimoire removes the directories above it that are now empty, whether or not it created them. Creating directories is not recorded, and an empty directory holds no content (git does not track one).
+- **Entry keys** (Phase 2) are RFC 6901 JSON Pointers. `/mcpServers/<id>` owns that member's value. `/hooks/PreToolUse|<id>#<n>` owns one element of that array, found by the hash of its value; the text after `|` only keeps keys distinct.
+- **JSON editing** (Phase 2, settles §11.1) uses `jsonc-parser`'s concrete syntax tree (`EDIT-CRATES` in `specs.md`), so no ADR is needed.
+  - Unrelated keys, values and order are always preserved, as is all formatting outside the container Grimoire edits.
+  - Inserting into a container written on a single line reflows that container across lines. Removing the entry later restores the values, not the single line. Grimoire edits only **strict JSON**: Claude Code reads its settings as strict JSON, and a file a client can't parse should not be "fixed" silently. Comments, trailing commas, or duplicate keys on Grimoire's path make the file unreadable for Grimoire (§7.3).
 
 ### 7.3 Drift and conflicts
 
@@ -359,10 +385,25 @@ For each output, the planner compares three hashes: on-disk (D), locked (L) and 
 
 A conflict is reported with a diff. `--force` overwrites. `--write-new` writes the would-be file as `<path>.new` (for blocks and entries, the whole file as it would be written) and leaves the original alone.
 
+Phase 2 details:
+- `apply --write-new` exits 4, because the conflicts remain. The lock keeps the old records for those files, so the conflict is reported again until the user merges the `.new` file or uses `--force`.
+- **A file Grimoire cannot edit safely is refused, even with `--force`** (exit 4). That covers malformed or unterminated block markers, non-UTF-8 text, invalid or non-strict JSON, a JSON path that is the wrong type, and duplicate keys on Grimoire's path. Grimoire never guesses what it owns.
+- `apply` re-reads each file just before writing it and aborts if it changed after planning (exit 4). A rerun converges.
+  - The files already written by then are recorded in the lock, so their creation records (§6.5) are not lost.
+  - The message says that some files were written.
+- **Array elements are found by their exact value** (hook bindings). When a locked element can't be found, it is a conflict (`NotFound`), whether the entry is still wanted or not. An edited element and a removed one look the same, so Grimoire never forgets one silently.
+  - With `--force`, a still-wanted element is written again, and any edited copy is left as the user's.
+  - Two keys never claim the same element, and identical desired elements are refused.
+- **`--write-new` never replaces a different `<path>.new`.** An identical one from an earlier run is left as it is. Sidecars are checked before anything is written, and get the original file's permissions.
+- **Something in the way** is a conflict (exit 4), not a safety refusal: a file where a directory is needed (`.claude` as a file), or a directory where a file is needed.
+- **A case-only rename between versions** is refused (exit 3), for example a lock recording `Guide.md` while the catalog now writes `guide.md`. On macOS and Windows both names are one file, and deleting the old name would delete the new one.
+
 ### 7.4 Filesystem safety
 
 - **Paths:** every destination is a normalized **ASCII** relative path under the project root (`RelPath`). ASCII-only rules out invisible and bidi characters, superscript device names and Unicode-normalization collisions. These are rejected: absolute paths, `..`, drive and UNC prefixes, NUL bytes, Windows reserved names and alternate data streams (`:`), and names that collide case-insensitively within one plan. The catalog validator applies the same rules to every catalog file (Phase 1).
 - **Confinement:** all filesystem access goes through a capability handle on the project root (`cap-std`). The handle refuses escapes, including through symlinks.
+  - Every directory on the way to a managed path is opened no-follow, one component at a time. The dependency's deny.toml entries are justified in [ADR-0006](adr/0006-filesystem-confinement.md).
+  - The full threat model is in [`security-model.md`](security-model.md).
 - **Symlinks:** Grimoire never writes through a symlink at a managed path. It refuses (exit 6) rather than follow one.
 - **Atomic writes:** a temp file in the same directory, fsync, then rename over the target. Behaviour differences on Windows are covered by tests.
 - **No hooks, no execution, no network:** installing never executes asset content and runs no install hooks. The install path has no network code at all in v1 (the builtin source).
@@ -380,6 +421,10 @@ Each of these is a distinct, actionable diagnostic (exit 3):
 - unaccepted permissions;
 - an agent whose tool restriction a selected client can't enforce;
 - a pinned version unavailable in this CLI's catalog when content is needed (ADR-0001).
+
+**Phase 2 refinement of the last item.** With one embedded version per asset, `plan`, `apply` and `update --no-apply` stop whenever a selected asset's locked version (or manifest digest) differs from the catalog's. That includes cases where no file would change, because telling whether content is needed would mean rendering the pinned version, which is not available. The error names `grimoire update <id>`.
+- `verify`, `remove` + `apply`, and `uninstall` still work, because they need only the lock.
+- Assets not yet in the lock resolve to the catalog version.
 
 ## 8. Client adapters
 
@@ -420,10 +465,14 @@ Consequences:
    - `{claude-code, cursor, copilot}` gets skills only in `.claude/skills/`.
    - `{codex, gemini-cli, cursor}` gets skills only in `.agents/skills/`.
    - Unavoidable duplicates are reported by `plan`. Example: all six clients need both skill directories, so Cursor and Copilot see each skill twice.
-2. **Rules with Claude Code + `agents-md` (Proposal for Phase 2, to be confirmed by tests).**
-   - Always-on rules live once in `AGENTS.md`. A managed block in `CLAUDE.md` holds `@AGENTS.md`, which Claude Code documents as never double-loading. Claude then reads them regardless of whether a user later adds their own `CLAUDE.md`.
-   - Path-scoped rules go to `.claude/rules/<id>.md` with `paths`.
-   - Risk to test: Copilot CLI expands `@` imports in `CLAUDE.md`, which may double-load there.
+2. **Rules with Claude Code + `agents-md` (implemented in Phase 2).**
+   - When a rule is installed for both clients from the same source, it lives once in `AGENTS.md`, attributed to both clients in the lock.
+   - A Grimoire-owned block in `CLAUDE.md` holds `@AGENTS.md`. Claude Code documents that this "never makes Claude read `AGENTS.md` twice, whichever Project instructions value you use" (`CC-P2`). Claude then reads the rules whether or not the user later adds their own `CLAUDE.md`.
+   - **Refinement:** path-scoped rules are shared the same way, carrying a scope line, instead of also going to `.claude/rules/`. Claude Code reads the whole of `AGENTS.md` through the import, so a `.claude/rules/` copy would load the rule a second time whenever matching files are touched.
+     - Cost: Claude Code sees a shared path-scoped rule at launch rather than only on matching files.
+     - With `claude-code` alone, rules go to `.claude/rules/<id>.md`, with `paths` when scoped. This settles §11.3.
+   - The import block is removed when no shared rule is left. Its file is deleted only if Grimoire created it.
+   - Still to test in Phase 4: Copilot CLI expands `@` imports in `CLAUDE.md`, which may double-load there.
 3. **Permissions can leak across clients.** Cursor reads `.claude/agents/` without tool restrictions, and Cursor and Copilot also execute hooks from `.claude/settings.json`. Installing for one client can therefore grant something in another, even an *unselected* one. `plan` prints a warning for these cases, and `docs/security-model.md` covers them.
 
 ### 8.3 Per-client mapping (v1 proposal; client order per [ADR-0005](adr/0005-client-priority.md))
@@ -438,6 +487,27 @@ Consequences:
 | Tool hooks | `.claude/settings.json` `hooks` | – | `.codex/hooks.json` | `.cursor/hooks.json` | `.gemini/settings.json` `hooks` | `.github/hooks/grimoire.json` |
 
 Project-scoped Codex config, rules and hooks load only in **trusted** projects (`CODEX-CONFIG`). `doctor` reports this, because Grimoire can't grant trust.
+
+**`claude-code` details as implemented in Phase 2** (`CC-P2`):
+
+| Output | Written as |
+|---|---|
+| Rule | The rule text. A path-scoped rule first gets `paths` frontmatter, a YAML list of quoted globs. |
+| Agent | Frontmatter `name` (the id), `description` (the manifest `description`, the delegation text) and `tools`, all JSON-quoted so YAML never reads `true` or `123` as non-strings. |
+| MCP server | `mcpServers.<id> = {"type": "stdio", "command": "<binary>", "env": {"VAR": "${VAR}"}}`. |
+| Hook binding | `hooks.<Event>[] = {"matcher": …, "hooks": [{"type": "command", "command": "<binary>", "args": […], "timeout": n}]}`. |
+
+- **Agent tool mapping:**
+  - `read` → `Read`; `search` → `Grep`, `Glob`; `edit` → `Edit`, `Write`, `NotebookEdit`; `execute` → `Bash`, `PowerShell`; `web` → `WebFetch`, `WebSearch`.
+  - `mcp:<id>` → `mcp__<id>__*`, and `mcp:<id>/<tool>` → `mcp__<id>__<tool>`.
+  - An agent with no capabilities gets `tools: ["Read"]` with `disallowedTools: ["Read"]`, the documented way to grant no tools.
+- **MCP servers:**
+  - A server started with no arguments speaks stdio, which every Grimoire server must support. Optional variables are written `${VAR:-}`, because an unset variable without a default reaches the server literally.
+  - `env` overrides map the server's variable to the user's name (`${GH_TOKEN}`).
+  - The `streamable-http` transport override is refused for now. It needs a server URL, designed with the first MCP server in Phase 3.
+- **Hook bindings:**
+  - They use exec form: `args` selects "no shell involved".
+  - Matchers are an exact `A|B` list, or an anchored `^(…)$` regex when an MCP tool is involved.
 
 ## 9. CLI (Proposal)
 
@@ -457,11 +527,22 @@ Project-scoped Codex config, rules and hooks load only in **trusted** projects (
 | `grimoire doctor` | Environment report: clients detected, tool and server binaries on `PATH` and their versions, Codex trust, config parse errors | — |
 | `grimoire uninstall [--purge]` | Remove all managed content and the lock (`--purge` also removes `grimoire.toml`) | managed outputs, lock |
 
-`add`/`remove` only change the desired state. `apply` reconciles, which keeps CI flows explicit. `add --apply` is a convenience.
+`add`/`remove` only change the desired state. `apply` reconciles, which keeps CI flows explicit. `add --apply` (and `remove --apply`) is a convenience.
+
+As implemented in Phase 2:
+- **`init`** detects `claude-code` from `CLAUDE.md` or `.claude/`, and `agents-md` from `AGENTS.md` or `.agents/`. With nothing detected and no `--client`, it is a usage error. Clients without an adapter yet are refused.
+- **`add`:**
+  - Resolves the new selection before writing, so a broken selection never reaches `grimoire.toml`.
+  - Asks for each asset's missing permissions on a terminal, or takes them from `--allow`.
+  - A plain id that names a bundle is added as a bundle.
+  - New direct entries get `^<catalog version>`.
+- **`remove`** warns when another selector keeps the asset installed.
+- **`update [<id>…]`** lets the named (or all) pins move to the catalog's versions. `--no-apply` writes the lock with the new versions but keeps every output record describing the files as they are, so the next `apply` performs the update.
+- **`doctor`** never runs a binary. It only checks that each locked tool or MCP server binary is on `PATH`.
 
 ### 9.2 Machine use
 
-- `--json` on every command puts exactly one JSON document on stdout: `{ "format": 1, "command": …, "ok": …, "result": …, "diagnostics": [ … ] }`. Human diagnostics go to stderr.
+- `--json` on every command puts exactly one JSON document on stdout: `{ "format": 1, "command": …, "ok": …, "exit": <code>, "result": …, "diagnostics": [ … ] }`. Human diagnostics go to stderr. With `--json` stderr stays quiet, and usage errors also produce the envelope.
 - `--no-input` disables prompts. It is implied when stdin is not a TTY or `CI` is set. A prompt that would be needed becomes an error that names the flag to pass.
 - `-C <dir>` sets the project root.
 - Output is deterministic: stable ordering, and no timestamps in written files.
@@ -474,7 +555,7 @@ Project-scoped Codex config, rules and hooks load only in **trusted** projects (
 | 1 | Unexpected failure (I/O, internal error) |
 | 2 | Usage error (bad flags or arguments) |
 | 3 | Invalid configuration or manifest, or a resolution failure (§7.5) |
-| 4 | Conflict: drift or an unmanaged file is in the way. Nothing was written |
+| 4 | Conflict: drift or an unmanaged file is in the way. Nothing was written, except when a file changed or failed partway through an `apply` (the message says so, and the lock records what was written) |
 | 5 | Check failed: `plan --check` found changes, `verify` found mismatches, or `doctor` found problems |
 | 6 | Refused for safety (path escape, symlink at a managed path) |
 | 130 | Interrupted |
@@ -495,9 +576,11 @@ Marketplace notes, verified against `CC-PLUGIN` and `CC-MKT`:
 
 ## 11. Open design issues (to settle in the phase noted)
 
-1. **JSON/JSONC editing** (Phase 2): which crate preserves comments and order for `.mcp.json`, `.cursor/mcp.json` and `settings.json`, or whether to write our own minimal editor. Needs evaluation and possibly an ADR.
-2. **Cross-client planning priorities** (Phase 2/4): the fixed priority order for the greedy cover, and how `plan` presents duplicates. Needs snapshot tests per client combination.
-3. **`.claude/rules/` vs a `CLAUDE.md` block** for Claude Code always-on rules when `agents-md` isn't selected (Phase 2).
+1. ~~**JSON/JSONC editing**~~ **Settled in Phase 2:** `jsonc-parser`'s CST, strict JSON only (§7.2, `EDIT-CRATES`).
+2. **Cross-client planning priorities** (Phase 4). In Phase 2 the only shared location is `AGENTS.md`, reached by Claude Code through the import (§8.2), and it has snapshot tests for each of the three client combinations. The general greedy cover over the read matrix arrives with the clients that share `.claude/skills/` and `.agents/skills/`.
+3. ~~**`.claude/rules/` vs a `CLAUDE.md` block**~~ **Settled in Phase 2:** `.claude/rules/` (§8.2).
 4. **Server-side MCP auth** (Phase 3): rmcp provides client-side OAuth only (`RMCP`). Grimoire needs a resource-server layer covering RFC 9728 metadata, `WWW-Authenticate`, and audience/issuer validation. Choose a JWT/introspection approach. Needs an ADR.
 5. **Codex AGENTS.md budget** (Phase 4): warn in `plan` when managed blocks push `AGENTS.md` near Codex's 32 KiB default.
 6. **Copilot cloud-agent MCP** can't be configured from repo files. Decide whether `doctor` emits the settings JSON for the user to paste (Phase 4).
+7. **Environment variable consent** (Phase 3): `allow = ["env"]` accepts the `env` permission, not each variable name, so a new version that reads more variables is not stopped. Decide with the first MCP server asset whether the lock records the accepted names.
+8. **HTTP transport configuration** (Phase 3): a Streamable HTTP entry needs the server's URL, so the `transport` override is refused until the first MCP server asset settles how that URL is given.
