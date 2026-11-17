@@ -16,14 +16,14 @@ use std::collections::BTreeSet;
 use agent_grimoire_install::entry::{element_key, member_key};
 use agent_grimoire_install::plan::{Content, Desired, Owner};
 use agent_grimoire_model::{
-    Anchor, Capability, ClientId, Diagnostic, HookEvent, HookFailure, OutputSpec, RelPath,
-    Strategy, Transport,
+    Anchor, Capability, ClientId, Diagnostic, EnvVarName, HookEvent, HookFailure, OutputSpec,
+    RelPath, Strategy, Transport,
 };
 use agent_grimoire_resolve::Resolved;
 use serde_json::{Map, Value, json};
 
 use crate::text::{with_frontmatter, yaml_list, yaml_string};
-use crate::{Report, source_text, under};
+use crate::{Report, copy_tree, env_remap, no_destination, rule_paths, source_text, under};
 
 /// Claude Code's project settings file, where hooks live.
 pub const SETTINGS: &str = ".claude/settings.json";
@@ -45,18 +45,12 @@ pub(crate) fn render(
 ) -> Vec<(RelPath, Content)> {
     match (spec.to.anchor(), spec.strategy) {
         (Anchor::Rules, Strategy::Render) => rule(resolved, spec, report).into_iter().collect(),
-        (Anchor::Skills, Strategy::Copy) => copy(resolved, spec, SKILLS),
+        (Anchor::Skills, Strategy::Copy) => copy_tree(resolved, spec, SKILLS),
         (Anchor::Agents, Strategy::Render) => agent(resolved, spec, report).into_iter().collect(),
         (Anchor::Mcp, Strategy::Entry) => mcp(resolved, report).into_iter().collect(),
         (Anchor::Hooks, Strategy::Entry) => hooks(resolved, report),
         (anchor, _) => {
-            report.errors.push(Diagnostic::error(
-                "adapter/unsupported",
-                format!(
-                    "claude-code cannot write `{}` to `{anchor}` this way",
-                    resolved.id()
-                ),
-            ));
+            no_destination(report, ClientId::ClaudeCode, resolved, anchor);
             Vec::new()
         }
     }
@@ -81,18 +75,7 @@ fn rule(
     let src = spec.src.as_ref()?;
     let body = source_text(resolved, src, report)?;
     let path = under(RULES, spec.to.path()?)?;
-    let paths: Vec<&str> = resolved
-        .asset
-        .manifest
-        .rule
-        .as_ref()
-        .map(|r| {
-            r.paths
-                .iter()
-                .map(agent_grimoire_model::Glob::as_str)
-                .collect()
-        })
-        .unwrap_or_default();
+    let paths = rule_paths(resolved);
     let text = if paths.is_empty() {
         body
     } else {
@@ -101,38 +84,38 @@ fn rule(
     Some((path, Content::File(text.into_bytes())))
 }
 
-/// Copies every file at or below `src` to the same layout under `dir`.
-pub(crate) fn copy(
-    resolved: &Resolved<'_>,
-    spec: &OutputSpec,
-    dir: &str,
-) -> Vec<(RelPath, Content)> {
-    let (Some(src), Some(to)) = (spec.src.as_ref(), spec.to.path()) else {
-        return Vec::new();
-    };
-    resolved
-        .asset
-        .files_under(src)
-        .filter_map(|(path, bytes)| {
-            let rest = &path.as_str()[src.as_str().len()..];
-            let dest = RelPath::new(format!("{dir}/{to}{rest}")).ok()?;
-            Some((dest, Content::File(bytes.to_vec())))
-        })
-        .collect()
-}
-
 /// Claude Code drops a tool whose full name is over 128 characters (`CC-P2`).
 const MAX_TOOL_NAME: usize = 128;
+
+/// How Claude Code names an MCP server's tools.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum McpNaming {
+    /// A server in the project's `.mcp.json`: `mcp__<server>__<tool>`.
+    Project,
+    /// A server shipped by the plugin of the same name, as in Grimoire's
+    /// marketplace: `mcp__plugin_<plugin>_<server>__<tool>` (`CC-PLUGIN-P4`).
+    Plugin,
+}
+
+impl McpNaming {
+    fn prefix(self, server: &agent_grimoire_model::AssetId) -> String {
+        match self {
+            // Asset ids are kebab-case, so nothing needs replacing.
+            McpNaming::Project => format!("mcp__{server}__"),
+            McpNaming::Plugin => format!("mcp__plugin_{server}_{server}__"),
+        }
+    }
+}
 
 /// Why Claude Code may not expose an MCP tool under the name Grimoire would
 /// write. Model-facing tool names allow only `[A-Za-z0-9_-]`; how Claude Code
 /// renames other characters in tool names is not documented (`CC-P2`).
-fn mcp_name_problem(capability: &Capability) -> Option<String> {
+fn mcp_name_problem(capability: &Capability, naming: McpNaming) -> Option<String> {
     let Capability::Mcp { server, tool } = capability else {
         return None;
     };
     let tool = tool.as_ref()?;
-    let full = format!("mcp__{server}__{tool}");
+    let full = format!("{}{tool}", naming.prefix(server));
     if tool.as_str().contains('.') {
         Some(format!(
             "`{full}` contains '.', which Claude Code may rename"
@@ -147,7 +130,7 @@ fn mcp_name_problem(capability: &Capability) -> Option<String> {
 }
 
 /// Claude Code tool names for a capability (`CC-AGENT`).
-fn tool_names(capability: &Capability) -> Vec<String> {
+fn tool_names(capability: &Capability, naming: McpNaming) -> Vec<String> {
     let names: &[&str] = match capability {
         Capability::Read => &["Read"],
         // Glob and Grep come back for a subagent that lists them without Bash.
@@ -157,9 +140,10 @@ fn tool_names(capability: &Capability) -> Vec<String> {
         Capability::Execute => &["Bash", "PowerShell"],
         Capability::Web => &["WebFetch", "WebSearch"],
         Capability::Mcp { server, tool } => {
+            let prefix = naming.prefix(server);
             return vec![match tool {
-                Some(tool) => format!("mcp__{server}__{tool}"),
-                None => format!("mcp__{server}__*"),
+                Some(tool) => format!("{prefix}{tool}"),
+                None => format!("{prefix}*"),
             }];
         }
     };
@@ -175,6 +159,24 @@ fn agent(
     let src = spec.src.as_ref()?;
     let body = source_text(resolved, src, report)?;
     let path = under(AGENTS, spec.to.path()?)?;
+    match agent_file(manifest, &body, McpNaming::Project) {
+        Ok(text) => Some((path, Content::File(text.into_bytes()))),
+        Err(problem) => {
+            report
+                .errors
+                .push(Diagnostic::error("adapter/unsupported", problem));
+            None
+        }
+    }
+}
+
+/// An agent file: frontmatter `name`, `description` and an explicit `tools`
+/// list, then the prompt. Fails when a tool can't be named for Claude Code.
+pub(crate) fn agent_file(
+    manifest: &agent_grimoire_model::AssetManifest,
+    body: &str,
+    naming: McpNaming,
+) -> Result<String, String> {
     let mut tools: Vec<String> = Vec::new();
     for capability in manifest
         .agent
@@ -182,17 +184,13 @@ fn agent(
         .map(|a| a.tools.as_slice())
         .unwrap_or_default()
     {
-        if let Some(problem) = mcp_name_problem(capability) {
-            report.errors.push(Diagnostic::error(
-                "adapter/unsupported",
-                format!(
-                    "claude-code cannot grant `{}` the tool `{capability}`: {problem}",
-                    manifest.id
-                ),
+        if let Some(problem) = mcp_name_problem(capability, naming) {
+            return Err(format!(
+                "claude-code cannot grant `{}` the tool `{capability}`: {problem}",
+                manifest.id
             ));
-            return None;
         }
-        for name in tool_names(capability) {
+        for name in tool_names(capability, naming) {
             if !tools.contains(&name) {
                 tools.push(name);
             }
@@ -212,13 +210,11 @@ fn agent(
     } else {
         fields.push(("tools", yaml_list(tools.iter().map(String::as_str))));
     }
-    Some((
-        path,
-        Content::File(with_frontmatter(&fields, &body).into_bytes()),
-    ))
+    Ok(with_frontmatter(&fields, body))
 }
 
-fn mcp(resolved: &Resolved<'_>, report: &mut Report) -> Option<(RelPath, Content)> {
+/// The `.mcp.json` entry, which GitHub Copilot reads too (`COPILOT-P4`).
+pub(crate) fn mcp(resolved: &Resolved<'_>, report: &mut Report) -> Option<(RelPath, Content)> {
     let manifest = &resolved.asset.manifest;
     let id = &manifest.id;
     let server = manifest.mcp_server.as_ref()?;
@@ -239,31 +235,22 @@ fn mcp(resolved: &Resolved<'_>, report: &mut Report) -> Option<(RelPath, Content
             },
         ));
     }
-    let remap = options.map(|o| &o.env);
-    if let Some(remap) = remap {
-        for name in remap.keys() {
-            if !server.env.iter().any(|e| e.name == *name) {
-                // A variable the server reads but the client sets itself, such as
-                // CLAUDE_PROJECT_DIR, is not forwarded, so it cannot be remapped.
-                let message = if manifest.permissions.env.contains(name) {
-                    format!(
-                        "`{id}` reads `{name}`, but the client sets it, so it cannot be remapped; the variables you can remap are {}",
-                        list(server.env.iter().map(|e| e.name.as_str()))
-                    )
-                } else {
-                    format!(
-                        "`{id}` does not read `{name}`; the variables you can remap are {}",
-                        list(server.env.iter().map(|e| e.name.as_str()))
-                    )
-                };
-                report.errors.push(
-                    Diagnostic::error("adapter/env-unknown", message)
-                        .at(format!("assets.{id}.env"))
-                        .in_file("grimoire.toml"),
-                );
-            }
-        }
-    }
+    let remap = env_remap(resolved, report);
+    Some((
+        RelPath::new(MCP).ok()?,
+        Content::Entry {
+            key,
+            value: stdio_entry(server, remap),
+        },
+    ))
+}
+
+/// A stdio server entry: `{"type": "stdio", "command", "env"}` with `${VAR}`
+/// references, optionally reading each variable from a user-chosen name.
+pub(crate) fn stdio_entry(
+    server: &agent_grimoire_model::McpServerSpec,
+    remap: Option<&std::collections::BTreeMap<EnvVarName, EnvVarName>>,
+) -> Value {
     let mut entry = Map::new();
     entry.insert("type".into(), json!("stdio"));
     entry.insert("command".into(), json!(server.binary.as_str()));
@@ -282,13 +269,7 @@ fn mcp(resolved: &Resolved<'_>, report: &mut Report) -> Option<(RelPath, Content
         }
         entry.insert("env".into(), Value::Object(env));
     }
-    Some((
-        RelPath::new(MCP).ok()?,
-        Content::Entry {
-            key,
-            value: Value::Object(entry),
-        },
-    ))
+    Value::Object(entry)
 }
 
 fn event_name(event: HookEvent) -> &'static str {
@@ -313,7 +294,7 @@ fn matcher(tools: &[Capability]) -> Option<String> {
                 Some(tool) => format!("mcp__{server}__{}", tool.as_str().replace('.', "\\.")),
                 None => format!("mcp__{server}__.*"),
             }],
-            other => tool_names(other),
+            other => tool_names(other, McpNaming::Project),
         };
         for name in mapped {
             if !names.contains(&name) {
@@ -361,7 +342,11 @@ fn hooks(resolved: &Resolved<'_>, report: &mut Report) -> Vec<(RelPath, Content)
         if binding.on_failure == HookFailure::Block {
             handler.insert("onFailure".into(), json!("block"));
         }
-        if let Some(problem) = binding.tools.iter().find_map(mcp_name_problem) {
+        if let Some(problem) = binding
+            .tools
+            .iter()
+            .find_map(|c| mcp_name_problem(c, McpNaming::Project))
+        {
             report.errors.push(Diagnostic::error(
                 "adapter/unsupported",
                 format!(
@@ -399,15 +384,6 @@ fn hooks(resolved: &Resolved<'_>, report: &mut Report) -> Vec<(RelPath, Content)
     out
 }
 
-fn list<'a>(names: impl Iterator<Item = &'a str>) -> String {
-    let names: Vec<String> = names.map(|n| format!("`{n}`")).collect();
-    if names.is_empty() {
-        "none".to_owned()
-    } else {
-        names.join(", ")
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -432,11 +408,19 @@ mod tests {
 
     #[test]
     fn tool_names_cover_every_capability() {
-        assert_eq!(tool_names(&cap("search")), ["Grep", "Glob"]);
-        assert_eq!(tool_names(&cap("mcp:docs-index")), ["mcp__docs-index__*"]);
+        let project = McpNaming::Project;
+        assert_eq!(tool_names(&cap("search"), project), ["Grep", "Glob"]);
         assert_eq!(
-            tool_names(&cap("mcp:docs-index/search")),
+            tool_names(&cap("mcp:docs-index"), project),
+            ["mcp__docs-index__*"]
+        );
+        assert_eq!(
+            tool_names(&cap("mcp:docs-index/search"), project),
             ["mcp__docs-index__search"]
+        );
+        assert_eq!(
+            tool_names(&cap("mcp:docs-index/search"), McpNaming::Plugin),
+            ["mcp__plugin_docs-index_docs-index__search"]
         );
     }
 }

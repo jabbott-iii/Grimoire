@@ -1,0 +1,156 @@
+---
+source: crates/agent-grimoire/tests/clients.rs
+expression: tree
+---
+== .agents/
+== .agents/skills/
+== .agents/skills/adr-writer/
+== .agents/skills/adr-writer/SKILL.md
+---
+name: adr-writer
+description: Does adr-writer things. Use when testing.
+---
+# adr-writer
+
+See [the notes](references/notes.md).
+== .agents/skills/adr-writer/references/
+== .agents/skills/adr-writer/references/notes.md
+# Notes
+
+Details.
+== .claude/
+== .claude/agents/
+== .claude/agents/security-reviewer.md
+---
+name: "security-reviewer"
+description: "Used by Grimoire's tests."
+tools: ["Read", "Grep", "Glob"]
+---
+
+You review changes carefully. You never edit files.
+== .claude/skills/
+== .claude/skills/adr-writer/
+== .claude/skills/adr-writer/SKILL.md
+---
+name: adr-writer
+description: Does adr-writer things. Use when testing.
+---
+# adr-writer
+
+See [the notes](references/notes.md).
+== .claude/skills/adr-writer/references/
+== .claude/skills/adr-writer/references/notes.md
+# Notes
+
+Details.
+== .codex/
+== .codex/config.toml
+# My Codex settings.
+model = "gpt-6"
+
+[mcp_servers.theirs]
+command = "their-server" # keep me
+
+[mcp_servers.docs-index]
+command = "grimoire-mcp-docs-index"
+env_vars = ["DOCS_TOKEN"]
+== .cursor/
+== .cursor/agents/
+== .cursor/agents/security-reviewer.md
+---
+name: "security-reviewer"
+description: "Used by Grimoire's tests."
+readonly: true
+---
+
+You review changes carefully. You never edit files.
+== .cursor/mcp.json
+{
+  "mcpServers": {
+    "theirs": { "command": "their-server" },
+    "docs-index": {
+      "type": "stdio",
+      "command": "grimoire-mcp-docs-index",
+      "env": {
+        "DOCS_TOKEN": "${env:DOCS_TOKEN}"
+      }
+    }
+  }
+}
+== .gemini/
+== .gemini/agents/
+== .gemini/agents/security-reviewer.md
+---
+name: "security-reviewer"
+description: "Used by Grimoire's tests."
+tools: ["read_file", "read_many_files", "grep_search", "glob", "list_directory"]
+---
+
+You review changes carefully. You never edit files.
+== .gemini/settings.json
+{
+  // My Gemini CLI settings.
+  "theme": "dark",
+  "mcpServers": {
+    /* theirs */ "theirs": { "command": "their-server" },
+    "docs-index": {
+      "command": "grimoire-mcp-docs-index",
+      "env": {
+        "DOCS_TOKEN": "${DOCS_TOKEN}"
+      }
+    }
+  }
+}
+== .github/
+== .github/agents/
+== .github/agents/security-reviewer.agent.md
+---
+name: "security-reviewer"
+description: "Used by Grimoire's tests."
+tools: ["read", "search"]
+strict-tools-list: true
+---
+
+You review changes carefully. You never edit files.
+== .mcp.json
+{
+  "mcpServers": {
+    "docs-index": {
+      "type": "stdio",
+      "command": "grimoire-mcp-docs-index",
+      "env": {
+        "DOCS_TOKEN": "${DOCS_TOKEN}"
+      }
+    }
+  }
+}
+== AGENTS.md
+<!-- grimoire:begin commit-style -->
+# Commits
+
+Write Conventional Commits.
+<!-- grimoire:end commit-style -->
+== CLAUDE.md
+<!-- grimoire:begin grimoire -->
+@AGENTS.md
+<!-- grimoire:end grimoire -->
+== GEMINI.md
+# Our project
+
+Human-written guidance.
+
+<!-- grimoire:begin grimoire -->
+@AGENTS.md
+<!-- grimoire:end grimoire -->
+== grimoire.lock
+== grimoire.toml
+# Grimoire project configuration. `grimoire add` and `grimoire remove` edit it,
+# and you can too; `grimoire apply` makes the project match it.
+format = 1
+clients = ["claude-code", "agents-md", "codex", "cursor", "gemini-cli", "copilot"]
+
+[assets]
+commit-style = "^1.0.0"
+adr-writer = "^0.3.1"
+security-reviewer = { version = "^1.0.0", allow = ["filesystem-read"] }
+docs-index = { version = "^2.0.0", allow = ["filesystem-read", "env:DOCS_TOKEN"] }

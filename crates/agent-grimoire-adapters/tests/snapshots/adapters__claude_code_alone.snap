@@ -67,7 +67,7 @@ Details.
     "DOCS_TOKEN": "${GH_TOKEN}"
   }
 }
-!! warning[plan/cross-client-agent]: Cursor also loads `security-reviewer` from .claude/agents/, and Cursor has no per-tool allow-list (only `readonly`), so it does not enforce this agent's tools; GitHub Copilot in VS Code also reads .claude/agents/, and how it maps Claude Code tool names is not verified
-!! warning[plan/cross-client-agent]: Cursor also loads `silent-reviewer` from .claude/agents/, and Cursor has no per-tool allow-list (only `readonly`), so it does not enforce this agent's tools; GitHub Copilot in VS Code also reads .claude/agents/, and how it maps Claude Code tool names is not verified
-!! warning[plan/cross-client-hooks]: Cursor and GitHub Copilot also run hooks from .claude/settings.json, so `secret-guard`'s hooks run there too
+!! warning[plan/cross-client-agent]: `security-reviewer`: Cursor also loads it from .claude/agents/, has no per-tool allow-list, and how it treats a Claude Code agent's `tools` is undocumented, so it may get all of the parent agent's tools; GitHub Copilot (CLI and VS Code) also loads it from .claude/agents/, and how it maps Claude Code tool names and `disallowedTools` is undocumented
+!! warning[plan/cross-client-agent]: `silent-reviewer`: Cursor also loads it from .claude/agents/, has no per-tool allow-list, and how it treats a Claude Code agent's `tools` is undocumented, so it may get all of the parent agent's tools; GitHub Copilot (CLI and VS Code) also loads it from .claude/agents/, and how it maps Claude Code tool names and `disallowedTools` is undocumented
+!! warning[plan/cross-client-hooks]: Cursor and GitHub Copilot also run hooks from .claude/settings.json, so `secret-guard`'s hooks run there too; whether they pass `args` and honour `onFailure` is undocumented, so there a hook may let actions through when it fails, or block every tool call if its arguments are dropped (turn off Claude Code hooks in that client to recover)
 !! warning[plan/cross-client-mcp]: GitHub Copilot (VS Code and CLI) also starts servers listed in .mcp.json, so `docs-index` is available there too

@@ -1,0 +1,13 @@
+{
+  "name": "security-reviewer",
+  "version": "0.2.0+1995761c726e",
+  "description": "Read-only security review of code and diffs, reporting each finding with evidence",
+  "author": {
+    "name": "jabbott-iii"
+  },
+  "license": "MIT OR Apache-2.0",
+  "keywords": [
+    "security",
+    "review"
+  ]
+}

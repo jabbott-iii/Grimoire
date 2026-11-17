@@ -26,7 +26,10 @@ The whole skill directory, byte for byte: `SKILL.md`, `references/writing-guide.
 | Client | Location |
 |---|---|
 | `claude-code` | `.claude/skills/adr-writer/` |
-| `agents-md` | `.agents/skills/adr-writer/` |
+| `agents-md`, `codex`, `gemini-cli` | `.agents/skills/adr-writer/` |
+| `cursor`, `copilot` | `.agents/skills/adr-writer/`, or `.claude/skills/adr-writer/` when only `claude-code` among the other selected clients needs a copy; both clients read both locations |
+
+Each location is written once, whatever the number of clients that read it.
 
 `README.md`, `CHANGELOG.md`, `evals/` and `asset.toml` are not installed.
 

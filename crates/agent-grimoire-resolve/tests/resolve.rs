@@ -503,3 +503,42 @@ fn permission_hints_show_the_merged_grant() {
         "{text}"
     );
 }
+
+/// Hooks are Claude Code only and Codex has no agents (ADR-0008): a project that
+/// also uses those clients is told, and agents-md is skipped quietly.
+#[test]
+fn clients_that_cannot_host_a_kind_are_reported() {
+    let source = catalog().source();
+    let c = config(
+        "format = 1\nclients = [\"claude-code\", \"agents-md\", \"codex\", \"gemini-cli\"]\n[assets]\nsecret-guard = { version = \"^1\", allow = [\"filesystem-read\", \"hooks\"] }\n",
+    );
+    let version = Version::parse("0.1.0").unwrap();
+    let r = resolve(
+        &source,
+        &Request {
+            config: &c,
+            lock: None,
+            cli_version: &version,
+            update: &Update::None,
+            available_clients: &ClientId::ALL,
+        },
+    )
+    .unwrap();
+    let not_covered: Vec<&str> = r
+        .warnings
+        .iter()
+        .filter(|d| d.code == "resolve/client-not-covered")
+        .map(|d| d.message.as_str())
+        .collect();
+    assert_eq!(
+        not_covered.len(),
+        2,
+        "codex and gemini-cli: {not_covered:?}"
+    );
+    assert!(
+        not_covered
+            .iter()
+            .all(|m| m.contains("hooks only for Claude Code"))
+    );
+    assert!(!not_covered.iter().any(|m| m.contains("agents-md")));
+}

@@ -505,9 +505,11 @@ fn versions(
 /// The clients an asset renders for.
 ///
 /// Clients listed explicitly in its `[assets]` entry must be supported. Otherwise
-/// the asset renders for every project client it supports; a client that cannot
-/// host the asset's kind at all (such as `agents-md` for an agent) is skipped
-/// quietly, and one the asset merely does not support gets a warning.
+/// the asset renders for every project client it supports, and one the asset
+/// merely does not support gets a warning. A client that cannot host the asset's
+/// kind at all is skipped with a warning too (ADR-0008: hooks are Claude Code
+/// only, and Codex has no agents), except `agents-md`, which by design holds no
+/// agents, MCP servers or hooks.
 fn clients(
     asset: &SourceAsset,
     options: Option<&AssetOptions>,
@@ -556,6 +558,16 @@ fn clients(
                             .collect::<Vec<_>>()
                     )
                 ),
+            ));
+        } else if *client != ClientId::AgentsMd {
+            let why = match m.kind {
+                Kind::Tool => "grimoire writes hooks only for Claude Code (ADR-0008)",
+                Kind::Agent => "a Codex agent can't be limited to its tools (ADR-0008)",
+                _ => "grimoire has no place to put it for that client",
+            };
+            out.push(Diagnostic::warning(
+                "resolve/client-not-covered",
+                format!("`{id}` is not installed for `{client}`: {why}"),
             ));
         }
     }

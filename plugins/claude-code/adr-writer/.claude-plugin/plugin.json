@@ -1,0 +1,15 @@
+{
+  "name": "adr-writer",
+  "version": "0.2.0+28df06dba97e",
+  "description": "Writes, numbers and supersedes architecture decision records, and answers why a decision was made",
+  "author": {
+    "name": "jabbott-iii"
+  },
+  "license": "MIT OR Apache-2.0",
+  "keywords": [
+    "adr",
+    "architecture",
+    "decisions",
+    "documentation"
+  ]
+}

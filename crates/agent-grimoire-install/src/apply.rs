@@ -7,7 +7,7 @@ use std::fmt;
 use agent_grimoire_model::{LockedAsset, LockedOutput, Lockfile, RelPath, Sha256Digest, Unit};
 
 use crate::block::Document;
-use crate::entry::EntryDoc;
+use crate::entry::{EntryDoc, EntryFormat};
 use crate::fs::{FsError, Root};
 use crate::hash;
 use crate::plan::{FilePlan, Owner, Plan};
@@ -315,7 +315,7 @@ pub fn verify(root: &Root, lock: &Lockfile) -> Result<Vec<Mismatch>, FsError> {
                     .map(|d| d.get(owner.name()).map(|b| hash::content(b.as_bytes())))
                     .map_err(|e| format!("its managed-block markers are broken ({e})")),
                 (Unit::Entry, _, Some(Ok(t))) => match &o.key {
-                    Some(key) => EntryDoc::parse(Some(t))
+                    Some(key) => EntryDoc::parse(EntryFormat::for_path(path), Some(t))
                         .and_then(|d| d.find(key, Some(&o.hash), None))
                         .map_err(|e| e.to_string()),
                     None => Err("the lock records an entry without a key".to_owned()),

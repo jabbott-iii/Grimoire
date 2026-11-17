@@ -1,4 +1,5 @@
-//! Owned entries in JSON config files such as `.mcp.json` (`architecture.md` §7.2).
+//! Owned entries in config files such as `.mcp.json`, `.gemini/settings.json`
+//! and `.codex/config.toml` (`architecture.md` §7.2).
 //!
 //! An entry key is an RFC 6901 JSON Pointer to what Grimoire owns:
 //!
@@ -7,20 +8,100 @@
 //!   `/hooks/PreToolUse`. Elements have no names, so the element is found by
 //!   the hash of its value; the text after `|` only keeps keys distinct.
 //!
+//! A value is a JSON value whatever the file's syntax, and the hash of what is on
+//! disk is [`value_hash`] of it read back as JSON. A lock hash therefore means the
+//! same thing in every format.
+//!
+//! # Formats
+//!
+//! [`EntryFormat::for_path`] decides a file's syntax from its path alone. Removing
+//! a locked entry that is no longer wanted has no desired value to look at: the
+//! lock records only the path, the unit, the key and the hash. The format must
+//! still be known then, so it cannot come from the adapter that wrote the entry.
+//!
+//! - **JSON**, the default (`.mcp.json`, `.claude/settings.json`, …): strict
+//!   RFC 8259. Claude Code reads its settings files as strict JSON (`CC-SET`),
+//!   and Grimoire refuses to edit what a client could not read.
+//! - **JSONC**, exactly `.gemini/settings.json`: Gemini CLI reads it as
+//!   `JSON.parse` of the text with its `//` and `/* */` comments stripped. Comments
+//!   are accepted and kept. Everything else a strict reader refuses (trailing
+//!   commas, single-quoted strings, hexadecimal numbers, …) is still refused.
+//! - **TOML**, any `.toml` file (Codex's `.codex/config.toml`): only object
+//!   members can be owned, not array elements. See *TOML* below.
+//!
+//! In every format a comment is the user's content: a file whose last member is
+//! gone but that still holds a comment is not empty, so it is never deleted.
+//! Values are hashed without their comments, so a comment the user adds *inside*
+//! an owned entry would be lost by rewriting or removing it; `EntryDoc::has_comments`
+//! lets the planner make that a conflict instead.
+//!
+//! # JSON and JSONC
+//!
 //! Files are edited in place with a concrete syntax tree, so the user's key
 //! order and unrelated content survive, and so do comments and whitespace outside
 //! the container Grimoire edits. Inserting into a container that is written on one
 //! line reflows that container across lines (a jsonc-parser behaviour); the values
-//! are unchanged, and removing the entry later does not restore the single line. Only strict JSON is
-//! accepted: Claude Code reads its settings files as strict JSON (`CC-SET`),
-//! and Grimoire refuses to edit what a client could not read.
+//! are unchanged, and removing the entry later does not restore the single line.
+//! Duplicate keys on Grimoire's path are refused, because readers resolve them
+//! differently.
+//!
+//! # TOML
+//!
+//! Files are edited with `toml_edit`, which keeps unrelated tables, keys,
+//! comments and ordering. A new entry whose value is an object is written as a
+//! standard table (`[mcp_servers.docs-index]`) with its keys in the value's
+//! order; nested objects become inline tables. Containers Grimoire creates on the
+//! way are implicit tables, which print no header of their own. Under a parent
+//! the user wrote as dotted keys or as an inline table, the entry takes the same
+//! form, because a `[table]` header cannot extend an inline table. Replacing an
+//! entry keeps its place, its form, its header line and the comments above it;
+//! removing it moves the comments above its header to the next one (see the
+//! `toml` module). `null` has no
+//! TOML form and is refused, as are integers outside the signed 64-bit range. A
+//! datetime or a non-finite float on disk has no JSON form, so it never matches
+//! a desired value. Invalid TOML, including duplicate keys and tables defined
+//! twice, makes the file unreadable for Grimoire.
 
 use std::fmt;
 
-use agent_grimoire_model::{EntryKey, Sha256Digest};
-use jsonc_parser::ParseOptions;
+use agent_grimoire_model::{EntryKey, RelPath, Sha256Digest};
 use jsonc_parser::cst::{CstArray, CstInputValue, CstNode, CstObject, CstRootNode};
+use jsonc_parser::tokens::Token;
+use jsonc_parser::{CollectOptions, CommentCollectionStrategy, ParseOptions};
 use serde_json::Value;
+
+mod toml;
+
+/// The syntax of an entry file. It follows from the file's path alone (see the
+/// module docs).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EntryFormat {
+    /// Strict JSON (RFC 8259).
+    Json,
+    /// JSON with `//` and `/* */` comments, and nothing else beyond strict JSON.
+    Jsonc,
+    /// TOML, where only object members can be owned.
+    Toml,
+}
+
+impl EntryFormat {
+    /// The format of the entry file at `path`: TOML for a `.toml` extension, JSONC
+    /// for exactly `.gemini/settings.json`, and strict JSON for everything else.
+    #[must_use]
+    pub fn for_path(path: &RelPath) -> Self {
+        let extension = match path.file_name().rsplit_once('.') {
+            Some((stem, extension)) if !stem.is_empty() => extension,
+            _ => "",
+        };
+        if extension.eq_ignore_ascii_case("toml") {
+            EntryFormat::Toml
+        } else if path.as_str() == ".gemini/settings.json" {
+            EntryFormat::Jsonc
+        } else {
+            EntryFormat::Json
+        }
+    }
+}
 
 /// Why an entry file cannot be edited.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -53,6 +134,76 @@ fn strict() -> ParseOptions {
         allow_non_finite_numbers: false,
         allow_extended_string_escapes: false,
     }
+}
+
+/// Strict JSON plus comments, for JSONC files.
+fn with_comments() -> ParseOptions {
+    ParseOptions {
+        allow_comments: true,
+        ..strict()
+    }
+}
+
+/// Checks `source` as a JSONC reader that strips comments and then parses strict
+/// JSON would (Gemini CLI: `JSON.parse` after `strip-json-comments`).
+///
+/// jsonc-parser finds the comments, which it tells apart from `//` inside
+/// strings; they are blanked out and the rest must be RFC 8259 JSON for
+/// `serde_json`. jsonc-parser alone would also accept some things `JSON.parse`
+/// refuses, such as raw control characters in strings.
+fn check_jsonc(source: &str) -> Result<(), EntryError> {
+    let invalid = |e: &dyn fmt::Display| err(format!("it is not valid JSONC ({e})"));
+    let parsed = jsonc_parser::parse_to_ast(
+        source,
+        &CollectOptions {
+            comments: CommentCollectionStrategy::AsTokens,
+            tokens: true,
+        },
+        &with_comments(),
+    )
+    .map_err(|e| invalid(&e))?;
+    let mut stripped = String::with_capacity(source.len());
+    let mut done = 0;
+    for token in parsed.tokens.iter().flatten() {
+        let range = token.range;
+        let line = matches!(token.token, Token::CommentLine(_));
+        if !line && !matches!(token.token, Token::CommentBlock(_)) {
+            continue;
+        }
+        // jsonc-parser also ends a line comment at a lone `\r`, strip-json-comments
+        // does not: the two would disagree about what follows.
+        if line
+            && source.as_bytes().get(range.end) == Some(&b'\r')
+            && source.as_bytes().get(range.end + 1) != Some(&b'\n')
+        {
+            return Err(err(
+                "it is not valid JSONC (a `//` comment ends in a lone carriage return, which JSONC readers disagree about)",
+            ));
+        }
+        let (Some(before), Some(comment)) = (
+            source.get(done..range.start),
+            source.get(range.start..range.end),
+        ) else {
+            return Err(invalid(&"comment boundaries are not character boundaries"));
+        };
+        stripped.push_str(before);
+        // strip-json-comments blanks only non-whitespace (`replace(/\S/g, ' ')`),
+        // so whitespace inside a comment reaches `JSON.parse`, which refuses all
+        // but space, tab, CR and LF. Keep JavaScript's whitespace as it is, so
+        // serde_json refuses the same characters. Rust's set adds U+0085 and
+        // lacks U+FEFF, unlike JavaScript's `\s`.
+        stripped.extend(comment.chars().map(|c| {
+            if (c.is_whitespace() && c != '\u{85}') || c == '\u{feff}' {
+                c
+            } else {
+                ' '
+            }
+        }));
+        done = range.end;
+    }
+    stripped.push_str(source.get(done..).unwrap_or_default());
+    serde_json::from_str::<Value>(&stripped).map_err(|e| invalid(&e))?;
+    Ok(())
 }
 
 /// What an entry key owns.
@@ -171,35 +322,176 @@ fn node_hash(node: &CstNode) -> Option<Sha256Digest> {
     node.to_serde_value().as_ref().map(value_hash)
 }
 
-/// A JSON document whose root is an object, edited in place.
-pub(crate) struct EntryDoc {
+/// An entry file, edited in place: one API over every [`EntryFormat`].
+pub(crate) enum EntryDoc {
+    /// JSON or JSONC.
+    Json(JsonDoc),
+    /// TOML.
+    Toml(Box<toml::TomlDoc>),
+}
+
+impl EntryDoc {
+    /// Parses the current file content (`None`: the file is absent) as `format`.
+    pub(crate) fn parse(format: EntryFormat, text: Option<&str>) -> Result<Self, EntryError> {
+        match format {
+            EntryFormat::Json => JsonDoc::parse(text, false).map(Self::Json),
+            EntryFormat::Jsonc => JsonDoc::parse(text, true).map(Self::Json),
+            EntryFormat::Toml => toml::TomlDoc::parse(text).map(|d| Self::Toml(Box::new(d))),
+        }
+    }
+
+    /// The hash of what the key owns on disk: the member's value, or the element
+    /// whose hash matches `desired` (preferred) or `locked`.
+    pub(crate) fn find(
+        &self,
+        key: &EntryKey,
+        locked: Option<&Sha256Digest>,
+        desired: Option<&Sha256Digest>,
+    ) -> Result<Option<Sha256Digest>, EntryError> {
+        match self {
+            Self::Json(doc) => doc.find(key, locked, desired),
+            Self::Toml(doc) => doc.find(key),
+        }
+    }
+
+    /// Writes `value` where the key points. For elements, replaces the element
+    /// matching `locked`, or appends. Returns the pointers of the containers it
+    /// had to create.
+    pub(crate) fn set(
+        &mut self,
+        key: &EntryKey,
+        locked: Option<&Sha256Digest>,
+        value: &Value,
+    ) -> Result<Vec<String>, EntryError> {
+        match self {
+            Self::Json(doc) => doc.set(key, locked, value),
+            Self::Toml(doc) => doc.set(key, value),
+        }
+    }
+
+    /// Removes what the key owns: the member, or the element whose hash is `disk`.
+    pub(crate) fn remove(
+        &mut self,
+        key: &EntryKey,
+        disk: Option<&Sha256Digest>,
+    ) -> Result<(), EntryError> {
+        match self {
+            Self::Json(doc) => doc.remove(key, disk),
+            Self::Toml(doc) => doc.remove(key),
+        }
+    }
+
+    /// Whether what the key owns carries comments that writing it, or removing
+    /// it when `deleting`, would lose. Values are hashed without their comments,
+    /// so the planner asks this before it rewrites or removes an entry.
+    pub(crate) fn has_comments(&self, key: &EntryKey, deleting: bool) -> Result<bool, EntryError> {
+        match self {
+            Self::Json(doc) => doc.has_comments(key),
+            Self::Toml(doc) => doc.has_comments(key, deleting),
+        }
+    }
+
+    /// Removes each container in `pointers` that is now empty, deepest first.
+    /// Returns those still holding something, which stay.
+    pub(crate) fn prune(&mut self, pointers: &[String]) -> Result<Vec<String>, EntryError> {
+        match self {
+            Self::Json(doc) => doc.prune(pointers),
+            Self::Toml(doc) => doc.prune(pointers),
+        }
+    }
+
+    /// Whether the file existed with content before editing.
+    pub(crate) fn existed(&self) -> bool {
+        match self {
+            Self::Json(doc) => doc.existed,
+            Self::Toml(doc) => doc.existed(),
+        }
+    }
+
+    /// Whether nothing is left in the file: no members, and no comments.
+    pub(crate) fn is_empty(&self) -> bool {
+        match self {
+            Self::Json(doc) => doc.is_empty(),
+            Self::Toml(doc) => doc.is_empty(),
+        }
+    }
+
+    /// The document as bytes.
+    pub(crate) fn render(&self) -> Vec<u8> {
+        match self {
+            Self::Json(doc) => doc.render(),
+            Self::Toml(doc) => doc.render(),
+        }
+    }
+}
+
+/// Whether a JSON node or anything inside it is a comment.
+fn node_comments(node: &CstNode) -> bool {
+    node.is_comment() || node.children().iter().any(node_comments)
+}
+
+/// Pointers in deepest-first order without duplicates, for pruning.
+fn deepest_first(pointers: &[String]) -> Vec<&String> {
+    let mut ordered: Vec<&String> = pointers.iter().collect();
+    ordered.sort_by_key(|p| std::cmp::Reverse(p.matches('/').count()));
+    ordered.dedup();
+    ordered
+}
+
+/// A JSON or JSONC document whose root is an object, edited in place.
+pub(crate) struct JsonDoc {
     /// Kept alive for as long as any node is used: the tree holds weak parent links.
     root: CstRootNode,
     /// Whether the file existed with content.
     existed: bool,
+    /// Whether comments are allowed (JSONC).
+    jsonc: bool,
 }
 
-impl EntryDoc {
-    /// Parses the current file content (`None`: the file is absent).
-    pub(crate) fn parse(text: Option<&str>) -> Result<Self, EntryError> {
+impl JsonDoc {
+    /// Parses the current file content (`None`: the file is absent), allowing
+    /// comments when `jsonc`.
+    fn parse(text: Option<&str>, jsonc: bool) -> Result<Self, EntryError> {
         let existed = text.is_some_and(|t| !t.trim().is_empty());
         let source = if existed {
             text.unwrap_or_default()
         } else {
             "{}\n"
         };
+        let what = if jsonc { "JSONC" } else { "JSON" };
         // jsonc-parser 0.34.0 collects comments as tokens when building a CST and
         // then skips its `allow_comments` check (`scan_handling_comments`), so
         // strictness is checked first with serde_json, an RFC 8259 parser.
-        serde_json::from_str::<Value>(source)
-            .map_err(|e| err(format!("it is not valid JSON ({e})")))?;
-        let root = CstRootNode::parse(source, &strict())
-            .map_err(|e| err(format!("it is not valid JSON ({e})")))?;
+        if jsonc {
+            check_jsonc(source)?;
+        } else {
+            serde_json::from_str::<Value>(source)
+                .map_err(|e| err(format!("it is not valid JSON ({e})")))?;
+        }
+        let options = if jsonc { with_comments() } else { strict() };
+        let root = CstRootNode::parse(source, &options)
+            .map_err(|e| err(format!("it is not valid {what} ({e})")))?;
         match root.value() {
             Some(node) if node.as_object().is_some() => {}
             _ => return Err(err("its top level is not a JSON object")),
         }
-        Ok(Self { root, existed })
+        Ok(Self {
+            root,
+            existed,
+            jsonc,
+        })
+    }
+
+    /// Whether the member's value holds comments, which writing or removing it
+    /// would lose. Strict JSON has none; JSONC entries are always members.
+    fn has_comments(&self, key: &EntryKey) -> Result<bool, EntryError> {
+        if !self.jsonc {
+            return Ok(false);
+        }
+        match parse_key(key)? {
+            Target::Member(path) => Ok(self.walk(&path)?.is_some_and(|n| node_comments(&n))),
+            Target::Element(_) => Ok(false),
+        }
     }
 
     fn object(&self) -> Result<CstObject, EntryError> {
@@ -228,9 +520,7 @@ impl EntryDoc {
         Ok(Some(current))
     }
 
-    /// The hash of what the key owns on disk: the member's value, or the element
-    /// whose hash matches `desired` (preferred) or `locked`.
-    pub(crate) fn find(
+    fn find(
         &self,
         key: &EntryKey,
         locked: Option<&Sha256Digest>,
@@ -291,10 +581,7 @@ impl EntryDoc {
         Ok(object)
     }
 
-    /// Writes `value` where the key points. For elements, replaces the element
-    /// matching `locked`, or appends. Returns the pointers of the containers it
-    /// had to create.
-    pub(crate) fn set(
+    fn set(
         &mut self,
         key: &EntryKey,
         locked: Option<&Sha256Digest>,
@@ -346,12 +633,7 @@ impl EntryDoc {
         Ok(created)
     }
 
-    /// Removes what the key owns: the member, or the element whose hash is `disk`.
-    pub(crate) fn remove(
-        &mut self,
-        key: &EntryKey,
-        disk: Option<&Sha256Digest>,
-    ) -> Result<(), EntryError> {
+    fn remove(&mut self, key: &EntryKey, disk: Option<&Sha256Digest>) -> Result<(), EntryError> {
         match parse_key(key)? {
             Target::Member(path) => {
                 if let Some((name, parents)) = path.split_last()
@@ -375,14 +657,9 @@ impl EntryDoc {
         Ok(())
     }
 
-    /// Removes each container in `pointers` that is now empty, deepest first.
-    /// Returns those still holding something, which stay.
-    pub(crate) fn prune(&mut self, pointers: &[String]) -> Result<Vec<String>, EntryError> {
-        let mut ordered: Vec<&String> = pointers.iter().collect();
-        ordered.sort_by_key(|p| std::cmp::Reverse(p.matches('/').count()));
-        ordered.dedup();
+    fn prune(&mut self, pointers: &[String]) -> Result<Vec<String>, EntryError> {
         let mut kept = Vec::new();
-        for pointer in ordered {
+        for pointer in deepest_first(pointers) {
             let Ok(Target::Member(path)) =
                 parse_key(&EntryKey::new(pointer.as_str()).map_err(|e| err(e.to_string()))?)
             else {
@@ -410,20 +687,17 @@ impl EntryDoc {
         Ok(kept)
     }
 
-    /// Whether the file existed with content before editing.
-    pub(crate) fn existed(&self) -> bool {
-        self.existed
-    }
-
-    /// Whether the top-level object has no members left.
-    pub(crate) fn is_empty(&self) -> bool {
+    /// Whether the top-level object has no members and no comments left. With no
+    /// members there are no strings, so any `/` starts a JSONC comment.
+    fn is_empty(&self) -> bool {
         self.root
             .object_value()
             .is_some_and(|o| o.properties().is_empty())
+            && !self.root.to_string().contains('/')
     }
 
     /// The document as bytes.
-    pub(crate) fn render(&self) -> Vec<u8> {
+    fn render(&self) -> Vec<u8> {
         let mut text = self.root.to_string();
         if !self.existed && !text.ends_with('\n') {
             text.push('\n');
@@ -483,6 +757,35 @@ mod tests {
         EntryKey::new(s).unwrap()
     }
 
+    fn json(text: Option<&str>) -> Result<EntryDoc, EntryError> {
+        EntryDoc::parse(EntryFormat::Json, text)
+    }
+
+    fn jsonc(text: Option<&str>) -> Result<EntryDoc, EntryError> {
+        EntryDoc::parse(EntryFormat::Jsonc, text)
+    }
+
+    fn rendered(doc: &EntryDoc) -> String {
+        String::from_utf8(doc.render()).unwrap()
+    }
+
+    #[test]
+    fn formats_follow_the_path() {
+        let format = |p: &str| EntryFormat::for_path(&RelPath::new(p).unwrap());
+        assert_eq!(format(".codex/config.toml"), EntryFormat::Toml);
+        assert_eq!(format("x/Y.TOML"), EntryFormat::Toml);
+        assert_eq!(format(".gemini/settings.json"), EntryFormat::Jsonc);
+        assert_eq!(format("sub/.gemini/settings.json"), EntryFormat::Json);
+        assert_eq!(format(".gemini/settings.json5"), EntryFormat::Json);
+        assert_eq!(format(".mcp.json"), EntryFormat::Json);
+        assert_eq!(format(".claude/settings.json"), EntryFormat::Json);
+        assert_eq!(
+            format(".toml"),
+            EntryFormat::Json,
+            "a dotfile, not an extension"
+        );
+    }
+
     #[test]
     fn keys_escape_and_parse() {
         assert_eq!(member_key(&["a/b", "c~d"]).unwrap().as_str(), "/a~1b/c~0d");
@@ -509,7 +812,7 @@ mod tests {
     #[test]
     fn member_set_and_remove_preserve_the_rest() {
         let text = "{\n  \"keep\": true,\n  \"mcpServers\": {\n    \"theirs\": {\"command\": \"x\"}\n  }\n}\n";
-        let mut doc = EntryDoc::parse(Some(text)).unwrap();
+        let mut doc = json(Some(text)).unwrap();
         let k = key("/mcpServers/mine");
         assert_eq!(doc.find(&k, None, None).unwrap(), None);
         assert_eq!(
@@ -527,7 +830,7 @@ mod tests {
         assert_eq!(value["mcpServers"]["mine"]["command"], "grimoire-mcp-x");
         assert_eq!(value["mcpServers"]["theirs"]["command"], "x");
         assert!(written.contains("\"keep\": true"));
-        let mut doc = EntryDoc::parse(Some(&written)).unwrap();
+        let mut doc = json(Some(&written)).unwrap();
         let hash = doc.find(&k, None, None).unwrap();
         assert!(hash.is_some());
         doc.remove(&k, hash.as_ref()).unwrap();
@@ -536,7 +839,7 @@ mod tests {
 
     #[test]
     fn creates_and_deletes_a_new_file() {
-        let mut doc = EntryDoc::parse(None).unwrap();
+        let mut doc = json(None).unwrap();
         assert!(!doc.existed());
         let k = key("/mcpServers/mine");
         assert_eq!(
@@ -547,7 +850,7 @@ mod tests {
         assert!(written.ends_with('\n'));
         let value: Value = serde_json::from_str(&written).unwrap();
         assert_eq!(value, json!({"mcpServers": {"mine": {"command": "c"}}}));
-        let mut doc = EntryDoc::parse(Some(&written)).unwrap();
+        let mut doc = json(Some(&written)).unwrap();
         let hash = doc.find(&k, None, None).unwrap();
         doc.remove(&k, hash.as_ref()).unwrap();
         assert_eq!(
@@ -559,12 +862,12 @@ mod tests {
 
     #[test]
     fn only_listed_empty_containers_are_pruned() {
-        let mut doc = EntryDoc::parse(Some("{\"a\": {}, \"b\": {\"c\": 1}, \"d\": []}")).unwrap();
+        let mut doc = json(Some("{\"a\": {}, \"b\": {\"c\": 1}, \"d\": []}")).unwrap();
         let kept = doc
             .prune(&["/b".to_owned(), "/d".to_owned(), "/missing".to_owned()])
             .unwrap();
         assert_eq!(kept, ["/b"]);
-        let value: Value = serde_json::from_str(&doc.root.to_string()).unwrap();
+        let value: Value = serde_json::from_str(&rendered(&doc)).unwrap();
         assert_eq!(
             value,
             json!({"a": {}, "b": {"c": 1}}),
@@ -577,7 +880,7 @@ mod tests {
         let theirs =
             json!({"matcher": "Bash", "hooks": [{"type": "command", "command": "theirs"}]});
         let text = format!("{{\"hooks\": {{\"PreToolUse\": [{theirs}]}}}}");
-        let mut doc = EntryDoc::parse(Some(&text)).unwrap();
+        let mut doc = json(Some(&text)).unwrap();
         let k = element_key(&["hooks", "PreToolUse"], "mine#0").unwrap();
         let v1 = json!({"matcher": "Edit", "hooks": [{"type": "command", "command": "mine", "args": []}]});
         let v2 = json!({"matcher": "Edit|Write", "hooks": [{"type": "command", "command": "mine", "args": []}]});
@@ -587,7 +890,7 @@ mod tests {
             Some(value_hash(&v1))
         );
         doc.set(&k, Some(&value_hash(&v1)), &v2).unwrap();
-        let value = serde_json::from_str::<Value>(&doc.root.to_string()).unwrap();
+        let value = serde_json::from_str::<Value>(&rendered(&doc)).unwrap();
         assert_eq!(
             value["hooks"]["PreToolUse"].as_array().unwrap().len(),
             2,
@@ -595,7 +898,7 @@ mod tests {
         );
         assert_eq!(doc.find(&k, Some(&value_hash(&v1)), None).unwrap(), None);
         doc.remove(&k, Some(&value_hash(&v2))).unwrap();
-        let value = serde_json::from_str::<Value>(&doc.root.to_string()).unwrap();
+        let value = serde_json::from_str::<Value>(&rendered(&doc)).unwrap();
         assert_eq!(value, json!({"hooks": {"PreToolUse": [theirs]}}));
     }
 
@@ -608,11 +911,104 @@ mod tests {
             "{'a': 1}",
             "nope",
         ] {
-            assert!(EntryDoc::parse(Some(bad)).is_err(), "{bad}");
+            assert!(json(Some(bad)).is_err(), "{bad}");
         }
-        let doc = EntryDoc::parse(Some("{\"mcpServers\": [], \"x\": 1}")).unwrap();
+        let doc = json(Some("{\"mcpServers\": [], \"x\": 1}")).unwrap();
         assert!(doc.find(&key("/mcpServers/a"), None, None).is_err());
-        let dup = EntryDoc::parse(Some("{\"mcpServers\": {}, \"mcpServers\": {}}")).unwrap();
+        let dup = json(Some("{\"mcpServers\": {}, \"mcpServers\": {}}")).unwrap();
         assert!(dup.find(&key("/mcpServers/a"), None, None).is_err());
+    }
+
+    /// A Gemini-style settings file: comments before, inside and after the
+    /// object Grimoire edits, and a `//` inside a string that is not a comment.
+    const COMMENTED: &str = "// Project settings\n{\n  /* servers */\n  \"mcpServers\": {\n    // theirs comes first\n    \"theirs\": {\"command\": \"x\"} // keep me\n  },\n  \"url\": \"https://example.com/a\" /* trailing */\n}\n// the end\n";
+
+    #[test]
+    fn strict_json_still_refuses_comments() {
+        for bad in [
+            COMMENTED,
+            "{} // after",
+            "/* before */ {}",
+            "{\"a\": /* inside */ 1}",
+        ] {
+            let e = json(Some(bad)).err().unwrap();
+            assert!(e.to_string().starts_with("it is not valid JSON ("), "{e}");
+            assert!(jsonc(Some(bad)).is_ok(), "{bad}");
+        }
+    }
+
+    #[test]
+    fn jsonc_keeps_comments_around_the_edit() {
+        let mut doc = jsonc(Some(COMMENTED)).unwrap();
+        let k = key("/mcpServers/mine");
+        assert_eq!(doc.find(&k, None, None).unwrap(), None);
+        let mine = json!({"command": "grimoire-mcp-x", "env": {"A": "$A"}});
+        assert_eq!(doc.set(&k, None, &mine).unwrap(), Vec::<String>::new());
+        let written = rendered(&doc);
+        for comment in [
+            "// Project settings\n",
+            "/* servers */",
+            "// theirs comes first",
+            "// keep me",
+            "/* trailing */",
+            "// the end\n",
+        ] {
+            assert!(written.contains(comment), "{comment} in {written}");
+        }
+        // What Gemini CLI would read: the text with its comments stripped.
+        let mut doc = jsonc(Some(&written)).unwrap();
+        assert_eq!(doc.find(&k, None, None).unwrap(), Some(value_hash(&mine)));
+        assert_eq!(
+            doc.find(&key("/url"), None, None).unwrap(),
+            Some(value_hash(&json!("https://example.com/a")))
+        );
+        doc.remove(&k, Some(&value_hash(&mine))).unwrap();
+        assert_eq!(rendered(&doc), COMMENTED);
+    }
+
+    #[test]
+    fn jsonc_refuses_everything_but_comments() {
+        for bad in [
+            "{\"a\": 1,}",
+            "{\"a\": [1,]}",
+            "{'a': 1}",
+            "{\"a\": 'b'}",
+            "{a: 1}",
+            "{\"a\": 0x1F}",
+            "{\"a\": +1}",
+            "{\"a\": .5}",
+            "{\"a\": NaN}",
+            "{\"a\": \"\\x41\"}",
+            "{\"a\": 1 \"b\": 2}",
+            "{\"a\": \"raw\ttab\"}",
+            "{\"a\": 01}",
+            "{} {}",
+            "{} /* unterminated",
+            "// a comment ended by a lone CR\r{}",
+            "[1, 2]",
+        ] {
+            let e = jsonc(Some(bad)).err();
+            assert!(e.is_some(), "{bad:?} was accepted");
+            let e = e.unwrap().to_string();
+            assert!(
+                e.starts_with("it is not valid JSONC (")
+                    || e == "its top level is not a JSON object",
+                "{bad:?}: {e}"
+            );
+        }
+        // CRLF line endings end `//` comments for every reader.
+        assert!(jsonc(Some("// note\r\n{}\r\n")).is_ok());
+        let dup = jsonc(Some("{\"mcpServers\": {}, /* again */ \"mcpServers\": {}}")).unwrap();
+        assert!(dup.find(&key("/mcpServers/a"), None, None).is_err());
+    }
+
+    #[test]
+    fn jsonc_comments_are_content() {
+        let mut doc = jsonc(Some("{\n  \"mine\": 1\n}\n// my note\n")).unwrap();
+        doc.remove(&key("/mine"), None).unwrap();
+        assert!(!doc.is_empty(), "the comment is the user's");
+        let mut doc = jsonc(Some("{\n  \"mine\": 1\n}\n")).unwrap();
+        doc.remove(&key("/mine"), None).unwrap();
+        assert!(doc.is_empty());
     }
 }

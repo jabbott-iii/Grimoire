@@ -54,17 +54,19 @@ impl ClientId {
     }
 
     /// Whether this client has a destination for `anchor` (`architecture.md` §8.3).
+    ///
+    /// Hooks are Claude Code only, and Codex has no agents: no other client can
+    /// keep a failed hook from letting the action through, and a Codex agent
+    /// can't be restricted to its declared tools (ADR-0008).
     #[must_use]
     pub fn supports(self, anchor: Anchor) -> bool {
         use Anchor::{Agents, Hooks, Instructions, Mcp, Rules, Skills};
         match self {
+            ClientId::ClaudeCode => matches!(anchor, Rules | Skills | Agents | Mcp | Hooks),
             ClientId::AgentsMd => matches!(anchor, Instructions | Skills),
-            ClientId::ClaudeCode | ClientId::Cursor | ClientId::Copilot => {
-                matches!(anchor, Rules | Skills | Agents | Mcp | Hooks)
-            }
-            ClientId::Codex | ClientId::GeminiCli => {
-                matches!(anchor, Instructions | Skills | Agents | Mcp | Hooks)
-            }
+            ClientId::Codex => matches!(anchor, Instructions | Skills | Mcp),
+            ClientId::Cursor | ClientId::Copilot => matches!(anchor, Rules | Skills | Agents | Mcp),
+            ClientId::GeminiCli => matches!(anchor, Instructions | Skills | Agents | Mcp),
         }
     }
 }

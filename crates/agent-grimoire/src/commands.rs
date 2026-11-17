@@ -125,17 +125,19 @@ fn init(out: &mut Out<'_, '_>, dir: Option<&PathBuf>, mut clients: Vec<ClientId>
     }
     let detected = clients.is_empty();
     if detected {
-        if exists(&project, "CLAUDE.md") || exists(&project, ".claude") {
-            clients.push(ClientId::ClaudeCode);
-        }
-        if exists(&project, "AGENTS.md") || exists(&project, ".agents") {
-            clients.push(ClientId::AgentsMd);
-        }
+        clients.extend(
+            ClientId::ALL
+                .into_iter()
+                .filter(|c| client_markers(*c).iter().any(|m| exists(&project, m))),
+        );
         if clients.is_empty() {
             return out.fail(
                 Exit::Usage,
                 "init/no-client",
-                "no client detected; pass --client claude-code and/or --client agents-md",
+                format!(
+                    "no client detected; pass --client with one or more of {}",
+                    AVAILABLE.map(ClientId::as_str).join(", ")
+                ),
             );
         }
     }
@@ -145,7 +147,10 @@ fn init(out: &mut Out<'_, '_>, dir: Option<&PathBuf>, mut clients: Vec<ClientId>
         return out.fail(
             Exit::Invalid,
             "init/client-unavailable",
-            format!("this version of grimoire cannot render for `{c}` yet; available: claude-code, agents-md"),
+            format!(
+                "this version of grimoire cannot render for `{c}` yet; available: {}",
+                AVAILABLE.map(ClientId::as_str).join(", ")
+            ),
         );
     }
     if let Err(e) = project.write(out, CONFIG, &new_config(&clients)) {
@@ -1111,7 +1116,8 @@ fn doctor(out: &mut Out<'_, '_>, dir: Option<&PathBuf>) -> Exit {
         },
     ));
     if let Some((config, _)) = &config {
-        config_checks(out, &project, config, &mut checks);
+        let locked = lock.as_ref().map(|(l, _)| l);
+        config_checks(out, &project, config, locked, &mut checks);
     }
     if let Some((lock, _)) = &lock {
         lock_checks(
@@ -1144,23 +1150,35 @@ fn config_checks(
     out: &mut Out<'_, '_>,
     project: &Project,
     config: &agent_grimoire_model::ProjectConfig,
+    lock: Option<&Lockfile>,
     checks: &mut Vec<Check>,
 ) {
     for client in &config.clients {
-        let found = match client {
-            ClientId::ClaudeCode => exists(project, "CLAUDE.md") || exists(project, ".claude"),
-            ClientId::AgentsMd => exists(project, "AGENTS.md") || exists(project, ".agents"),
-            _ => false,
+        // What grimoire installed comes from the lock; the markers show only that
+        // the project already used the client.
+        let installed = lock.map_or(0, |l| {
+            l.assets
+                .iter()
+                .flat_map(|a| &a.outputs)
+                .chain(&l.outputs)
+                .filter(|o| o.clients.contains(client))
+                .count()
+        });
+        let mut detail = if installed > 0 {
+            format!("{installed} outputs installed")
+        } else if client_markers(*client).iter().any(|m| exists(project, m)) {
+            "client files present, nothing installed by grimoire yet".to_owned()
+        } else {
+            "no files yet".to_owned()
         };
-        checks.push((
-            format!("client {client}"),
-            true,
-            if found {
-                "files present".into()
-            } else {
-                "no files yet".into()
-            },
-        ));
+        if let Some(note) = client_note(*client) {
+            detail.push_str("; ");
+            detail.push_str(note);
+        }
+        if *client == ClientId::Codex && exists(project, crate::pipeline::CODEX_OVERRIDE) {
+            detail.push_str("; AGENTS.override.md exists, so Codex reads it instead of AGENTS.md");
+        }
+        checks.push((format!("client {client}"), true, detail));
     }
     let Ok(planned) = prepare(out, project, config, &Update::None) else {
         checks.push((
@@ -1193,6 +1211,117 @@ fn config_checks(
     }
 }
 
+/// Files and folders that show a project already uses a client, for `init`'s
+/// detection and `doctor`.
+fn client_markers(client: ClientId) -> &'static [&'static str] {
+    match client {
+        ClientId::ClaudeCode => &["CLAUDE.md", ".claude"],
+        ClientId::AgentsMd => &["AGENTS.md", ".agents"],
+        ClientId::Codex => &[".codex"],
+        ClientId::Cursor => &[".cursor"],
+        ClientId::GeminiCli => &["GEMINI.md", ".gemini"],
+        ClientId::Copilot => &[
+            ".github/copilot-instructions.md",
+            ".github/instructions",
+            ".github/agents",
+        ],
+    }
+}
+
+/// What each client needs before it reads what grimoire wrote, which grimoire
+/// can't check or change (`*-P4` in `docs/specs.md`).
+fn client_note(client: ClientId) -> Option<&'static str> {
+    match client {
+        ClientId::ClaudeCode | ClientId::AgentsMd => None,
+        ClientId::Codex => Some(
+            "Codex reads .codex/config.toml, and so its MCP servers, only in a project you have marked trusted",
+        ),
+        ClientId::Cursor => Some("Cursor asks you to approve each project MCP server"),
+        ClientId::GeminiCli => Some(
+            "Gemini CLI reads project files only in a folder you have trusted; it finds GEMINI.md from any directory in the repository, but reads .gemini/ (and so its MCP servers and agents) and .agents/skills only when started at the project root, and asks you to acknowledge each project agent again after every change",
+        ),
+        ClientId::Copilot => Some(
+            "Copilot reads .mcp.json only after you trust the folder; its cloud agent reads MCP servers only from the repository settings",
+        ),
+    }
+}
+
+/// The JSON for Copilot cloud agent's repository settings, for each locked MCP
+/// server installed for `copilot` (`COPILOT-P4`). The cloud agent reads no
+/// repository file for MCP, its secrets must be named `COPILOT_MCP_*`, and it
+/// can't use a remote server that needs OAuth.
+fn copilot_cloud_mcp(
+    out: &Out<'_, '_>,
+    lock: &Lockfile,
+    config: Option<&agent_grimoire_model::ProjectConfig>,
+    checks: &mut Vec<Check>,
+) {
+    let source = out.ctx.source;
+    let mut servers = serde_json::Map::new();
+    let mut remote = Vec::new();
+    for asset in &lock.assets {
+        let for_copilot = asset.outputs.iter().any(|o| {
+            o.path.as_str() == agent_grimoire_adapters::claude_code::MCP
+                && o.clients.contains(&ClientId::Copilot)
+        });
+        let Some(server) = source
+            .asset(&asset.id)
+            .and_then(|a| a.manifest.mcp_server.as_ref())
+            .filter(|_| for_copilot)
+        else {
+            continue;
+        };
+        let options = config
+            .and_then(|c| c.assets.get(&asset.id))
+            .and_then(agent_grimoire_model::AssetSelection::options);
+        if let Some(url) = options
+            .filter(|o| o.transport == Some(agent_grimoire_model::Transport::StreamableHttp))
+            .and_then(|o| o.url.as_ref())
+        {
+            servers.insert(
+                asset.id.to_string(),
+                json!({ "type": "http", "url": url.as_str(), "tools": ["*"] }),
+            );
+            remote.push(asset.id.to_string());
+            continue;
+        }
+        // An unset variable without a default may reach the server as the
+        // reference text, so optional ones get an empty default.
+        let env: serde_json::Map<String, Value> = server
+            .env
+            .iter()
+            .map(|v| {
+                let secret = format!("COPILOT_MCP_{}", v.name);
+                let reference = if v.required {
+                    format!("${{{secret}}}")
+                } else {
+                    format!("${{{secret}:-}}")
+                };
+                (v.name.to_string(), json!(reference))
+            })
+            .collect();
+        servers.insert(
+            asset.id.to_string(),
+            json!({ "type": "local", "command": server.binary.as_str(), "args": [], "env": env, "tools": ["*"] }),
+        );
+    }
+    if servers.is_empty() {
+        return;
+    }
+    let mut detail = "to use these MCP servers there, install the binaries of the local ones in copilot-setup-steps.yml, add each `COPILOT_MCP_*` variable as an Agents secret, and paste this into the repository's Copilot MCP settings".to_owned();
+    if !remote.is_empty() {
+        detail = format!(
+            "{detail} (the cloud agent can use {} only if it can reach that URL and it needs no OAuth sign-in)",
+            remote.join(", ")
+        );
+    }
+    checks.push((
+        "copilot cloud agent".into(),
+        true,
+        format!("{detail}: {}", json!({ "mcpServers": servers })),
+    ));
+}
+
 fn lock_checks(
     out: &mut Out<'_, '_>,
     project: &Project,
@@ -1201,6 +1330,7 @@ fn lock_checks(
     checks: &mut Vec<Check>,
 ) {
     let source = out.ctx.source;
+    copilot_cloud_mcp(out, lock, config, checks);
     match apply::verify(&project.root, lock) {
         Ok(m) => checks.push((
             "outputs".into(),

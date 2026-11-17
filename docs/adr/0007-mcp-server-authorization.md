@@ -122,6 +122,7 @@ Tokens are never logged, stored or forwarded.
 |---|---|
 | `licenses.exceptions` | `subtle` for `BSD-3-Clause`, the constant-time crate under every pure-Rust verifier. |
 | `bans.skip` | Exactly `syn@2.0.119`, for tracing-attributes 0.1.31 (via rmcp → tracing) and zeroize_derive 1.5.0 (via jsonwebtoken → zeroize). |
+| `advisories.ignore` | Exactly RUSTSEC-2026-0543, "chrono is unmaintained" (added 2026-11-17, the maintainer's choice). rmcp depends on chrono directly, not behind a feature, in 3.10.0 and in 3.11.0, so no upgrade removes it. It is an unmaintained notice, not a vulnerability. |
 | `bans.build.bypass` | rmcp 3.10.0's six JS and Python test fixtures, each pinned by SHA-256. Its `build.rs` is not trusted as a whole (the maintainer's choice). It runs `git config core.hooksPath .githooks` when its grandparent directory has `.githooks` and `.git`, which can happen under `cargo vendor`. Grimoire has no `.githooks` directory. |
 
 ## Consequences
@@ -144,7 +145,7 @@ Tokens are never logged, stored or forwarded.
 
 **Follow-up and review:**
 - Option (b) is the follow-up if users need automatic key rotation. It needs the deny.toml entries listed under (b).
-- **rmcp bumps.** Each one re-pins the fixture checksums. The `syn` skip goes once both tracing-attributes and zeroize_derive move to syn 3; `cargo deny` then reports the entry as unused.
+- **rmcp bumps.** Each one re-pins the fixture checksums. The `syn` skip goes once both tracing-attributes and zeroize_derive move to syn 3; `cargo deny` then reports the entry as unused. The chrono advisory ignore goes once rmcp drops chrono, which `cargo deny` also reports.
 
 **Not verified:**
 - That Claude Code completes its OAuth flow against this server end to end.

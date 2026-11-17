@@ -304,11 +304,11 @@ If something important is still unknown when you write the ADR, say so in the se
 == .claude/agents/security-reviewer.md
 ---
 name: "security-reviewer"
-description: "Use this agent to review code, a diff or a pull request for security problems before it is merged, or when asked for a security review, threat check or audit of specific files. It reads and searches the repository only: it never edits files, runs commands or uses the network. Give it the files, diff or change to review and any context about how the code is deployed."
+description: "Use this agent to review code, a diff or a pull request for security problems before it is merged, or when asked for a security review, threat check or audit of specific files. It only reads and searches the repository, and is told never to edit files, run commands or use the network. Give it the files, diff or change to review and any context about how the code is deployed."
 tools: ["Read", "Grep", "Glob"]
 ---
 
-You are a security reviewer. You examine source code and changes for vulnerabilities and report what you find, with evidence. You can read and search files. You cannot edit files, run commands or reach the network, so you never change anything and you never claim to have executed or tested code.
+You are a security reviewer. You examine source code and changes for vulnerabilities and report what you find, with evidence. You can read and search files. You must not edit files, run commands or reach the network, even where a client would let you, so you never change anything and you never claim to have executed or tested code.
 
 ## Scope
 
@@ -782,8 +782,8 @@ format = 1
 clients = ["claude-code", "agents-md"]
 
 [assets]
-conventional-commits = "^0.1.0"
-adr-writer = "^0.1.0"
-security-reviewer = { version = "^0.1.0", allow = ["filesystem-read"] }
+conventional-commits = "^0.2.0"
+adr-writer = "^0.2.0"
+security-reviewer = { version = "^0.2.0", allow = ["filesystem-read"] }
 secret-guard = { version = "^0.1.0", allow = ["filesystem-read", "hooks"] }
 project-docs = { version = "^0.1.0", allow = ["filesystem-read", "env:CLAUDE_PROJECT_DIR"] }

@@ -20,6 +20,7 @@ Start a new asset with `cargo xtask new <kind> <id> --maintainer <login>` (or `c
 
 - **`asset.toml`**, the manifest. Its schema is [`schemas/asset.schema.json`](../schemas/asset.schema.json).
   - `id` must equal the directory name. Use 1–64 characters of `[a-z0-9-]`, and don't start with `claude-`, `anthropic-`, `anthropics-`, `cc-plugin-` or `grimoire-`.
+  - A skill, agent or MCP server id, and a bundle id, also becomes a Claude Code plugin name, so it can't contain `claude`, `anthropic` or `anthropics` as a word, or `official` next to one of them, and a bundle can't share an asset's id. `cargo xtask gen-marketplace` fails otherwise.
   - `kind` must match the parent directory.
   - Unknown fields are errors.
 - **`README.md`**, which explains what the asset does, when to use it, and security notes.
@@ -31,6 +32,19 @@ Start a new asset with `cargo xtask new <kind> <id> --maintainer <login>` (or `c
 - **Explicit outputs per client.**
   - Each `[clients.<client>]` table lists exactly what is installed for that client: `src` (a file or directory in the asset), `to` (an anchor such as `rules:<id>.md`, `skills:<id>/SKILL.md`, `instructions`, `mcp` or `hooks`) and `strategy` (`copy`, `render`, `block` or `entry`).
   - A client is supported if, and only if, its table is present.
+  - Each client has its own anchors ([ADR-0008](../docs/adr/0008-phase-4-client-adapters.md)):
+
+    | Client | Rule | Skill | Agent | MCP server | Hooks |
+    |---|---|---|---|---|---|
+    | `claude-code` | `rules:<id>.md` | `skills:` | `agents:<id>.md` | `mcp` | `hooks` |
+    | `agents-md` | `instructions` | `skills:` | – | – | – |
+    | `codex` | `instructions` | `skills:` | – | `mcp` | – |
+    | `cursor` | `rules:<id>.md` | `skills:` | `agents:<id>.md` | `mcp` | – |
+    | `gemini-cli` | `instructions` | `skills:` | `agents:<id>.md` | `mcp` | – |
+    | `copilot` | `rules:<id>.md` | `skills:` | `agents:<id>.md` | `mcp` | – |
+
+  - The destination names stay `<id>.md`; adapters rename them where a client needs it (`.mdc`, `.instructions.md`, `.agent.md`).
+  - `cursor` can only run an agent with exactly `read` and `search` tools (as `readonly`), and `cursor` and `copilot` can't scope a rule to a glob containing a comma. `cargo xtask validate` renders every asset for each client it declares, so these and every other adapter refusal fail validation. `codex` can't forward a variable under another name, so users can't rename an MCP server's variables there.
 - **Skills keep their layout.**
   - `src = "X"` goes to `skills:<id>/X`.
   - Every client must install `SKILL.md` and everything under `scripts/`, `references/` and `assets/`.
@@ -40,7 +54,7 @@ Start a new asset with `cargo xtask new <kind> <id> --maintainer <login>` (or `c
   - No frontmatter (Grimoire writes each client's).
   - No line starting with `<!-- grimoire:`, which is reserved for managed-block markers.
   - No unclosed code fence, which would turn the rest of a user's `AGENTS.md` into code.
-  - A rule for both `claude-code` and `agents-md` uses the same `src` for both, because Claude Code also reads `AGENTS.md`.
+  - Every client of a rule uses the same `src`, because clients read each other's rule files and a shared rule is written once.
 - **Rule and agent files are named `<id>.md`.** Claude Code discovers only `.md` files.
 - **Hook bindings list each capability once.** Avoid `search` in hooks: Claude Code's main session searches with Bash on macOS, Linux and WSL.
 - **Guards fail closed.** A hook that must never be skipped, such as a secret scanner, sets `on-failure = "block"`, so a missing or broken binary blocks the event. Say so in the README, with the way out. Only `pre-tool-use` and `user-prompt-submit` bindings may block.
@@ -51,6 +65,7 @@ Start a new asset with `cargo xtask new <kind> <id> --maintainer <login>` (or `c
   - A tool with `hooks` declares `hooks = true`, and a tool without hooks must not.
   - Every environment variable an MCP server reads is listed in `permissions.env`, and needs consent by name (`env:<NAME>`). `[mcp-server] env` lists only the variables the client must forward from the user's environment; one the client sets itself, such as `CLAUDE_PROJECT_DIR`, is in `permissions.env` alone.
   - A skill that bundles `scripts/` declares `shell = true`.
+- **No `.claude-plugin/` in a skill.** Claude Code would load the installed skill as a plugin, with its own hooks and MCP servers.
 - **Skill references.**
   - Links (`[text](path)`, images, HTML `src`/`href`) must name a file inside the skill that every client installs. `file:` URLs are refused.
   - A script counts as documented when `SKILL.md` names its path, for example `scripts/x.sh`, in prose, inline code or a code block. Mentioning the `scripts/` directory alone does not count.
@@ -65,4 +80,5 @@ Start a new asset with `cargo xtask new <kind> <id> --maintainer <login>` (or `c
   - These source checks are plain text searches. Review still decides.
 - **Asset crates stand alone.** No dependency on Grimoire's core crates, no `path` or `git` dependency except on `agent-grimoire-mcp`, and no `Cargo.toml` below the asset's own.
 - **The catalog is embedded in the binary.** After changing anything here, run `cargo xtask pack-catalog`; CI fails if the pack is stale.
+- **The Claude Code marketplace is generated from it.** Skills, agents and MCP servers that support `claude-code` become plugins under `plugins/claude-code/`, and bundles become plugins that depend on them. After changing anything here, run `cargo xtask gen-marketplace`; CI fails if it is stale and runs `claude plugin validate --strict` on every plugin.
 - **No symlinks**, and no files over 1 MiB. Every path must be portable across Linux, macOS and Windows: ASCII only, no Windows reserved names, and no two paths that differ only in letter case.

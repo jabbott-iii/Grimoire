@@ -1,7 +1,7 @@
 format = 1
 id = "conventional-commits"
 kind = "rule"
-version = "0.1.0"
+version = "0.2.0"
 summary = "Write commit messages in the Conventional Commits 1.0.0 format"
 description = """An always-on rule that tells the agent how to write commit messages in the Conventional Commits 1.0.0 format: the `type(scope)!: description` header, `feat` and `fix`, other types as a project convention, body and git-trailer footers, breaking changes, reverts and how each maps to a SemVer release.
 
@@ -22,3 +22,15 @@ outputs = [{ src = "rule.md", to = "rules:conventional-commits.md", strategy = "
 
 [clients.agents-md]
 outputs = [{ src = "rule.md", to = "instructions", strategy = "block" }]
+
+[clients.codex]
+outputs = [{ src = "rule.md", to = "instructions", strategy = "block" }]
+
+[clients.cursor]
+outputs = [{ src = "rule.md", to = "rules:conventional-commits.md", strategy = "render" }]
+
+[clients.gemini-cli]
+outputs = [{ src = "rule.md", to = "instructions", strategy = "block" }]
+
+[clients.copilot]
+outputs = [{ src = "rule.md", to = "rules:conventional-commits.md", strategy = "render" }]

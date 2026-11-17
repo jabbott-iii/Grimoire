@@ -1,0 +1,34 @@
+---
+source: crates/agent-grimoire-adapters/tests/adapters.rs
+expression: dump(&r)
+---
+== .agents/skills/adr-writer/SKILL.md [adr-writer] (codex) file
+---
+name: adr-writer
+description: Does adr-writer things. Use when testing.
+---
+# adr-writer
+
+See [the notes](references/notes.md).
+== .agents/skills/adr-writer/references/notes.md [adr-writer] (codex) file
+# Notes
+
+Details.
+== .codex/config.toml [docs-index] (codex) entry /mcp_servers/docs-index
+{
+  "command": "grimoire-mcp-docs-index",
+  "env_vars": [
+    "DOCS_CACHE",
+    "DOCS_TOKEN"
+  ]
+}
+== AGENTS.md [commit-style] (codex) block commit-style
+# Commits
+
+Write Conventional Commits.
+== AGENTS.md [rust-errors] (codex) block rust-errors
+_Applies when working on files matching `**/*.rs`, `` src/`odd`/** ``._
+
+# Errors
+
+Use typed errors.

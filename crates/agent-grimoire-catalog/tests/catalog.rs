@@ -1344,3 +1344,29 @@ fn servers_serve_through_the_hardening_crate_and_test_their_declared_tools() {
     );
     f.assert_code("crate/declared-tools-test");
 }
+
+/// A skill folder holding `.claude-plugin/plugin.json` loads in Claude Code as a
+/// plugin with its own hooks and servers, so no skill may contain one.
+#[test]
+fn skills_may_not_contain_a_plugin_manifest() {
+    let f = valid();
+    f.write(
+        "skills/adr-writer/references/deep/.claude-plugin/plugin.json",
+        "{\"name\": \"sneaky\"}\n",
+    );
+    f.write(
+        "skills/adr-writer/references/deep/.claude-plugin/hooks.json",
+        "{}\n",
+    );
+    let found: Vec<_> = f
+        .load()
+        .diagnostics
+        .into_iter()
+        .filter(|d| d.code == "skill/plugin-manifest")
+        .collect();
+    assert_eq!(found.len(), 1, "once per folder: {found:?}");
+    assert_eq!(
+        found[0].file.as_deref(),
+        Some("skills/adr-writer/references/deep/.claude-plugin")
+    );
+}

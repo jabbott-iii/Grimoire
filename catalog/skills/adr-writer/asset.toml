@@ -1,7 +1,7 @@
 format = 1
 id = "adr-writer"
 kind = "skill"
-version = "0.1.0"
+version = "0.2.0"
 summary = "Writes, numbers and supersedes architecture decision records, and answers why a decision was made"
 description = """An Agent Skills skill for architecture decision records (ADRs). The agent uses it when it records an architecture or technical decision, supersedes or deprecates an ADR, answers why a past decision was made, or keeps an ADR log in order.
 
@@ -29,6 +29,34 @@ outputs = [
 ]
 
 [clients.agents-md]
+outputs = [
+    { src = "SKILL.md", to = "skills:adr-writer/SKILL.md", strategy = "copy" },
+    { src = "references", to = "skills:adr-writer/references", strategy = "copy" },
+    { src = "assets", to = "skills:adr-writer/assets", strategy = "copy" },
+]
+
+[clients.codex]
+outputs = [
+    { src = "SKILL.md", to = "skills:adr-writer/SKILL.md", strategy = "copy" },
+    { src = "references", to = "skills:adr-writer/references", strategy = "copy" },
+    { src = "assets", to = "skills:adr-writer/assets", strategy = "copy" },
+]
+
+[clients.cursor]
+outputs = [
+    { src = "SKILL.md", to = "skills:adr-writer/SKILL.md", strategy = "copy" },
+    { src = "references", to = "skills:adr-writer/references", strategy = "copy" },
+    { src = "assets", to = "skills:adr-writer/assets", strategy = "copy" },
+]
+
+[clients.gemini-cli]
+outputs = [
+    { src = "SKILL.md", to = "skills:adr-writer/SKILL.md", strategy = "copy" },
+    { src = "references", to = "skills:adr-writer/references", strategy = "copy" },
+    { src = "assets", to = "skills:adr-writer/assets", strategy = "copy" },
+]
+
+[clients.copilot]
 outputs = [
     { src = "SKILL.md", to = "skills:adr-writer/SKILL.md", strategy = "copy" },
     { src = "references", to = "skills:adr-writer/references", strategy = "copy" },

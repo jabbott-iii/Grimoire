@@ -8,7 +8,7 @@ use std::path::PathBuf;
 
 use agent_grimoire_install::fs::{FsError, Root};
 use agent_grimoire_model::{
-    AssetId, ClientId, Diagnostic, Lockfile, Permission, ProjectConfig, RelPath, has_errors,
+    AssetId, ClientId, Diagnostic, Lockfile, Permission, ProjectConfig, RelPath, Unit, has_errors,
     validate,
 };
 use toml_edit::{Array, DocumentMut, InlineTable, Item, Table, TableLike, Value};
@@ -105,26 +105,32 @@ impl Project {
             .into_iter()
             .map(|d| d.in_file(LOCK))
             .collect();
-        // Grimoire only ever writes where an adapter puts content, so a lock that
-        // names anything else (`.git/HEAD`, `.env`, …) was not written by it.
-        let asset_paths = lock
-            .assets
-            .iter()
-            .flat_map(|a| a.outputs.iter().map(|o| &o.path));
-        for path in asset_paths.filter(|p| !agent_grimoire_adapters::is_managed_location(p)) {
+        // Grimoire only ever writes where an adapter puts content, and only the
+        // unit an adapter owns there, so a lock that names anything else
+        // (`.git/HEAD`, `.env`, a whole `.codex/config.toml`, …) was not written by it.
+        let asset_outputs = lock.assets.iter().flat_map(|a| &a.outputs);
+        for o in asset_outputs {
+            let problem = match agent_grimoire_adapters::managed_unit(&o.path) {
+                None => format!("`{}` is not a location grimoire manages", o.path),
+                Some(unit) if unit != o.unit => format!(
+                    "grimoire owns only {} at `{}`, not {}",
+                    unit_name(unit),
+                    o.path,
+                    unit_name(o.unit)
+                ),
+                Some(_) => continue,
+            };
             problems.push(
                 Diagnostic::error(
                     "project/lock-path",
-                    format!("`{path}` is not a location grimoire manages; grimoire.lock may have been edited by hand"),
+                    format!("{problem}; grimoire.lock may have been edited by hand"),
                 )
                 .in_file(LOCK),
             );
         }
-        for o in lock
-            .outputs
-            .iter()
-            .filter(|o| o.path.as_str() != agent_grimoire_adapters::claude_code::CLAUDE_MD)
-        {
+        for o in lock.outputs.iter().filter(|o| {
+            !agent_grimoire_adapters::is_project_location(&o.path) || o.unit != Unit::Block
+        }) {
             problems.push(
                 Diagnostic::error(
                     "project/lock-path",
@@ -340,6 +346,15 @@ impl ConfigEdit {
         let before = array.len();
         array.retain(|v| v.as_str() != Some(value));
         before != array.len()
+    }
+}
+
+/// A unit as the lock writes it, with its article.
+fn unit_name(unit: Unit) -> &'static str {
+    match unit {
+        Unit::File => "a `file`",
+        Unit::Block => "a `block`",
+        Unit::Entry => "an `entry`",
     }
 }
 

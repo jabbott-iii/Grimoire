@@ -1,6 +1,6 @@
 # ADR-0005: v1 client adapters and their order
 
-- **Status:** Accepted (maintainer approved all Phase 0 proposals, 2026-11-16)
+- **Status:** Accepted (maintainer approved all Phase 0 proposals, 2026-11-16); amended by [ADR-0008](0008-phase-4-client-adapters.md) (2026-11-17): hooks stay Claude Code only, Codex gets no agents, and Cursor and Copilot read shared rules from `AGENTS.md`
 - **Date:** 2026-11-16
 - **Specs:** `CC-*`, `AGENTSMD`, `SKILLS`, `CODEX-*`, `CURSOR-*`, `GEMINI-*`, `COPILOT-*` in [`../specs.md`](../specs.md); the read matrix in [`../architecture.md`](../architecture.md) §8.2
 

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "project-docs": {
+      "type": "stdio",
+      "command": "grimoire-mcp-project-docs"
+    }
+  }
+}

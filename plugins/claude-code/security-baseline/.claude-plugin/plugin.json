@@ -1,0 +1,11 @@
+{
+  "name": "security-baseline",
+  "version": "0.2.0+ae4c66d829c2",
+  "description": "Part of Grimoire's `security-baseline` bundle: installs the `security-reviewer` plugin. Left out: `secret-guard` (a tool) is not published as a plugin; install it with the grimoire CLI. The whole bundle: A read-only security reviewer agent plus hooks that keep likely secrets out of tool calls and prompts.",
+  "author": {
+    "name": "jabbott-iii"
+  },
+  "dependencies": [
+    "security-reviewer"
+  ]
+}

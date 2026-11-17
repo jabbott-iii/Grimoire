@@ -1,6 +1,6 @@
 # Grimoire: implementation plan
 
-- **Status:** Phases 0, 1 and 2 approved and committed 2026-11-16. **Phase 3 implemented, awaiting review** (2026-11-17).
+- **Status:** Phases 0 to 3 approved and committed (Phase 3 on 2026-11-17). **Phase 4 implemented, awaiting review** (2026-11-17).
 - **Date:** 2026-11-17
 
 ## Decisions recorded (2026-11-16)
@@ -16,6 +16,17 @@
 - **Phase 3 exemplars confirmed as proposed** (§5). The MCP server is named `project-docs`.
 - **Phase 3, MCP server auth:** RFC 9068 JWT access tokens verified locally against an operator-supplied JWKS file, with no outbound network (the maintainer's choice when asked; ADR-0007). This needs one `subtle` (BSD-3-Clause) license exception.
 - **Phase 3, rmcp policy entries:** skip exactly `syn@2.0.119`, and allow rmcp 3.10.0's six test-fixture files, each pinned by SHA-256, rather than trusting its build script (the maintainer's choice).
+- **Phase 3 approved** (2026-11-17), and Phase 4 started.
+- **Phase 4, marketplace** (the maintainer's choices when asked, 2026-11-17):
+  - one plugin per eligible asset, plus one per bundle that depends on its members' plugins;
+  - marketplace name `grimoire`, owner `jabbott-iii`, no email;
+  - CI installs an exact, verified Claude Code version to run `claude plugin validate --strict`, provided it runs without a login or secrets.
+  - tool assets with hooks are not plugins until fail-closed plugin hooks are tested;
+  - a bundle plugin depends on its eligible members' plugins, and its description names the members left out.
+- **Phase 4, adapters** (the maintainer's choices when asked, 2026-11-17, after the format research):
+  - **Hooks stay Claude Code only** for now. The `codex`, `cursor`, `gemini-cli` and `copilot` adapters refuse hook outputs: none of those clients can guarantee that a failed hook blocks, three run hooks only through a shell, and none can be tested here.
+  - **AGENTS.md covers Cursor and Copilot.** When a rule is in `AGENTS.md`, Cursor and Copilot get no rule file of their own, and Gemini CLI gets an `@AGENTS.md` import in `GEMINI.md`. Native rule files are written only when `AGENTS.md` isn't.
+- **Phase 4, `cargo deny`** (the maintainer's choice when asked, 2026-11-17): ignore RUSTSEC-2026-0543 ("chrono is unmaintained"), with its reason, in `deny.toml`. It is an unmaintained notice, not a vulnerability. rmcp 3.10.0 and 3.11.0 depend on chrono directly, so no upgrade removes it. The entry is reviewed on each rmcp bump, and `unused-ignored-advisory = "deny"` fails CI once it no longer applies.
 
 ## Where things are
 
@@ -260,8 +271,30 @@ Candidates, as confirmed at Phase 3 start:
 
 ### Phase 4: Remaining adapters + generated Claude Code marketplace
 
-- **Adapters:** `codex`, `cursor`, `gemini-cli`, `copilot`, each re-verifying its `specs.md` entries first.
-- **Marketplace:** `cargo xtask gen-marketplace [--check]` generates `.claude-plugin/marketplace.json` and `plugins/claude-code/…`. Optionally `claude plugin validate --strict` in CI, if you approve installing Claude Code there.
+**Outcome (2026-11-17):** implemented and reviewed. Every gate that runs locally passes on Linux. CI on macOS and Windows, and the new Claude Code plugin validation job, still need a push.
+
+What was built:
+- **Specs first.** Five research topics (Codex, Cursor, Gemini CLI, Copilot, and Claude Code plugins and CI), each re-checked by a skeptic: 421 of 454 facts confirmed, 20 corrected, 13 left UNVERIFIED. They are recorded in `docs/specs.md` (Phase 4 additions).
+- **Adapters** `codex`, `cursor`, `gemini-cli` and `copilot`, and a placement pass that writes shared rules and skills once ([ADR-0008](docs/adr/0008-phase-4-client-adapters.md), `architecture.md` §8.2–§8.3).
+- **Entry editing** for TOML (`.codex/config.toml`) and JSONC (`.gemini/settings.json`), chosen by path.
+- **CLI:** a Codex `AGENTS.md` size warning; per-client trust notes and the Copilot cloud-agent MCP snippet in `doctor`; `GEMINI.md` as a second file Grimoire may own a block in.
+- **Exemplars** `conventional-commits`, `adr-writer` and `security-reviewer` support the new clients (all `0.2.0`), and both bundles moved to `0.2.0`.
+- **Marketplace:** `cargo xtask gen-marketplace [--check]` writes `.claude-plugin/marketplace.json` and five plugins under `plugins/claude-code/`. CI checks it is current and runs `claude plugin validate --strict` with a pinned, checksum-verified Claude Code 2.1.311.
+
+Deviations from the Phase 4 candidate list (each the maintainer's choice or forced by the research, recorded in ADR-0008):
+- Hooks stay Claude Code only.
+- Codex gets no agents; Cursor gets only `read`-and-`search` agents.
+- Cursor and Copilot read shared rules from `AGENTS.md` instead of their own files when `AGENTS.md` is written.
+- `project-docs` and `secret-guard` stay Claude Code only: the server needs `CLAUDE_PROJECT_DIR`, which only Claude Code sets, and hooks are Claude Code only.
+
+**Review (2026-11-17).** A five-area review (adapters, installer, CLI, marketplace and CI, docs) raised 48 findings. An independent skeptic checked each one: 47 were confirmed and 1 was uncertain. All 48 are addressed. The main ones:
+- **TOML editing could lose or rewrite the user's text** (2 high). A CRLF or byte-order-mark `.codex/config.toml` was rewritten on every apply, and removing Grimoire's table deleted any comment the user had put above it. Unchanged files now keep their bytes, edited ones keep their line endings, and those comments move to the next header. A 5,000-case property test with CRLF files and added comments now covers both.
+- **Comments inside Grimoire's entries** in TOML and JSONC files were dropped silently on update or removal. That is now a conflict (`commented`).
+- **Placement:** a glob with a comma was refused for Cursor and Copilot even when `AGENTS.md` covered them; Gemini CLI read `AGENTS.md` rules not installed for it, and `plan` didn't say so; projects weren't told that `secret-guard` doesn't guard Codex or Gemini CLI (`resolve/client-not-covered`).
+- **Validation:** adapter-only refusals reached users. `cargo xtask validate` now renders every asset for every client it declares, and a test installs the shipped catalog for all six clients.
+- **Lock safety:** a hand-edited lock could claim a whole `.codex/config.toml` as a Grimoire file. Lock records must now name the unit Grimoire owns at that path.
+- **Marketplace:** plugin versions now change with plugin content; agents depend on their MCP servers' plugins, which must exist; READMEs list the permissions a plugin install grants without asking; bundle descriptions give the real reason for each left-out member.
+- **Docs** overstated what Cursor's `readonly` and VS Code's Copilot enforce, and stated some unverified client behaviour as fact. They now say what is documented.
 
 ### Phase 5: Release pipeline and every channel, dry-run only
 

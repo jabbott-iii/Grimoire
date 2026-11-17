@@ -23,7 +23,14 @@ unsound = "all"
 unused-ignored-advisory = "deny"
 # Entries need a reason, e.g. { id = "RUSTSEC-YYYY-NNNN", reason = "…" }.
 # (Per-entry `expiry` needs cargo-deny 0.21; CI runs 0.20.2.)
-ignore = []
+# Each one is checked again on every bump of the crate that pulls it in;
+# `unused-ignored-advisory = "deny"` fails CI once it no longer applies.
+ignore = [
+    # The maintainer's choice, 2026-11-17. An unmaintained notice, not a vulnerability:
+    # rmcp 3.10.0 and 3.11.0 depend on chrono directly (not behind a feature),
+    # and ADR-0002 makes rmcp the MCP SDK, so no upgrade removes it.
+    { id = "RUSTSEC-2026-0543", reason = "chrono is unmaintained; rmcp (ADR-0002) depends on it directly with no alternative, so this is reviewed again on each rmcp bump" },
+]
 
 [licenses]
 # Narrow by design; per-crate exceptions name exactly who needs anything else.

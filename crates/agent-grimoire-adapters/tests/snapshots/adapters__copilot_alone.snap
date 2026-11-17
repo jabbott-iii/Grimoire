@@ -1,0 +1,62 @@
+---
+source: crates/agent-grimoire-adapters/tests/adapters.rs
+expression: dump(&r)
+---
+== .agents/skills/adr-writer/SKILL.md [adr-writer] (copilot) file
+---
+name: adr-writer
+description: Does adr-writer things. Use when testing.
+---
+# adr-writer
+
+See [the notes](references/notes.md).
+== .agents/skills/adr-writer/references/notes.md [adr-writer] (copilot) file
+# Notes
+
+Details.
+== .github/agents/security-reviewer.agent.md [security-reviewer] (copilot) file
+---
+name: "security-reviewer"
+description: "Used by Grimoire's tests."
+tools: ["read", "search"]
+strict-tools-list: true
+---
+
+You review changes carefully. You never edit files.
+== .github/agents/silent-reviewer.agent.md [silent-reviewer] (copilot) file
+---
+name: "silent-reviewer"
+description: "Used by Grimoire's tests."
+tools: []
+strict-tools-list: true
+---
+
+You review changes carefully. You never edit files.
+== .github/instructions/commit-style.instructions.md [commit-style] (copilot) file
+---
+applyTo: "**"
+---
+
+# Commits
+
+Write Conventional Commits.
+== .github/instructions/rust-errors.instructions.md [rust-errors] (copilot) file
+---
+applyTo: "**/*.rs,src/`odd`/**"
+---
+
+# Errors
+
+Use typed errors.
+== .mcp.json [docs-index] (copilot) entry /mcpServers/docs-index
+{
+  "type": "stdio",
+  "command": "grimoire-mcp-docs-index",
+  "env": {
+    "DOCS_CACHE": "${DOCS_CACHE:-}",
+    "DOCS_TOKEN": "${GH_TOKEN}"
+  }
+}
+!! warning[adapter/agent-strict-tools]: copilot limits `security-reviewer` to its tools with `strict-tools-list: true`, which VS Code doesn't pass on, so in VS Code the agent may also get Copilot's default tools
+!! warning[adapter/agent-strict-tools]: copilot limits `silent-reviewer` to its tools with `strict-tools-list: true`, which VS Code doesn't pass on, so in VS Code the agent may also get Copilot's default tools
+!! warning[plan/cross-client-mcp]: Claude Code also offers servers listed in .mcp.json once you approve them, so `docs-index` is available there too

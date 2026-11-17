@@ -8,13 +8,13 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
+agent-grimoire-catalog.workspace = true
 agent-grimoire-install.workspace = true
 agent-grimoire-model.workspace = true
 agent-grimoire-resolve.workspace = true
 serde_json.workspace = true
 
 [dev-dependencies]
-agent-grimoire-catalog.workspace = true
 agent-grimoire-testkit.workspace = true
 insta.workspace = true
 serde.workspace = true

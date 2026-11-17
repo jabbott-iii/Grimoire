@@ -8,13 +8,18 @@ license.workspace = true
 publish = false
 
 [dependencies]
+agent-grimoire-adapters.workspace = true
 agent-grimoire-catalog.workspace = true
 agent-grimoire-model.workspace = true
+agent-grimoire-resolve.workspace = true
 clap.workspace = true
 schemars.workspace = true
 serde_json.workspace = true
 tempfile.workspace = true
 toml.workspace = true
+
+[dev-dependencies]
+agent-grimoire-testkit.workspace = true
 
 [lints]
 workspace = true

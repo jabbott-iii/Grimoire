@@ -14,8 +14,10 @@
 
 mod bumps;
 mod git;
+mod marketplace;
 mod new;
 mod pack;
+mod render;
 mod schema;
 
 use std::path::{Path, PathBuf};
@@ -50,6 +52,12 @@ enum Command {
     /// Pack catalog/ into the archive embedded in the grimoire binary.
     PackCatalog {
         /// Fail if the pack on disk differs from a fresh one instead of writing it.
+        #[arg(long)]
+        check: bool,
+    },
+    /// Generate the Claude Code plugin marketplace from catalog/.
+    GenMarketplace {
+        /// Fail if the files on disk differ from the generated ones instead of writing them.
         #[arg(long)]
         check: bool,
     },
@@ -134,6 +142,7 @@ fn main() -> ExitCode {
         Command::Schema { check } => schema::run(&root, check),
         Command::Validate { catalog, base } => validate(&root, &catalog, base.as_deref()),
         Command::PackCatalog { check } => pack::run(&root, &root.join("catalog"), check),
+        Command::GenMarketplace { check } => marketplace::run(&root, &root.join("catalog"), check),
         Command::New {
             kind,
             id,
@@ -194,6 +203,7 @@ fn new_asset(
 fn validate(root: &Path, catalog: &Path, base: Option<&str>) -> Result<ExitCode, String> {
     let (catalog_dir, display) = catalog_location(root, catalog)?;
     let validation = agent_grimoire_catalog::load(&catalog_dir);
+    let valid = !validation.has_errors();
     let mut diagnostics: Vec<_> = validation
         .diagnostics
         .into_iter()
@@ -207,6 +217,9 @@ fn validate(root: &Path, catalog: &Path, base: Option<&str>) -> Result<ExitCode,
         .collect();
     if let Some(base) = base {
         diagnostics.extend(bumps::check(root, &display, base, &validation.catalog)?);
+    }
+    if valid {
+        diagnostics.extend(render::check(&catalog_dir, &display));
     }
     agent_grimoire_model::sort_diagnostics(&mut diagnostics);
     for d in &diagnostics {

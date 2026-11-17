@@ -1,27 +1,35 @@
 //! Client adapters and the cross-client planner (`architecture.md` §8).
 //!
 //! An adapter is pure: it turns one resolved asset's declared outputs for one
-//! client into [`Desired`] outputs at that client's literal paths. [`render`]
-//! runs the adapters for every selected client and then plans across clients:
-//! content that several clients can read from one place is written once and
-//! attributed to all of them.
+//! client into outputs at that client's literal paths. [`render`] runs the
+//! adapters for every selected client and then places shared content
+//! (`placement`): where several clients read one location, the content is
+//! written there once and attributed to all of them (ADR-0008).
 //!
-//! v1 so far has two adapters: [`claude_code`] and [`agents_md`].
+//! The v1 adapters are [`claude_code`], [`agents_md`], [`codex`], [`cursor`],
+//! [`gemini_cli`] and [`copilot`].
 
 pub mod agents_md;
 pub mod claude_code;
+pub mod codex;
+pub mod copilot;
+pub mod cursor;
+pub mod gemini_cli;
+mod placement;
+pub mod plugin;
 mod text;
 
 use std::collections::{BTreeMap, BTreeSet};
 
 use agent_grimoire_install::plan::{Content, Desired, Owner};
 use agent_grimoire_model::{
-    Anchor, AssetId, ClientId, Diagnostic, OutputSpec, RelPath, sort_diagnostics,
+    Anchor, AssetId, Capability, ClientId, Diagnostic, EnvVarName, OutputSpec, RelPath, Unit,
+    sort_diagnostics,
 };
 use agent_grimoire_resolve::{Resolution, Resolved};
 
 /// The clients this build can render for.
-pub const AVAILABLE: [ClientId; 2] = [ClientId::ClaudeCode, ClientId::AgentsMd];
+pub const AVAILABLE: [ClientId; 6] = ClientId::ALL;
 
 /// What adapters produce for a whole project.
 #[derive(Debug, Default)]
@@ -33,6 +41,7 @@ pub struct Rendered {
 }
 
 /// One output of one asset for one client, before cross-client planning.
+#[derive(Debug, Clone)]
 struct Output {
     owner: AssetId,
     client: ClientId,
@@ -47,6 +56,9 @@ struct Output {
 pub(crate) struct Report {
     pub(crate) errors: Vec<Diagnostic>,
     pub(crate) warnings: Vec<Diagnostic>,
+    /// Errors about one client's output of one asset that count only if
+    /// placement keeps that output (see `cursor::comma_globs`).
+    pub(crate) deferred: Vec<(AssetId, ClientId, Diagnostic)>,
 }
 
 /// Renders every resolved asset for its clients and plans across clients.
@@ -69,23 +81,25 @@ pub fn render(resolution: &Resolution<'_>) -> Result<Rendered, Vec<Diagnostic>> 
             }
         }
     }
-    let (outputs, import) = share_rules(outputs);
-    let mut desired = merge(outputs, &mut report);
-    if import {
-        desired.push(claude_code::agents_md_import());
+    let placed = placement::place(outputs);
+    for (owner, client, error) in std::mem::take(&mut report.deferred) {
+        if !placed.shared.contains(&(owner, client)) {
+            report.errors.push(error);
+        }
     }
-    let claude_selected = resolution
-        .assets
-        .values()
-        .any(|r| r.clients.contains(&ClientId::ClaudeCode));
-    cross_client_warnings(&desired, import, claude_selected, &mut report);
+    let mut desired = merge(placed.outputs, &mut report);
+    desired.extend(placed.imports);
+    placement::warnings(resolution, &desired, &mut report);
+    // Clients that share a renderer report the same problem once each.
     if !report.errors.is_empty() {
         let mut all = report.errors;
         all.extend(report.warnings);
         sort_diagnostics(&mut all);
+        all.dedup();
         return Err(all);
     }
     sort_diagnostics(&mut report.warnings);
+    report.warnings.dedup();
     desired.sort_by(|a, b| (&a.path, &a.owner).cmp(&(&b.path, &b.owner)));
     Ok(Rendered {
         desired,
@@ -102,8 +116,10 @@ fn render_one(
     let rendered = match client {
         ClientId::ClaudeCode => claude_code::render(resolved, spec, report),
         ClientId::AgentsMd => agents_md::render(resolved, spec, report),
-        // Resolution refuses clients without an adapter (`AVAILABLE`).
-        _ => Vec::new(),
+        ClientId::Codex => codex::render(resolved, spec, report),
+        ClientId::Cursor => cursor::render(resolved, spec, report),
+        ClientId::GeminiCli => gemini_cli::render(resolved, spec, report),
+        ClientId::Copilot => copilot::render(resolved, spec, report),
     };
     rendered
         .into_iter()
@@ -116,55 +132,6 @@ fn render_one(
             content,
         })
         .collect()
-}
-
-/// Claude Code reads `AGENTS.md` once through an `@AGENTS.md` import in
-/// `CLAUDE.md` (`CC-MEM`). When a rule is installed for both `claude-code` and
-/// `agents-md` from the same source, its `AGENTS.md` block serves both, and its
-/// `.claude/rules/` file is dropped: Claude Code would otherwise load the rule
-/// twice. Returns the outputs and whether the import is needed.
-fn share_rules(outputs: Vec<Output>) -> (Vec<Output>, bool) {
-    let shared_src: BTreeMap<&AssetId, Option<&RelPath>> = outputs
-        .iter()
-        .filter(|o| o.client == ClientId::AgentsMd && o.anchor == Anchor::Instructions)
-        .map(|o| (&o.owner, o.src.as_ref()))
-        .collect();
-    let drop: BTreeSet<AssetId> = outputs
-        .iter()
-        .filter(|o| o.client == ClientId::ClaudeCode && o.anchor == Anchor::Rules)
-        .filter(|o| {
-            shared_src
-                .get(&o.owner)
-                .is_some_and(|src| *src == o.src.as_ref())
-        })
-        .map(|o| o.owner.clone())
-        .collect();
-    let mut kept = Vec::new();
-    let mut import = false;
-    for mut o in outputs {
-        if !drop.contains(&o.owner) {
-            kept.push(o);
-            continue;
-        }
-        match (o.client, o.anchor) {
-            (ClientId::ClaudeCode, Anchor::Rules) => {}
-            (ClientId::AgentsMd, Anchor::Instructions) => {
-                import = true;
-                kept.push(Output {
-                    client: ClientId::ClaudeCode,
-                    content: o.content.clone(),
-                    path: o.path.clone(),
-                    src: o.src.clone(),
-                    owner: o.owner.clone(),
-                    anchor: o.anchor,
-                });
-                o.client = ClientId::AgentsMd;
-                kept.push(o);
-            }
-            _ => kept.push(o),
-        }
-    }
-    (kept, import)
 }
 
 /// Joins outputs that land on the same unit, unioning their clients.
@@ -203,65 +170,28 @@ fn merge(outputs: Vec<Output>, report: &mut Report) -> Vec<Desired> {
     merged.into_values().collect()
 }
 
-/// Warns where installing for one client also grants something to another,
-/// possibly unselected, client (`architecture.md` §8.2, `specs.md`).
-fn cross_client_warnings(
-    desired: &[Desired],
-    import: bool,
-    claude_selected: bool,
+/// An error for an output a client cannot express.
+pub(crate) fn unsupported(report: &mut Report, message: String) {
+    report
+        .errors
+        .push(Diagnostic::error("adapter/unsupported", message));
+}
+
+/// The error for an anchor and strategy pair a client has no destination for.
+/// Manifest validation normally refuses these first (`manifest/anchor-client`).
+pub(crate) fn no_destination(
     report: &mut Report,
+    client: ClientId,
+    resolved: &Resolved<'_>,
+    anchor: Anchor,
 ) {
-    let mut agents = BTreeSet::new();
-    let mut hooks = BTreeSet::new();
-    let mut mcp = BTreeSet::new();
-    for d in desired {
-        let Owner::Asset(id) = &d.owner else { continue };
-        let path = d.path.as_str();
-        // Claude Code reads all of AGENTS.md: through the import, or natively when
-        // the project has no CLAUDE.md (`CC-MEM`).
-        if path == agents_md::AGENTS_MD && !d.clients.contains(&ClientId::ClaudeCode) {
-            let how = if import {
-                Some("through the `@AGENTS.md` import grimoire adds to CLAUDE.md")
-            } else if claude_selected {
-                Some("whenever the project has no CLAUDE.md")
-            } else {
-                None
-            };
-            if let Some(how) = how {
-                report.warnings.push(Diagnostic::warning(
-                    "plan/cross-client-rule",
-                    format!("Claude Code also reads `{id}` from AGENTS.md {how}, although it is installed only for agents-md"),
-                ));
-            }
-        }
-        if path.starts_with(".claude/agents/") {
-            agents.insert(id);
-        } else if path == claude_code::SETTINGS {
-            hooks.insert(id);
-        } else if path == claude_code::MCP {
-            mcp.insert(id);
-        }
-    }
-    for id in agents {
-        report.warnings.push(Diagnostic::warning(
-            "plan/cross-client-agent",
-            format!(
-                "Cursor also loads `{id}` from .claude/agents/, and Cursor has no per-tool allow-list (only `readonly`), so it does not enforce this agent's tools; GitHub Copilot in VS Code also reads .claude/agents/, and how it maps Claude Code tool names is not verified"
-            ),
-        ));
-    }
-    for id in hooks {
-        report.warnings.push(Diagnostic::warning(
-            "plan/cross-client-hooks",
-            format!("Cursor and GitHub Copilot also run hooks from .claude/settings.json, so `{id}`'s hooks run there too"),
-        ));
-    }
-    for id in mcp {
-        report.warnings.push(Diagnostic::warning(
-            "plan/cross-client-mcp",
-            format!("GitHub Copilot (VS Code and CLI) also starts servers listed in .mcp.json, so `{id}` is available there too"),
-        ));
-    }
+    unsupported(
+        report,
+        format!(
+            "{client} cannot write `{}` to `{anchor}` this way",
+            resolved.id()
+        ),
+    );
 }
 
 /// The text of a source file, or an error diagnostic.
@@ -291,27 +221,160 @@ pub(crate) fn under(dir: &str, path: &RelPath) -> Option<RelPath> {
     RelPath::new(format!("{dir}/{path}")).ok()
 }
 
+/// Copies every file at or below `src` to the same layout under `dir`.
+pub(crate) fn copy_tree(
+    resolved: &Resolved<'_>,
+    spec: &OutputSpec,
+    dir: &str,
+) -> Vec<(RelPath, Content)> {
+    let (Some(src), Some(to)) = (spec.src.as_ref(), spec.to.path()) else {
+        return Vec::new();
+    };
+    resolved
+        .asset
+        .files_under(src)
+        .filter_map(|(path, bytes)| {
+            let rest = &path.as_str()[src.as_str().len()..];
+            let dest = RelPath::new(format!("{dir}/{to}{rest}")).ok()?;
+            Some((dest, Content::File(bytes.to_vec())))
+        })
+        .collect()
+}
+
+/// The single-file destination of a rule or agent output, with its `.md`
+/// extension replaced: `rules:x.md` becomes `<dir>/x<extension>`. Manifest
+/// validation guarantees the name is `<id>.md`.
+pub(crate) fn renamed(dir: &str, spec: &OutputSpec, extension: &str) -> Option<RelPath> {
+    let path = spec.to.path()?;
+    let stem = path.as_str().strip_suffix(".md")?;
+    RelPath::new(format!("{dir}/{stem}{extension}")).ok()
+}
+
+/// The globs a rule is scoped to; empty for an always-on rule.
+pub(crate) fn rule_paths<'a>(resolved: &'a Resolved<'_>) -> Vec<&'a str> {
+    resolved
+        .asset
+        .manifest
+        .rule
+        .as_ref()
+        .map(|r| {
+            r.paths
+                .iter()
+                .map(agent_grimoire_model::Glob::as_str)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// The capabilities an agent declares.
+pub(crate) fn agent_tools<'a>(resolved: &'a Resolved<'_>) -> &'a [Capability] {
+    resolved
+        .asset
+        .manifest
+        .agent
+        .as_ref()
+        .map(|a| a.tools.as_slice())
+        .unwrap_or_default()
+}
+
+/// The `env` overrides in `grimoire.toml` for an MCP server, after refusing any
+/// that name a variable the client configuration does not forward.
+pub(crate) fn env_remap<'a>(
+    resolved: &'a Resolved<'_>,
+    report: &mut Report,
+) -> Option<&'a BTreeMap<EnvVarName, EnvVarName>> {
+    let manifest = &resolved.asset.manifest;
+    let id = &manifest.id;
+    let server = manifest.mcp_server.as_ref()?;
+    let remap = resolved.options.as_ref().map(|o| &o.env)?;
+    for name in remap.keys() {
+        if !server.env.iter().any(|e| e.name == *name) {
+            // A variable the server reads but the client sets itself, such as
+            // CLAUDE_PROJECT_DIR, is not forwarded, so it cannot be remapped.
+            let message = if manifest.permissions.env.contains(name) {
+                format!(
+                    "`{id}` reads `{name}`, but the client sets it, so it cannot be remapped; the variables you can remap are {}",
+                    list(server.env.iter().map(|e| e.name.as_str()))
+                )
+            } else {
+                format!(
+                    "`{id}` does not read `{name}`; the variables you can remap are {}",
+                    list(server.env.iter().map(|e| e.name.as_str()))
+                )
+            };
+            report.errors.push(
+                Diagnostic::error("adapter/env-unknown", message)
+                    .at(format!("assets.{id}.env"))
+                    .in_file("grimoire.toml"),
+            );
+        }
+    }
+    Some(remap)
+}
+
+/// A list of names for messages: "`A`, `B`", or "none".
+pub(crate) fn list<'a>(names: impl Iterator<Item = &'a str>) -> String {
+    let names: Vec<String> = names.map(|n| format!("`{n}`")).collect();
+    if names.is_empty() {
+        "none".to_owned()
+    } else {
+        names.join(", ")
+    }
+}
+
 /// Whether `path` is somewhere an available adapter can write: anything a lock
 /// names elsewhere was not written by Grimoire and must not be read or deleted.
 #[must_use]
 pub fn is_managed_location(path: &RelPath) -> bool {
-    const DIRS: [&str; 4] = [
+    managed_unit(path).is_some()
+}
+
+/// What an adapter owns at `path`: a whole file in a managed folder, blocks in a
+/// shared instruction file, or entries in a configuration file. A lock that
+/// records another unit there was edited by hand: a `file` record on
+/// `.codex/config.toml` would let Grimoire delete the user's whole file.
+#[must_use]
+pub fn managed_unit(path: &RelPath) -> Option<Unit> {
+    const DIRS: [&str; 9] = [
         ".claude/rules/",
         ".claude/agents/",
         ".claude/skills/",
         ".agents/skills/",
+        cursor::RULES_DIR,
+        cursor::AGENTS_DIR,
+        gemini_cli::AGENTS_DIR,
+        copilot::INSTRUCTIONS_DIR,
+        copilot::AGENTS_DIR,
     ];
-    const FILES: [&str; 4] = [
-        agents_md::AGENTS_MD,
-        claude_code::CLAUDE_MD,
+    const ENTRY_FILES: [&str; 5] = [
         claude_code::MCP,
         claude_code::SETTINGS,
+        codex::CONFIG,
+        cursor::MCP,
+        gemini_cli::SETTINGS,
     ];
     let p = path.as_str();
-    FILES.contains(&p) || DIRS.iter().any(|d| p.len() > d.len() && p.starts_with(d))
+    if is_project_location(path) || p == agents_md::AGENTS_MD {
+        Some(Unit::Block)
+    } else if ENTRY_FILES.contains(&p) {
+        Some(Unit::Entry)
+    } else if DIRS.iter().any(|d| p.len() > d.len() && p.starts_with(d)) {
+        Some(Unit::File)
+    } else {
+        None
+    }
 }
 
-/// Where a declared output lands for `client`, for `grimoire show`.
+/// Whether Grimoire may own a block for itself at `path`: the files that hold
+/// the `@AGENTS.md` imports.
+#[must_use]
+pub fn is_project_location(path: &RelPath) -> bool {
+    [claude_code::CLAUDE_MD, gemini_cli::GEMINI_MD].contains(&path.as_str())
+}
+
+/// Where a declared output lands for `client`, for `grimoire show`. Shared
+/// placement (ADR-0008) can move a rule or skill to a location another client
+/// also reads; `grimoire plan` shows the final paths.
 #[must_use]
 pub fn destination(
     client: ClientId,
@@ -319,18 +382,48 @@ pub fn destination(
     id: &AssetId,
 ) -> String {
     let path = to.path().map(RelPath::as_str).unwrap_or_default();
+    let stem = path.strip_suffix(".md").unwrap_or(path);
     match (client, to.anchor()) {
         (ClientId::ClaudeCode, Anchor::Rules) => format!(".claude/rules/{path}"),
         (ClientId::ClaudeCode, Anchor::Skills) => format!(".claude/skills/{path}"),
         (ClientId::ClaudeCode, Anchor::Agents) => format!(".claude/agents/{path}"),
-        (ClientId::ClaudeCode, Anchor::Mcp) => format!("{} (mcpServers.{id})", claude_code::MCP),
+        (ClientId::ClaudeCode | ClientId::Copilot, Anchor::Mcp) => {
+            format!("{} (mcpServers.{id})", claude_code::MCP)
+        }
         (ClientId::ClaudeCode, Anchor::Hooks) => format!("{} (hooks)", claude_code::SETTINGS),
-        (ClientId::AgentsMd, Anchor::Instructions) => {
+        (ClientId::AgentsMd | ClientId::Codex, Anchor::Instructions) => {
             format!("{} (managed block)", agents_md::AGENTS_MD)
         }
-        (ClientId::AgentsMd, Anchor::Skills) => format!(".agents/skills/{path}"),
-        (client, _) if !AVAILABLE.contains(&client) => {
-            "not available in this version of grimoire".to_owned()
+        (ClientId::Cursor, Anchor::Rules) => format!(
+            "{}{stem}.mdc, or {} when that is written",
+            cursor::RULES_DIR,
+            agents_md::AGENTS_MD
+        ),
+        (ClientId::Copilot, Anchor::Rules) => format!(
+            "{}{stem}.instructions.md, or {} when that is written",
+            copilot::INSTRUCTIONS_DIR,
+            agents_md::AGENTS_MD
+        ),
+        (ClientId::GeminiCli, Anchor::Instructions) => format!(
+            "{} (managed block), or {} through an import when that is written",
+            gemini_cli::GEMINI_MD,
+            agents_md::AGENTS_MD
+        ),
+        (ClientId::AgentsMd | ClientId::Codex | ClientId::GeminiCli, Anchor::Skills) => {
+            format!(".agents/skills/{path}")
+        }
+        (ClientId::Cursor | ClientId::Copilot, Anchor::Skills) => {
+            format!(".agents/skills/{path}, or .claude/skills/{path} with claude-code")
+        }
+        (ClientId::Cursor, Anchor::Agents) => format!("{}{path}", cursor::AGENTS_DIR),
+        (ClientId::GeminiCli, Anchor::Agents) => format!("{}{path}", gemini_cli::AGENTS_DIR),
+        (ClientId::Copilot, Anchor::Agents) => {
+            format!("{}{stem}.agent.md", copilot::AGENTS_DIR)
+        }
+        (ClientId::Codex, Anchor::Mcp) => format!("{} (mcp_servers.{id})", codex::CONFIG),
+        (ClientId::Cursor, Anchor::Mcp) => format!("{} (mcpServers.{id})", cursor::MCP),
+        (ClientId::GeminiCli, Anchor::Mcp) => {
+            format!("{} (mcpServers.{id})", gemini_cli::SETTINGS)
         }
         (_, anchor) => format!("unsupported anchor `{anchor}`"),
     }

@@ -26,7 +26,7 @@ use agent_grimoire_model::{
 };
 
 use crate::block::Document;
-use crate::entry::{self, EntryDoc};
+use crate::entry::{self, EntryDoc, EntryFormat};
 use crate::hash;
 
 /// Who owns an output.
@@ -124,6 +124,9 @@ pub enum Conflict {
     /// An array element Grimoire wrote can no longer be found. Elements are found
     /// by their exact value, so an edited element and a removed one look the same.
     NotFound,
+    /// An entry in a TOML or JSONC file has comments added inside it, which
+    /// updating or removing it would lose. Values are compared without comments.
+    Commented,
 }
 
 impl Conflict {
@@ -137,6 +140,9 @@ impl Conflict {
             Conflict::EditedBeforeDelete => "no longer wanted, but edited since grimoire wrote it",
             Conflict::NotFound => {
                 "edited or removed since grimoire wrote it (grimoire finds array entries by their exact value; with --force it writes its entry again and leaves any edited copy alone)"
+            }
+            Conflict::Commented => {
+                "has comments added inside it since grimoire wrote it, which updating or removing it would lose (move them out of the entry, or use --force to drop them)"
             }
         }
     }
@@ -709,13 +715,29 @@ fn entry_action(
     } else {
         decide(disk.as_ref(), locked, desired)
     };
-    Ok((disk, action))
+    Ok((disk, guard_comments(doc, key, action)?))
+}
+
+/// Values are compared without their comments, so a comment the user put inside
+/// Grimoire's entry would be lost without a word by an update or removal: that
+/// becomes a conflict instead.
+fn guard_comments(
+    doc: &EntryDoc,
+    key: &EntryKey,
+    action: Action,
+) -> Result<Action, entry::EntryError> {
+    Ok(match action {
+        Action::Update | Action::Delete if doc.has_comments(key, action == Action::Delete)? => {
+            Action::Conflict(Conflict::Commented)
+        }
+        other => other,
+    })
 }
 
 /// Entries adopted from an earlier, interrupted apply: the containers that hold
 /// nothing else, and the file if nothing else is left, were created by Grimoire.
-fn infer_created(text: Option<&str>, units: &mut [UnitPlan]) {
-    let Ok(mut probe) = EntryDoc::parse(text) else {
+fn infer_created(format: EntryFormat, text: Option<&str>, units: &mut [UnitPlan]) {
+    let Ok(mut probe) = EntryDoc::parse(format, text) else {
         return;
     };
     let mut containers = Vec::new();
@@ -762,7 +784,9 @@ fn plan_entries(
         Some(Ok(text)) => Some(text),
         Some(Err(_)) => return unreadable("it is not UTF-8 text".to_owned(), before),
     };
-    let mut doc = match EntryDoc::parse(text) {
+    // The format comes from the path: a lock record has no value to tell it.
+    let format = EntryFormat::for_path(&path);
+    let mut doc = match EntryDoc::parse(format, text) {
         Ok(doc) => doc,
         Err(e) => return unreadable(e.to_string(), before),
     };
@@ -828,7 +852,7 @@ fn plan_entries(
     let empty = doc.is_empty();
     let untracked = pairs.values().all(|(_, had)| had.is_none());
     if doc.existed() && untracked && units.iter().all(|u| u.action == Action::Adopt) {
-        infer_created(text, &mut units);
+        infer_created(format, text, &mut units);
     }
     hand_over(
         &mut units,

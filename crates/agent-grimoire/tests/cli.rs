@@ -853,8 +853,9 @@ fn errors_have_distinct_exit_codes() {
         "nothing to detect"
     );
     assert_eq!(
-        grimoire(&source, &p, &["init", "--client", "cursor"]).exit,
-        Exit::Invalid
+        grimoire(&source, &p, &["init", "--client", "nope"]).exit,
+        Exit::Usage,
+        "unknown client"
     );
     p.write("AGENTS.md", "x\n");
     grimoire(&source, &p, &["init"]).ok();

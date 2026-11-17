@@ -1,0 +1,49 @@
+{
+  "name": "grimoire",
+  "owner": {
+    "name": "jabbott-iii"
+  },
+  "description": "Grimoire's catalog as Claude Code plugins: skills, subagents and MCP servers. Rules and hook tools are installed with the grimoire CLI.",
+  "plugins": [
+    {
+      "name": "adr-writer",
+      "source": "./plugins/claude-code/adr-writer",
+      "description": "Writes, numbers and supersedes architecture decision records, and answers why a decision was made",
+      "tags": [
+        "adr",
+        "architecture",
+        "decisions",
+        "documentation"
+      ]
+    },
+    {
+      "name": "project-docs",
+      "source": "./plugins/claude-code/project-docs",
+      "description": "A read-only MCP server that lists, reads and searches a project's docs and ADRs",
+      "tags": [
+        "documentation",
+        "adr",
+        "mcp"
+      ]
+    },
+    {
+      "name": "rust-cli",
+      "source": "./plugins/claude-code/rust-cli",
+      "description": "Part of Grimoire's `rust-cli` bundle: installs the `adr-writer` and `project-docs` plugins. Left out: `conventional-commits` (a rule) is not published as a plugin; install it with the grimoire CLI. The whole bundle: Conventional Commits, architecture decision records and a read-only docs server for Rust CLI projects. Needs `grimoire-mcp-project-docs` on PATH."
+    },
+    {
+      "name": "security-baseline",
+      "source": "./plugins/claude-code/security-baseline",
+      "description": "Part of Grimoire's `security-baseline` bundle: installs the `security-reviewer` plugin. Left out: `secret-guard` (a tool) is not published as a plugin; install it with the grimoire CLI. The whole bundle: A read-only security reviewer agent plus hooks that keep likely secrets out of tool calls and prompts."
+    },
+    {
+      "name": "security-reviewer",
+      "source": "./plugins/claude-code/security-reviewer",
+      "description": "Read-only security review of code and diffs, reporting each finding with evidence",
+      "tags": [
+        "security",
+        "review"
+      ]
+    }
+  ]
+}

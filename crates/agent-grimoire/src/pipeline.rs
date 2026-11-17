@@ -5,7 +5,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use agent_grimoire_adapters::AVAILABLE;
 use agent_grimoire_install::apply::{self, ApplyError, FileOutcome, Options, Stopped};
 use agent_grimoire_install::plan::{self, Action, Desired, FilePlan, Plan};
-use agent_grimoire_model::{Diagnostic, LockedAsset, Lockfile, ProjectConfig, RelPath, Unit};
+use agent_grimoire_model::{
+    ClientId, Diagnostic, LockedAsset, Lockfile, ProjectConfig, RelPath, Unit,
+};
 use agent_grimoire_resolve::{Request, Update, resolve};
 use serde_json::{Value, json};
 
@@ -77,7 +79,54 @@ pub(crate) fn prepare(
             outputs: Vec::new(),
         })
         .collect();
-    finish(out, project, rendered.desired, old, old_text, assets)
+    let planned = finish(out, project, rendered.desired, old, old_text, assets)?;
+    // Codex reads all of AGENTS.md, whichever client each block is for.
+    if config.clients.contains(&ClientId::Codex) {
+        codex_budget(out, &planned.plan);
+        codex_override(out, project);
+    }
+    Ok(planned)
+}
+
+/// Codex reads `AGENTS.override.md` instead of `AGENTS.md` in a directory that
+/// has both, even an empty one (`CODEX-P4`).
+fn codex_override(out: &mut Out<'_, '_>, project: &Project) {
+    if std::fs::symlink_metadata(project.dir.join(CODEX_OVERRIDE)).is_ok() {
+        out.diag(Diagnostic::warning(
+            "plan/codex-override",
+            format!("{CODEX_OVERRIDE} exists, so Codex reads it instead of AGENTS.md and none of the rules grimoire writes there"),
+        ));
+    }
+}
+
+/// The file Codex prefers to `AGENTS.md`.
+pub(crate) const CODEX_OVERRIDE: &str = "AGENTS.override.md";
+
+/// Codex reads at most `project_doc_max_bytes` (32 KiB by default) of project
+/// instructions, shared by every `AGENTS.md` from the repository root to the
+/// working directory, and truncates the rest (`CODEX-P4`).
+const CODEX_BUDGET: usize = 32 * 1024;
+
+/// Warns when the planned `AGENTS.md` uses most of Codex's budget on its own
+/// (`architecture.md` §11.5).
+fn codex_budget(out: &mut Out<'_, '_>, plan: &Plan) {
+    let Some(size) = plan
+        .files
+        .iter()
+        .find(|f| f.path.as_str() == agent_grimoire_adapters::agents_md::AGENTS_MD)
+        .and_then(|f| f.after.as_ref().map(Vec::len))
+    else {
+        return;
+    };
+    if size * 4 >= CODEX_BUDGET * 3 {
+        out.diag(Diagnostic::warning(
+            "plan/codex-instructions-size",
+            format!(
+                "AGENTS.md would be about {} KiB; Codex reads at most 32 KiB of project instructions in total, including nested AGENTS.md files, and cuts off the rest (`project_doc_max_bytes`)",
+                size.div_ceil(1024)
+            ),
+        ));
+    }
 }
 
 /// Warns when a selected tool's hooks fail closed (`on-failure = "block"`) and

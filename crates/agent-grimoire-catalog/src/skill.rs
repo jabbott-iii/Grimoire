@@ -279,6 +279,26 @@ fn coverage(
         per_client.insert(*client, covered);
     }
     let anywhere: BTreeSet<&RelPath> = per_client.values().flatten().collect();
+    // Claude Code loads a skills folder that holds `.claude-plugin/plugin.json`
+    // as a plugin, with its own hooks and MCP servers (`CC-PLUGIN-P4`).
+    let plugin_dirs: BTreeSet<String> = tree
+        .entries
+        .keys()
+        .filter_map(|p| {
+            let parts: Vec<&str> = p.components().collect();
+            let at = parts.iter().position(|c| *c == ".claude-plugin")?;
+            Some(parts[..=at].join("/"))
+        })
+        .collect();
+    for dir in plugin_dirs {
+        out.push(
+            Diagnostic::error(
+                "skill/plugin-manifest",
+                "a skill must not contain `.claude-plugin/`: Claude Code would load the installed skill as a plugin, with its own hooks and MCP servers",
+            )
+            .in_file(format!("{rel_dir}/{dir}")),
+        );
+    }
     for path in tree.entries.keys() {
         let top = path.components().next().unwrap_or_default();
         let is_top_level = path.components().count() == 1;

@@ -16,11 +16,20 @@ Skip it if the project uses a different commit style: the rule would contradict 
 
 ## What Grimoire installs
 
-| Clients selected | Output |
+When `agents-md` or `codex` is selected, the rule is written once, as a managed block in `AGENTS.md`, and every other selected client reads it from there:
+- Claude Code and Gemini CLI through an `@AGENTS.md` import that Grimoire adds to `CLAUDE.md` or `GEMINI.md`;
+- Cursor and Copilot directly, because they read `AGENTS.md`.
+
+Otherwise each client gets its own always-on copy:
+
+| Client | Output |
 |---|---|
-| `claude-code` only | `.claude/rules/conventional-commits.md`, with no `paths` frontmatter, so Claude Code loads it at the start of every session |
-| `agents-md` only | A managed block in `AGENTS.md` |
-| Both | The `AGENTS.md` block once, plus an `@AGENTS.md` import in `CLAUDE.md`, so Claude Code reads it without a second copy |
+| `claude-code` | `.claude/rules/conventional-commits.md`, with no `paths` frontmatter, so Claude Code loads it at the start of every session |
+| `cursor` | `.cursor/rules/conventional-commits.mdc` with `alwaysApply: true` |
+| `gemini-cli` | A managed block in `GEMINI.md` |
+| `copilot` | `.github/instructions/conventional-commits.instructions.md` with `applyTo: "**"` |
+
+`grimoire plan` reports any client that may still read the rule twice, such as Copilot CLI, which reads both `AGENTS.md` and the import in `CLAUDE.md`.
 
 ## License of the source
 

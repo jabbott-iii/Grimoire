@@ -28,8 +28,9 @@ Grimoire is a catalog of AI-agent assets (rules, skills, agents, tools, MCP serv
 | `crates/agent-grimoire` | The `grimoire` CLI: a library (`run`) plus the binary |
 | `crates/agent-grimoire-mcp` | Shared hardening for MCP server assets: stdio, Streamable HTTP, limits and OAuth resource-server checks (never published) |
 | `crates/agent-grimoire-testkit` | Fixture catalogs and projects for tests (never published) |
-| `xtask/` | `cargo xtask schema`, `validate`, `pack-catalog`, `new`; scaffolding templates in `xtask/templates/` |
+| `xtask/` | `cargo xtask schema`, `validate`, `pack-catalog`, `gen-marketplace`, `new`; scaffolding templates in `xtask/templates/` |
 | `catalog/<kind>/<id>/` | One directory per asset (data only). See [`catalog/README.md`](catalog/README.md) |
+| `.claude-plugin/`, `plugins/claude-code/` | The Claude Code plugin marketplace, generated from `catalog/`. Never edit by hand |
 | `schemas/` | Generated JSON Schemas. Never edit by hand |
 
 ## Everyday commands
@@ -44,6 +45,8 @@ cargo xtask validate          # validate catalog/
 cargo xtask validate --base origin/main   # also enforce version bumps for changed assets
 cargo xtask pack-catalog      # regenerate the embedded catalog after changing catalog/
 cargo xtask pack-catalog --check
+cargo xtask gen-marketplace   # regenerate .claude-plugin/ and plugins/claude-code/ after changing catalog/
+cargo xtask gen-marketplace --check
 cargo xtask new <kind> <id> --maintainer <login>   # scaffold an asset
 cargo +1.96 check --workspace --all-targets --locked   # MSRV
 cargo deny check

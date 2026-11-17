@@ -1,0 +1,145 @@
+---
+source: crates/agent-grimoire-adapters/tests/adapters.rs
+expression: dump(&r)
+---
+== .claude/agents/security-reviewer.md [security-reviewer] (claude-code) file
+---
+name: "security-reviewer"
+description: "Used by Grimoire's tests."
+tools: ["Read", "Grep", "Glob"]
+---
+
+You review changes carefully. You never edit files.
+== .claude/agents/silent-reviewer.md [silent-reviewer] (claude-code) file
+---
+name: "silent-reviewer"
+description: "Used by Grimoire's tests."
+tools: ["Read"]
+disallowedTools: ["Read"]
+---
+
+You review changes carefully. You never edit files.
+== .claude/rules/commit-style.md [commit-style] (claude-code) file
+# Commits
+
+Write Conventional Commits.
+== .claude/rules/rust-errors.md [rust-errors] (claude-code) file
+---
+paths: ["**/*.rs", "src/`odd`/**"]
+---
+
+# Errors
+
+Use typed errors.
+== .claude/settings.json [secret-guard] (claude-code) entry /hooks/PreToolUse|secret-guard#0
+{
+  "matcher": "Edit|Write|NotebookEdit",
+  "hooks": [
+    {
+      "type": "command",
+      "command": "grimoire-tool-secret-guard",
+      "args": [
+        "check",
+        "--stdin"
+      ],
+      "timeout": 10
+    }
+  ]
+}
+== .claude/skills/adr-writer/SKILL.md [adr-writer] (claude-code, cursor, copilot) file
+---
+name: adr-writer
+description: Does adr-writer things. Use when testing.
+---
+# adr-writer
+
+See [the notes](references/notes.md).
+== .claude/skills/adr-writer/references/notes.md [adr-writer] (claude-code, cursor, copilot) file
+# Notes
+
+Details.
+== .cursor/agents/security-reviewer.md [security-reviewer] (cursor) file
+---
+name: "security-reviewer"
+description: "Used by Grimoire's tests."
+readonly: true
+---
+
+You review changes carefully. You never edit files.
+== .cursor/mcp.json [docs-index] (cursor) entry /mcpServers/docs-index
+{
+  "type": "stdio",
+  "command": "grimoire-mcp-docs-index",
+  "env": {
+    "DOCS_CACHE": "${env:DOCS_CACHE}",
+    "DOCS_TOKEN": "${env:GH_TOKEN}"
+  }
+}
+== .cursor/rules/commit-style.mdc [commit-style] (cursor) file
+---
+alwaysApply: true
+---
+
+# Commits
+
+Write Conventional Commits.
+== .cursor/rules/rust-errors.mdc [rust-errors] (cursor) file
+---
+alwaysApply: false
+globs: "**/*.rs, src/`odd`/**"
+---
+
+# Errors
+
+Use typed errors.
+== .github/agents/security-reviewer.agent.md [security-reviewer] (copilot) file
+---
+name: "security-reviewer"
+description: "Used by Grimoire's tests."
+tools: ["read", "search"]
+strict-tools-list: true
+---
+
+You review changes carefully. You never edit files.
+== .github/agents/silent-reviewer.agent.md [silent-reviewer] (copilot) file
+---
+name: "silent-reviewer"
+description: "Used by Grimoire's tests."
+tools: []
+strict-tools-list: true
+---
+
+You review changes carefully. You never edit files.
+== .github/instructions/commit-style.instructions.md [commit-style] (copilot) file
+---
+applyTo: "**"
+---
+
+# Commits
+
+Write Conventional Commits.
+== .github/instructions/rust-errors.instructions.md [rust-errors] (copilot) file
+---
+applyTo: "**/*.rs,src/`odd`/**"
+---
+
+# Errors
+
+Use typed errors.
+== .mcp.json [docs-index] (claude-code, copilot) entry /mcpServers/docs-index
+{
+  "type": "stdio",
+  "command": "grimoire-mcp-docs-index",
+  "env": {
+    "DOCS_CACHE": "${DOCS_CACHE:-}",
+    "DOCS_TOKEN": "${GH_TOKEN}"
+  }
+}
+!! warning[adapter/agent-readonly]: cursor runs `security-reviewer` with `readonly: true`, which blocks edits and state-changing shell commands; shell commands Cursor judges harmless stay available, and whether it limits MCP tools and web fetches is undocumented
+!! warning[adapter/agent-strict-tools]: copilot limits `security-reviewer` to its tools with `strict-tools-list: true`, which VS Code doesn't pass on, so in VS Code the agent may also get Copilot's default tools
+!! warning[adapter/agent-strict-tools]: copilot limits `silent-reviewer` to its tools with `strict-tools-list: true`, which VS Code doesn't pass on, so in VS Code the agent may also get Copilot's default tools
+!! warning[plan/cross-client-agent]: `security-reviewer`: VS Code loads the .claude/agents/ copy as well as the .github/agents/ one, and which it uses is undocumented (Copilot CLI uses .github/agents/)
+!! warning[plan/cross-client-agent]: `silent-reviewer`: Cursor also loads it from .claude/agents/, has no per-tool allow-list, and how it treats a Claude Code agent's `tools` is undocumented, so it may get all of the parent agent's tools; VS Code loads the .claude/agents/ copy as well as the .github/agents/ one, and which it uses is undocumented (Copilot CLI uses .github/agents/)
+!! warning[plan/cross-client-hooks]: Cursor and GitHub Copilot also run hooks from .claude/settings.json, so `secret-guard`'s hooks run there too; whether they pass `args` and honour `onFailure` is undocumented, so there a hook may let actions through when it fails, or block every tool call if its arguments are dropped (turn off Claude Code hooks in that client to recover)
+!! warning[plan/duplicate-rule]: GitHub Copilot CLI may read `commit-style` twice: from .claude/rules/ and from .github/instructions/ (it deduplicates only identical copies)
+!! warning[plan/duplicate-rule]: GitHub Copilot CLI may read `rust-errors` twice: from .claude/rules/ and from .github/instructions/ (it deduplicates only identical copies)

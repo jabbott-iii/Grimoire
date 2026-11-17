@@ -438,30 +438,34 @@ fn clients(m: &AssetManifest, out: &mut Vec<Diagnostic>) {
     rule_sources(m, out);
 }
 
-/// Claude Code reads `AGENTS.md` through the `CLAUDE.md` import, or natively when
-/// there is no `CLAUDE.md` (`CC-MEM`), so a rule shipped to both `claude-code` and
-/// `agents-md` must say the same thing in both: otherwise Claude Code loads two
-/// different versions of it.
+/// Clients read each other's rule files: Claude Code reads `AGENTS.md` through
+/// the `CLAUDE.md` import (`CC-MEM`), Cursor and Copilot always read
+/// `AGENTS.md`, and Gemini CLI reads it through a `GEMINI.md` import (ADR-0008).
+/// A rule is written once where they share a file, so every client must ship the
+/// same text: otherwise a client would load two different versions of it.
 fn rule_sources(m: &AssetManifest, out: &mut Vec<Diagnostic>) {
     if m.kind != Kind::Rule {
         return;
     }
-    let src = |client: ClientId| {
-        m.clients
-            .get(&client)
-            .and_then(|o| o.outputs.first())
-            .and_then(|o| o.src.as_ref())
-    };
-    if let (Some(a), Some(b)) = (src(ClientId::ClaudeCode), src(ClientId::AgentsMd))
-        && a != b
-    {
-        out.push(
-            Diagnostic::error(
-                "manifest/rule-src",
-                format!("the claude-code and agents-md outputs must use the same `src` (`{a}` and `{b}` differ); Claude Code also reads AGENTS.md"),
-            )
-            .at("clients"),
-        );
+    let mut first: Option<(ClientId, &crate::RelPath)> = None;
+    for (client, outputs) in &m.clients {
+        let Some(src) = outputs.outputs.first().and_then(|o| o.src.as_ref()) else {
+            continue;
+        };
+        match first {
+            None => first = Some((*client, src)),
+            Some((other, a)) if a != src => {
+                out.push(
+                    Diagnostic::error(
+                        "manifest/rule-src",
+                        format!("every client's output must use the same `src` (`{other}` uses `{a}`, `{client}` uses `{src}`); clients read each other's rule files"),
+                    )
+                    .at("clients"),
+                );
+                return;
+            }
+            Some(_) => {}
+        }
     }
 }
 

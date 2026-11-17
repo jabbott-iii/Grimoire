@@ -1,15 +1,15 @@
 format = 1
 id = "security-baseline"
-version = "0.1.0"
+version = "0.2.0"
 summary = "A read-only security reviewer agent plus hooks that keep likely secrets out of tool calls and prompts"
 description = """A starting point for security in any repository.
 
 - `security-reviewer`: a read-only subagent that reviews code, diffs and pull requests and reports each finding with evidence.
 - `secret-guard`: hooks that block tool calls and prompts containing likely secrets, and a scanner for files. Its hooks fail closed, so install the `grimoire-tool-secret-guard` binary before you run `grimoire apply`.
 
-Both currently support Claude Code only."""
+`security-reviewer` supports Claude Code, Cursor, Gemini CLI and GitHub Copilot; `secret-guard` supports Claude Code only."""
 maintainers = ["jabbott-iii"]
 
 [assets]
-security-reviewer = "^0.1.0"
+security-reviewer = "^0.2.0"
 secret-guard = "^0.1.0"

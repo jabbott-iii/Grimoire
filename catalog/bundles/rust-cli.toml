@@ -1,6 +1,6 @@
 format = 1
 id = "rust-cli"
-version = "0.1.0"
+version = "0.2.0"
 summary = "Conventional Commits, architecture decision records and a read-only docs server for Rust CLI projects"
 description = """Project conventions for a Rust command-line project.
 
@@ -10,6 +10,6 @@ description = """Project conventions for a Rust command-line project.
 maintainers = ["jabbott-iii"]
 
 [assets]
-conventional-commits = "^0.1.0"
-adr-writer = "^0.1.0"
+conventional-commits = "^0.2.0"
+adr-writer = "^0.2.0"
 project-docs = "^0.1.0"

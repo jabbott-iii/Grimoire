@@ -279,3 +279,42 @@ fn doctor_needs_no_local_binary_for_a_server_over_http() {
         "{doctor}"
     );
 }
+
+/// The exemplars and both bundles for all six clients: every client table the
+/// catalog ships renders, installs, verifies and uninstalls.
+#[test]
+fn every_exemplar_installs_for_every_client() {
+    let source = Source::builtin().unwrap();
+    let p = Project::new();
+    let mut init = vec!["init"];
+    for client in [
+        "claude-code",
+        "agents-md",
+        "codex",
+        "cursor",
+        "gemini-cli",
+        "copilot",
+    ] {
+        init.extend(["--client", client]);
+    }
+    ok(&source, &p, &init);
+    ok(
+        &source,
+        &p,
+        &[
+            "add",
+            "rust-cli",
+            "security-baseline",
+            "--allow",
+            "filesystem-read,hooks,env",
+        ],
+    );
+    ok(&source, &p, &["apply"]);
+    insta::assert_snapshot!(snapshot_tree(&p));
+    let second = ok(&source, &p, &["apply"]);
+    assert!(second.contains("apply: 0 files changed"), "{second}");
+    ok(&source, &p, &["plan", "--check"]);
+    ok(&source, &p, &["verify"]);
+    ok(&source, &p, &["uninstall"]);
+    assert_eq!(p.tree(), ["grimoire.toml"], "nothing is left behind");
+}

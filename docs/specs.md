@@ -11,17 +11,17 @@ This file lists every external format, protocol, registry or tool that Grimoire 
 
 ## Register
 
-All rows were checked 2026-11-16. Section IDs below link each row to its notes.
+Rows were checked 2026-11-16 unless they say otherwise; the client rows were re-checked 2026-11-17 for Phase 4. Section IDs below link each row to its notes.
 
 | ID | Spec / source | Version or revision checked | Primary URL | Status |
 |---|---|---|---|---|
-| CC-* | Claude Code: memory, skills, subagents, settings/hooks, `.mcp.json`, plugins, marketplaces | CLI 2.1.326 (npm `latest`); live docs | https://code.claude.com/docs/en/ | Verified; CC-MKT Partial |
+| CC-* | Claude Code: memory, skills, subagents, settings/hooks, `.mcp.json`, plugins, marketplaces | CLI 2.1.326 (npm `latest`); live docs | https://code.claude.com/docs/en/ | Verified; plugins and marketplaces re-checked 2026-11-17 in CC-PLUGIN-P4 and CC-MKT-P4 |
 | SKILLS | Agent Skills specification | unversioned; spec file @ `217be54873` (2026-08-04) | https://agentskills.io/specification | Verified |
 | AGENTSMD | AGENTS.md | unversioned; repo @ `d001185d79` (2026-09-10) | https://agents.md | Verified (convention, not normative) |
-| CODEX-* | OpenAI Codex CLI: AGENTS.md, config/MCP, skills, agents, hooks, rules, plugins | `rust-v0.169.0` (2026-11-13) | https://learn.chatgpt.com/docs/ ; https://github.com/openai/codex | Verified (some facts from source only) |
-| CURSOR-* | Cursor: rules, MCP, skills, subagents, hooks | IDE 3.27 / CLI v2026.10.22 (2026-10-22) | https://cursor.com/docs/ | Partial |
-| GEMINI-* | Gemini CLI: context, settings/MCP, skills, subagents, hooks | v0.68.0 (2026-11-10), docs @ tag | https://github.com/google-gemini/gemini-cli | Partial |
-| COPILOT-* | GitHub Copilot: instructions, agents, skills, MCP, hooks | CLI v1.0.112; VS Code 1.146.0; docs fetched 2026-11-16 | https://docs.github.com/en/copilot ; https://code.visualstudio.com/docs | Partial |
+| CODEX-* | OpenAI Codex CLI: AGENTS.md, config/MCP, skills, agents, hooks, rules, plugins | `rust-v0.169.0` (2026-11-13); prerelease `rust-v0.171.0-alpha.11` | https://learn.chatgpt.com/docs/ ; https://github.com/openai/codex | Verified; re-checked 2026-11-17 in CODEX-*-P4 (some facts from source only) |
+| CURSOR-* | Cursor: rules, MCP, skills, subagents, hooks | release notes IDE 3.27 / CLI v2026.10.22; shipped IDE 3.30.14 / CLI 2026.11.13 | https://cursor.com/docs/ | Partial; re-checked 2026-11-17 in CURSOR-P4 |
+| GEMINI-* | Gemini CLI: context, settings/MCP, skills, subagents, hooks | v0.68.0 (2026-11-10), source and docs @ tag; preview v0.69.0-preview.0 | https://github.com/google-gemini/gemini-cli | Verified from source; re-checked 2026-11-17 in GEMINI-P4 |
+| COPILOT-* | GitHub Copilot: instructions, agents, skills, MCP, hooks | CLI v1.0.112; VS Code 1.146.0; docs fetched 2026-11-17 | https://docs.github.com/en/copilot ; https://code.visualstudio.com/docs | Partial; re-checked 2026-11-17 in COPILOT-P4 |
 | MCP-SPEC | Model Context Protocol | **2026-07-28** (current final) | https://modelcontextprotocol.io/specification/2026-07-28 | Verified |
 | RMCP | rmcp (official Rust SDK) | 3.10.0 (2026-11-12); supports 2026-07-28 | https://github.com/modelcontextprotocol/rust-sdk | Verified |
 | MCP-REGISTRY | Official MCP Registry / `server.json` | registry 1.8.9; schema `2025-12-11`; **preview** | https://registry.modelcontextprotocol.io | Verified |
@@ -65,6 +65,13 @@ All rows were checked 2026-11-16. Section IDs below link each row to its notes.
 | AUTH-CRATES | Server-side JWT validation crates under `deny.toml` | jsonwebtoken 12.0.0, rsa 0.10.0, p256 0.14.0, hyper 1.12.0, hyper-util 0.1.21; advisory-db `02e2517f45`; cargo-deny 0.21.0 / 0.20.2 | https://github.com/Keats/jsonwebtoken | Verified (Phase 3), two claims corrected |
 | SECRET-FORMATS | Vendor credential formats for secret-guard | vendor docs fetched 2026-11-16; gitleaks v8.30.1; GitLab rules @ `c8396d46d7` | https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/about-authentication-to-github#githubs-token-formats | Partial (many lengths third-party; OpenAI UNVERIFIED) |
 | CONTENT-P3 | Conventional Commits, Agent Skills, ADR formats | CC 1.0.0 @ `7d293dc59e`; Agent Skills @ `83021e2be4`; MADR 4.0.0 (`2475fe1973`) | https://www.conventionalcommits.org/en/v1.0.0/ | Verified (Phase 3) |
+| CC-PLUGIN-P4, CC-MKT-P4 | Claude Code plugin manifest, components, marketplace file, dependencies | CLI 2.1.326 (`latest`) / 2.1.311 (`stable`); CHANGELOG @ `bc1e8a88cb44`; docs fetched 2026-11-17 | https://code.claude.com/docs/en/plugins/manifest-reference.md | Verified (Phase 4), gaps listed |
+| CC-CI-P4 | `claude plugin validate` and installing Claude Code in CI | 2.1.311 and 2.1.326 manifests and signatures checked 2026-11-17 | https://code.claude.com/docs/en/plugins/cli-reference.md | Partial (offline behaviour UNVERIFIED) |
+| CODEX-P4 … CODEX-PLUGINS-P4 | Codex AGENTS.md, trust, MCP, skills, agents, hooks, tools, plugins | `rust-v0.169.0` (`d32063f96c2d`), diffed against `rust-v0.171.0-alpha.11` | https://github.com/openai/codex | Verified (Phase 4), gaps listed |
+| CURSOR-P4 | Cursor rules, MCP, skills, subagents, hooks | docs fetched 2026-11-17; shipped IDE 3.30.14 | https://cursor.com/docs/ | Partial (Phase 4), many gaps listed |
+| GEMINI-P4 | Gemini CLI context, settings, trust, MCP, skills, subagents, hooks | v0.68.0 (`5a5c7180ff`) source | https://github.com/google-gemini/gemini-cli | Verified from source (Phase 4), gaps listed |
+| COPILOT-P4 | Copilot instructions, agents, skills, MCP, hooks, plugins | CLI 1.0.112; VS Code 1.146.0; docs fetched 2026-11-17 | https://docs.github.com/en/copilot | Partial (Phase 4; docs only, no source) |
+| EDIT-P4 | TOML and JSONC entry editing | strip-json-comments 3.1.1; toml_edit 0.25.19; jsonc-parser 0.34.0; checked 2026-11-17 | https://unpkg.com/strip-json-comments@3.1.1/index.js | Verified (Phase 4); which TOML version Codex accepts is UNVERIFIED |
 
 **Not yet researched, to verify in the phase that needs them:**
 
@@ -1311,3 +1318,1451 @@ Sources: https://github.com/conventional-commits/conventionalcommits.org at `7d2
   - **Nygard (2011, CC0 1.0):** Title (a short noun phrase), Context (the forces, value-neutral), Decision (full sentences, active voice, "We will …"), Status (proposed, accepted, deprecated, or superseded with a reference to the replacement) and Consequences (all of them). One decision per ADR, numbered sequentially and monotonically, with numbers never reused. Reversed decisions are kept and marked superseded. An ADR is one or two pages in full sentences. The original location was `doc/arch/adr-NNN.md`.
   - **MADR 4.0.0** (2024-09-17, tag commit `2475fe1973`; MIT OR CC0-1.0): optional YAML front matter (`status`, which also allows `rejected` and `superseded by ADR-0123`; `date`; `decision-makers`; `consulted`; `informed`), a title, Context and Problem Statement, Decision Drivers (optional), Considered Options, Decision Outcome ("Chosen option: …, because …") with optional `### Consequences` and `### Confirmation` subsections, Pros and Cons of the Options (optional) and More Information (optional). The minimal template keeps Context and Problem Statement, Considered Options and Decision Outcome. MADR says to copy it into `docs/decisions`. develop (`ba75bb1b20`, 2026-08-28) has unreleased wording changes.
   - adr.github.io (MIT) defines an ADR as a record of a single architectural decision and its rationale, and calls the collection a decision log.
+
+## Phase 4 additions (checked 2026-11-17)
+
+These facts came from a five-topic research workflow: Codex, Cursor, Gemini CLI, GitHub Copilot, and Claude Code plugins, marketplaces and CI validation. An independent skeptic re-checked each topic against its primary sources: Codex 93 of 100 confirmed (6 refuted, 1 uncertain), Cursor 89 of 94 (2 refuted, 3 uncertain), Gemini CLI 61 of 68 (5 refuted, 2 uncertain), Copilot 81 of 92 (6 refuted, 5 uncertain), Claude Code plugins 97 of 100 (1 refuted, 2 uncertain). Refuted facts appear below in corrected form, uncertain ones are listed as UNVERIFIED, and facts the skeptics added are included where an implementer needs them. No client binary was downloaded or run. The raw results are not committed. Each entry supersedes the 2026-11-16 entry for the same client where they differ.
+
+### CC-PLUGIN-P4: plugin manifest, components and naming
+Sources: https://code.claude.com/docs/en/plugins/manifest-reference.md, …/plugins/components.md, …/plugins/loading.md, …/plugins/troubleshooting.md, …/plugins/create.md, …/plugins/publish.md, …/plugins/host-marketplace.md, …/skills.md, …/sub-agents.md, …/hooks.md, …/mcp.md, …/permissions.md (live docs, Last-Modified 2026-11-17 03:13–03:14 GMT, fetched 2026-11-17). CHANGELOG at https://github.com/anthropics/claude-code/blob/bc1e8a88cb447f43697e848d991efed6cac2a64c/CHANGELOG.md (content-identical to `ccc86e33cd`, cited by CC-P3). https://registry.npmjs.org/@anthropic-ai/claude-code. https://www.schemastore.org/api/json/catalog.json (SchemaStore commits `d6c59e8a9b85`, `51aa82eff63e`). Grimoire ID rules: `crates/agent-grimoire-model/src/values.rs`.
+Status: Verified, except the UNVERIFIED list. Supersedes CC-PLUGIN where they differ.
+
+- **Releases checked (2026-11-17):**
+  - npm `@anthropic-ai/claude-code`: `latest` = `next` = 2.1.326 (published 2026-11-16T18:43:39Z), `stable` = 2.1.311 (2026-10-26T19:47:57Z). Unchanged since 2026-11-16. 564 versions, none a semver prerelease. 2.1.324 is on npm (2026-11-13T18:42:36Z) but has no GitHub release and no CHANGELOG heading.
+  - GitHub release `v2.1.326` (2026-11-16T22:11:05Z) is `/releases/latest`. None of the last 100 releases (back to `v2.1.208`) is a prerelease.
+  - Native channel pointers: `https://downloads.claude.ai/claude-code-releases/stable` returns `2.1.311` and `…/latest` returns `2.1.326`.
+  - CHANGELOG last changed in `bc1e8a88cb44` (2026-11-16T22:10:49Z), and its top entry is `2.1.326`. Repo HEAD `e2c963a886e3` (2026-11-17) changes only `mods/`.
+  - The docs describe `latest`. Version gates below are quoted from the docs unless marked CHANGELOG.
+- **Version gates that matter on `stable` 2.1.311:**
+
+  | Feature | Needs | On `stable`? |
+  |---|---|---|
+  | `metadata.pluginRoot` | 2.1.239 | yes |
+  | `claude plugin validate --json` | 2.1.259 | yes |
+  | validate MCP checks; directory-listing fields not reported as unknown | 2.1.281 | yes |
+  | validate path checks for `outputStyles`, `lspServers`, `monitors`, `themes` | 2.1.283 | yes |
+  | `Invalid string: must start with "./"` message | 2.1.285 | yes |
+  | validating a directory with both manifests | 2.1.289 | yes |
+  | README advice; hook `onFailure` | 2.1.295 | yes |
+  | `engines["claude-code"]` in `plugin.json` | 2.1.323 (CHANGELOG) | no |
+  | marketplace `ref` set to a commit SHA | 2.1.324 (docs); listed under 2.1.325 (CHANGELOG) | no |
+  | malformed display field no longer blocks load | 2.1.326 (CHANGELOG) | no |
+
+- **Manifest file:** `.claude-plugin/plugin.json` under the plugin root. It is optional. Every other plugin file (`skills/`, `commands/`, `hooks/` …) goes at the plugin root, not in `.claude-plugin/`. Without a manifest, the plugin name comes from the marketplace entry, or from the directory name with `--plugin-dir`.
+- **Fields:** `name` is the only required key. The top-level keys are:
+  - metadata: `$schema` (ignored at load), `name`, `displayName`, `version`, `description`, `author{name, email?, url?}`, `homepage`, `repository`, `license` (SPDX), `keywords`, `metadata` (not read);
+  - directory listing, `plugin.json` only: `icon`, `documentationUrl`, `supportUrl`, `privacyPolicyUrl`, `termsOfServiceUrl`;
+  - behaviour: `defaultEnabled` (default `true`; the entry value overrides it, and a dependency of an enabled plugin starts enabled regardless), `dependencies`, `userConfig`, `types`, `channels`;
+  - components: `skills`, `commands`, `agents`, `hooks`, `mcpServers`, `lspServers`, `outputStyles`, `workflows`, `experimental{themes, monitors, evals}`.
+  - `engines["claude-code"]` (CHANGELOG 2.1.323): outside its version range a plugin is not installed, updated or loaded. It isn't in the Fields table.
+- **Unknown and malformed fields:**
+  - An unknown top-level key is stripped, the plugin loads, and validate warns.
+  - An unknown key inside a `userConfig` option, `channels` entry, `lspServers` config or `monitors` entry is an error, and the plugin doesn't load.
+  - `homepage` must parse as a URL or the plugin fails to load. That is what 2.1.311 does. CHANGELOG 2.1.326 changed this: a plugin with a malformed display field such as `author` or `homepage` now loads, with the field ignored and a note shown. `repository` isn't validated.
+  - `version` is a free string, not checked as semver. Setting it pins users to that copy until it changes. A missing `version`, `description` or `author` is a validate warning.
+- **Plugin `name`:** non-empty, with no spaces, `@`, `:`, path separators, control characters or bidi-formatting characters.
+  - Use kebab-case. Any other form gets the warning `Plugin name "<name>" is not kebab-case`. The claude.ai marketplace sync needs lowercase letters, digits and hyphens.
+  - The reserved-name check ignores case and treats a run of separators as one:
+
+    | Name | Result |
+    |---|---|
+    | starts with `claude-`, `anthropic-`, `anthropics-` or `cc-plugin-` | Error |
+    | is `claude`, `anthropic`, `anthropics`, `claude-code` or `claude-mods` | Error |
+    | `official` next to `claude` or `anthropic`, e.g. `official-claude-tools` | Error |
+    | `claude`, `anthropic` or `anthropics` as a whole word elsewhere, e.g. `mcp-for-claude` | Warning, so `--strict` fails |
+
+  - `claude plugin init` and `claude plugin tag` refuse error-level names, but Claude Code still installs and loads such plugins.
+  - Claude Code documents no length limit. Claude Desktop accepts at most 128 characters of letters, digits, `.`, `_` and `-`, starting alphanumeric, and validate warns otherwise.
+  - **Grimoire gap:** asset IDs (kebab-case, 1–64 chars, reserved prefixes `claude-`, `anthropic-`, `anthropics-`, `cc-plugin-`, `grimoire-`) avoid the prefix errors, `claude-code` and `claude-mods`. They don't yet reject `claude`, `anthropic`, `anthropics`, the `official` rule or the whole-word warning.
+- **Two names:** a marketplace plugin's entry name is its install and enable key and names its cache directory. Its manifest `name` namespaces its components and is what name conflicts compare.
+- **Component paths:**
+  - Relative to the plugin root, starting with `./` (`commands/foo.md` fails), existing, and resolving inside the root.
+  - A path with `..` gets the error `Path contains ".." which could be a path traversal attempt`. A missing path gets `Path not found`.
+  - `skills` also accepts `"."` (the root). `mcpServers` also accepts an `https://` `.mcpb` or `.dxt` URL.
+  - On macOS and Linux, a component path that contains any backslash is refused.
+  - `agents` entries must be `.md` files, not directories. `skills` entries must be directories: either a directory of `<name>/SKILL.md` folders or one folder holding `SKILL.md`. An entry that points at `SKILL.md` itself gets `Path is a file; skills entries must be directories containing SKILL.md`.
+- **Manifest keys and default locations:**
+
+  | Effect | Keys |
+  |---|---|
+  | Replaces the default scan | `commands`, `agents`, `outputStyles`, `workflows`, `experimental.themes`, `experimental.monitors` |
+  | Adds to the default `skills/` scan | `skills` |
+  | Merges (default file first; for MCP and LSP a later same-named server replaces an earlier one) | `hooks`, `mcpServers`, `lspServers` |
+
+  - When a key replaces a default folder that exists, `claude plugin list` and `/plugin` warn `Default <folder>/ folder is ignored because the manifest sets "<key>"`.
+- **Default layout:**
+
+  | Component | Location |
+  |---|---|
+  | Manifest | `.claude-plugin/plugin.json` |
+  | Skills | `skills/<name>/SKILL.md` |
+  | Commands | `commands/*.md` (subfolders add segments) |
+  | Agents | `agents/*.md`, scanned recursively |
+  | Hooks | `hooks/hooks.json` |
+  | MCP / LSP | `.mcp.json` / `.lsp.json` |
+  | Output styles, workflows, themes | `output-styles/`, `workflows/`, `themes/` |
+  | Monitors | `monitors/monitors.json` |
+  | Executables | `bin/` |
+
+  - A root `SKILL.md`, with no `skills/` directory and no `skills` key, loads as a single skill. Set its `name`, or a marketplace install names it after the cache directory.
+  - **A root `CLAUDE.md` isn't loaded**, and validate warns `CLAUDE.md at the plugin root is not loaded as project context`. Instructions must ship as a skill, and a rule that must always hold, as a hook.
+- **Skills:**
+  - `skills/<dir>/SKILL.md` runs as `/<plugin>:<dir>`. A frontmatter `name` replaces only the last segment.
+  - From 2.1.246, a `name` that already carries the plugin prefix isn't doubled. 2.1.216–2.1.245 doubled it.
+  - With a `name` set, the bare `/<name>` also invokes the skill, unless another command uses that name.
+  - Characters that a command name can't hold become `-` when they're in a plugin skill folder name.
+  - `${CLAUDE_PLUGIN_ROOT}` and `${CLAUDE_PLUGIN_DATA}` are substituted in the body and in `allowed-tools` Bash rules. `${CLAUDE_SKILL_DIR}` is the skill's own subdirectory, not the plugin root.
+- **Agents:**
+  - An agent is named `<plugin>:<name>`, with `<name>` from frontmatter `name` or the filename.
+  - Subfolders of `agents/` add colon segments: `agents/review/security.md` becomes `my-plugin:review:security`. A file listed in the `agents` key loads without subfolder segments.
+  - Supported frontmatter: `name`, `description`, `model`, `effort`, `maxTurns`, `autoCompactWindow`, `tools`, `disallowedTools`, `skills`, `memory`, `background`, `omitClaudeMd`, `isolation` (only `"worktree"`), `color` and `experimental.cacheTtl`. **`tools` is honoured.**
+  - Ignored: `permissionMode`, `hooks`, `mcpServers` and `initialPrompt`.
+  - A `name` over 256 chars is ignored, and the agent is named after its file.
+  - Frontmatter that doesn't parse: the agent still loads under its filename with every field ignored. It loses `tools` and inherits every tool. Its description becomes `Agent from <plugin> plugin`, and validate reports the file.
+- **Hooks:**
+  - `hooks/hooks.json` has the shape `{"description"?: string, "hooks": {"<Event>": [{"matcher"?, "hooks": [handler]}]}}`, the same as `hooks` in settings.json. A file without the top-level `"hooks"` wrapper fails to load.
+  - Inline `hooks` in `plugin.json` is the bare event map. The file and the inline key both load.
+  - **Exec form works in plugins:** hooks.md's plugin example uses `command` plus `args`. `${CLAUDE_PLUGIN_ROOT}` is substituted into `command` and each `args` element, with no shell.
+  - `${user_config.*}` is substituted only in exec form. A shell-form reference is an error (since 2.1.207).
+  - Every plugin hook process receives `CLAUDE_PLUGIN_ROOT`, `CLAUDE_PLUGIN_DATA`, `CLAUDE_PROJECT_DIR` and `CLAUDE_PLUGIN_OPTION_<KEY>`.
+  - Hooks register when a session loads the plugin and fire from then on, including on subagents' tool calls.
+  - Validate warns about an unquoted `${CLAUDE_PLUGIN_ROOT}` in a shell-form hook, unless `shell` is `"powershell"`.
+- **MCP servers:**
+  - Configured in `.mcp.json` at the plugin root, `{"mcpServers": {…}}` with the wrapper optional, or inline in `mcpServers`. A manifest server replaces a same-named `.mcp.json` server.
+  - **Names:** the server is `plugin:<plugin>:<server>`, and its tools are `mcp__plugin_<plugin>_<server>__<tool>`, with every character outside `A-Za-z0-9_-` replaced by `_`.
+    - Use the full name in permission rules (`mcp__plugin_<plugin>_<server>__*`), skill `allowed-tools`, a subagent's `tools` and hook matchers.
+    - A matcher on the bare server key never fires.
+  - **Substitution:** `${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_PLUGIN_DATA}` and `${CLAUDE_PROJECT_DIR}` in stdio `command`, `args` and `env`, and in remote `url`, `headers` and `headersHelper`.
+    - Plugin configs substitute `${CLAUDE_PROJECT_DIR}` directly, with no `:-` default needed, unlike a project `.mcp.json`.
+    - Stdio servers also get the three variables exported.
+  - **User environment:** plugin servers see the same variables as manually configured servers (docs example `"DB_URL": "${DB_URL}"`). Credential variables such as `ANTHROPIC_API_KEY` and `NPM_TOKEN` read as empty in a remote `url` and `headers`, for plugins too.
+  - **Precedence:** local > project > user > plugin > claude.ai connectors. Plugin servers are matched by endpoint, so a plugin server with the same URL or command as a higher one is a duplicate, and only the higher definition connects.
+- **`bin/`:**
+  - It is on the PATH of the Bash tool's shell, and of PowerShell outside the sandbox, after the user's own PATH entries. A plugin can't shadow system commands.
+  - claude.ai and Cowork refuse a plugin with a top-level `bin/`. host-marketplace.md suggests `scripts/` with `${CLAUDE_PLUGIN_ROOT}/scripts/<name>` instead.
+- **On disk:**
+  - Copied plugins live at `~/.claude/plugins/cache/<marketplace>/<entry-name>/<version>/`. `CLAUDE_CODE_PLUGIN_CACHE_DIR` moves the plugins root. `${CLAUDE_PLUGIN_ROOT}` points at that directory, so it changes with every version.
+  - Files outside the plugin directory aren't copied.
+  - Symlinks: one inside the plugin is preserved, one elsewhere in the same marketplace is dereferenced, and one outside the marketplace is skipped. A local-path install keeps only links that stay inside the plugin.
+  - `${CLAUDE_PLUGIN_DATA}` is `~/.claude/plugins/data/<id>/`, with characters outside `[A-Za-z0-9_-]` in `<id>` replaced by `-`.
+  - Relative-path plugins from a marketplace added by local path load in place, and their `version` isn't used.
+- **Repository (project-scope) plugins:**
+  - They load only after workspace trust. Trusting a parent folder or running with `-p` isn't enough.
+  - Their MCP servers need per-server approval. Their `.mcpb` bundles and MCP files outside the plugin are skipped, and their monitors don't load.
+  - Claude Code doesn't scan a project's `.claude/plugins/`.
+- **Interaction with project `.claude/` files:**
+
+  | Same name in | Result |
+  |---|---|
+  | `.claude/skills/` and a plugin skill | Both load: `/deploy` and `/my-plugin:deploy` |
+  | `.claude/agents/` and a plugin agent | Two agents, `reviewer` and `my-plugin:reviewer`: non-plugin names can't contain `:`. Precedence for a shared name: managed 1 > `--agents` 2 > `.claude/agents/` 3 > `~/.claude/agents/` 4 > plugin 5 |
+  | `.claude/settings.json` hook and `hooks/hooks.json` hook | Runs twice per event. Identical handlers are merged across settings files only |
+  | Two enabled plugins with one manifest name | One registers its `hooks/hooks.json` hooks: the managed copy, else the first loaded. Load order: managed > `--plugin-dir` > installed marketplace plugin > skills-dir (user over project) > synced |
+
+  - SubagentStart and SubagentStop matchers for plugin agents use the scoped id, and the colon makes the matcher a regex. Anchor it, as in `^my-plugin:db-agent$`.
+  - A folder under `.claude/skills/` or `~/.claude/skills/` that holds `.claude-plugin/plugin.json` loads as plugin `<name>@skills-dir`, with its own agents, hooks and MCP servers. A project copy needs workspace trust first.
+- **JSON Schema:**
+  - No Anthropic page publishes a schema URL for `plugin.json` or `marketplace.json`. Both pages say only that `$schema` is ignored at load.
+  - The official marketplace sets `https://anthropic.com/claude-code/marketplace.schema.json`. That URL, like `…/plugin.schema.json`, redirects (301) to `www.anthropic.com` and returns 404.
+  - SchemaStore has third-party draft-07 schemas `claude-code-plugin-manifest.json` and `claude-code-marketplace.json`, added 2026-04-23. The manifest schema last changed 2026-09-28.
+  - They lag the docs. The manifest schema lacks `displayName`, `defaultEnabled`, `metadata`, `experimental` and `workflows`, and has an undocumented `settings`. The marketplace schema lacks `renames`. Don't validate against them.
+- **Not documented (UNVERIFIED):**
+  - whether `onFailure` works in a plugin `hooks/hooks.json` (it is documented only as a command and http handler field, with no plugin example or exclusion);
+  - whether plugin `bin/` is on the PATH used to resolve an exec-form hook `command`;
+  - what happens to an unset `${VAR}` in a plugin MCP config, where the docs conflict. Plugin troubleshooting lists `Missing environment variables: <names>`, so the server isn't resolved. mcp.md says the server loads with the text unexpanded. Whether `${VAR:-default}` applies in plugin configs isn't stated. Write optional variables as `${VAR:-}`;
+  - how validate, and `--strict`, treats `engines`;
+  - a Claude Code length limit for plugin `name`;
+  - whether a plugin agent's frontmatter `name` may contain `:`.
+
+### CC-MKT-P4: marketplace file, sources, dependencies and adding a marketplace
+Sources: https://code.claude.com/docs/en/plugins/marketplace-reference.md, …/plugins/create-marketplace.md, …/plugins/host-marketplace.md, …/plugins/dependencies.md, …/plugins/install.md, …/plugins/cli-reference.md, …/plugins/loading.md, …/plugins/publish.md, …/settings-reference.md (live docs, fetched 2026-11-17). CHANGELOG @ `bc1e8a88cb44`. https://github.com/anthropics/claude-plugins-official @ `fd30cee3ecd5` (2026-11-16).
+Status: Verified, except the UNVERIFIED list. Supersedes CC-MKT and corrects its reserved-name line.
+
+- **File and root:** `<root>/.claude-plugin/marketplace.json`. The marketplace root is the directory that contains `.claude-plugin/`, and every relative plugin source resolves from it. A marketplace file anywhere else needs `extraKnownMarketplaces` with `path`, because `marketplace add` has no option for it.
+- **Top-level fields:**
+  - Required: `name`, `owner`, `plugins`.
+  - Optional: `$schema` (ignored), `description` (validate warns when it's missing), `version`, `metadata.description`, `metadata.version`, `metadata.pluginRoot` (2.1.239+), `forceRemoveDeletedPlugins`, `allowCrossMarketplaceDependenciesOn` and `renames`.
+  - Unknown keys are ignored at load, and validate warns about each one. At load, each entry is checked on its own, so one bad entry doesn't fail the marketplace.
+  - `name`: letters, digits, `.`, `_` and `-`, starting with a letter or digit, and no `..`. Validate fails any other name. Users type it after `@`, and each user can register only one marketplace per name.
+  - `owner`: `name` is required, and `email` and `url` are optional. An empty `owner.name` is the error `Author name cannot be empty`.
+- **Reserved marketplace names** (there is no blanket `anthropic-` prefix rule; `grimoire` matches none of these):
+  - Official names, usable only from a `github` or `git` source under `github.com/anthropics/`:
+    - `claude-code-marketplace`, `claude-code-plugins`, `claude-plugins-official`, `anthropic-marketplace`, `anthropic-plugins`;
+    - `agent-skills`, `anthropic-agent-skills`, `life-sciences`, `knowledge-work-plugins`, `claude-for-legal`, `claude-for-financial-services`, `financial-services-plugins`, `first-party-plugins`, `claude-tag-plugins`;
+    - community: `claude-community`, `claude-plugins-community`, `healthcare`;
+    - directory: `anthropic-plugin-directory`, `claude-plugin-directory`.
+  - Names that impersonate an official one, such as `official-claude-plugins` or `claude-plugins-v2`, and any non-ASCII name.
+  - Another spelling of a reserved name, such as `claude.code.plugins` (2.1.280+).
+  - `inline`, `builtin`, `skills-dir`, `synced` and `claude-plugin-test`.
+  - JavaScript object member names such as `constructor` and `toString` (2.1.296+).
+  - The prefix `claudeai-`.
+  - `<owner>-<repo>`, the download folder of another registered GitHub marketplace (2.1.290+).
+  - **Validate doesn't catch the exact official names.** They pass validation and are refused only at `marketplace add`.
+  - Claude Desktop warnings: the names `org`, `org-provisioned` and `unknown` in any case, and names outside its charset or over 128 chars. These are warnings, so they fail `--strict`.
+- **Plugin entry:**
+  - Required: `name` (letters, digits, `.`, `_`, `-`, starting alphanumeric) and `source`. Duplicate names are an error.
+  - Its own optional fields: `description`, `version`, `category` and `tags` (both free-form), `strict` (default `true`), `relevance`, `dependencies`, `defaultEnabled`, `displayName`, `metadata`, plus `headers` and `headersHelper`.
+    - `headers` and `headersHelper` apply only to `archive` sources and need 2.1.238+. `headersHelper` also needs `strict: false`.
+  - An entry also accepts every `plugin.json` field except the directory-listing fields, which validate reports as unknown.
+  - The official marketplace uses categories such as `development`, `productivity`, `database`, `monitoring` and `security`.
+- **Entry and `plugin.json`:**
+
+  | Case | Result |
+  |---|---|
+  | No `plugin.json` | The entry is the manifest, whatever `strict` says. Entry `hooks` load only as an inline object |
+  | `plugin.json` present | Entry `mcpServers`, `lspServers`, `userConfig` and `channels` don't apply |
+  | present, `strict: true` (default) | Entry `commands`, `agents`, `skills`, `outputStyles` and `themes` are appended. For each event, entry `hooks` matchers replace the manifest's |
+  | present, `strict: false`, entry declares any of the six component fields | Load error `Plugin <name> has conflicting manifests` |
+
+  - Entry `hooks` written as a file path or an array pass validate but never run. The plugin shows `not yet supported in a marketplace entry`.
+  - Display fields set on the entry override `plugin.json` in listings: `displayName`, `description`, `author`, `homepage`, `repository`, `license` and `keywords`. Before install, Claude Code can read `plugin.json` only for relative-path entries.
+  - If an entry whose source is the marketplace root lists `skills` subdirectories, only those load.
+- **Relative-path source:**
+  - The source must start with `./`, or be `"."` for the root, or be a bare name under `metadata.pluginRoot`.
+  - A source without `./` gets `Invalid string: must start with "./"` (`Invalid input` before 2.1.285). A path containing `..` fails validation.
+  - On macOS and Linux, a backslash after `./` is refused.
+  - A path to a missing directory passes validate, but install fails with `Source path does not exist: <path>`.
+  - `metadata.pluginRoot` must itself be relative and inside the marketplace. It has no effect on `./` sources, and a source containing `/` still needs `./`.
+- **Other plugin sources:** `github{repo, ref, sha}`, `url{url, ref, sha}`, `git-subdir{url, path, ref, sha}`, `npm{package, version, registry}`, `archive{url, sha256}` and `command{command, timeout, mode}`. `sha` is a full 40-char lowercase commit SHA.
+- **Version:**
+  - Precedence: `plugin.json` `version`, then the entry `version`, then a value derived from the source.
+  - Derived values: `github`, `url` and `git-subdir` give a 12-char commit SHA. A relative path in a git-hosted marketplace gives the commit SHA of the installed directory. A local non-git directory, or `npm`, gives `unknown`. `archive` gives a 12-char SHA-256.
+  - A mismatch gets the warning `Entry declares version "<a>" but <path>/plugin.json says "<b>"` (relative entries). The docs say not to set `version` in both places.
+  - publish.md: keep `--strict` in CI, or drop it if you omit `version`.
+- **`dependencies`** (in `plugin.json` or the entry):
+  - An array whose items are `"name"`, `"name@marketplace"` or `{"name", "marketplace"?, "version"?}`. A bare name resolves in the declaring plugin's own marketplace.
+  - `version` is an npm semver range (`~2.1.0`, `^2.0`, `>=1.4`, `=2.1.0`). It doesn't match prereleases unless you opt in, as with `^2.0.0-0`.
+  - Ranges resolve against git tags named `<plugin-name>--v<version>`. For a relative-path plugin, the marketplace repository holds the tags, and `claude plugin tag --push` creates them.
+  - With no matching tag, a relative-path plugin installs the marketplace's current copy and checks the range at load. If that copy is out of range, the dependent stays disabled.
+  - With no matching tag, a plugin with its own repository fails to install (`has no git tag satisfying`). A local non-git marketplace has no tags and installs its current contents.
+  - A plugin with only `name` and `dependencies` is a valid bundle plugin.
+  - **Behaviour:**
+    - Install also installs and enables the declared dependencies, at the same scope.
+    - Enable also enables installed-but-disabled dependencies, and fails if one isn't installed.
+    - Disable is refused while another enabled plugin needs the plugin.
+    - Uninstall leaves auto-installed dependencies until `claude plugin prune`, which needs `-y` without a TTY.
+    - `marketplace add`, `/reload-plugins`, auto-update and a repeated install also install missing dependencies.
+  - **Cross-marketplace:** allowed only if the root marketplace (the one hosting the plugin being installed) lists the target marketplace in `allowCrossMarketplaceDependenciesOn`, or the user already enabled the dependency at the same scope. Otherwise:
+    - a dependency declared in the entry makes the install fail;
+    - one declared in `plugin.json` lets the install go ahead without it, and the plugin then fails to load.
+- **Adding a marketplace:** `claude plugin marketplace add <source> [--scope user|project|local] [--sparse …] [--json]`, or `/plugin marketplace add`.
+
+  | Input | Source type | Relative entries resolve? |
+  |---|---|---|
+  | `owner/repo`, `owner/repo#ref`, `owner/repo@ref` | `github` | yes |
+  | `user@host:path`; an http(s) URL ending in `.git` or containing `/_git/`; a github.com or gitlab.com repo URL | `git` | yes |
+  | any other http(s) URL | `url` (fetches only `marketplace.json`) | **no**: install fails `…does not stay inside the marketplace directory` |
+  | `./`, `../`, `/`, `~` path to a directory / to a `.json` file | `directory` / `file` | yes |
+  | `settings` (inline in settings) | `settings` | rejected outright |
+
+  - **A raw.githubusercontent.com link is a `url` source**, so Grimoire's relative entries would fail. Users must add `owner/repo` or `https://github.com/<owner>/<repo>`.
+  - The registered name is the `name` in `marketplace.json`, not the repo name, and the install id is `<entry-name>@<marketplace-name>`.
+  - `--scope project` writes `extraKnownMarketplaces` to `.claude/settings.json`. Teammates get it only after workspace trust, and it is ignored without a message in untrusted folders and in `-p` runs.
+  - `claude plugin install <name> --marketplace <source>` adds the marketplace and installs in one step (2.1.292+; `/plugin install … --marketplace` 2.1.275+).
+  - A `file` source takes the directory two levels above the file as the root.
+  - A marketplace `ref` may be a branch, a tag or a full lowercase commit SHA. The SHA form needs 2.1.324+ (docs; CHANGELOG lists it under 2.1.325) and is refused for reserved names. Older clients, `stable` 2.1.311 included, can't load a SHA-pinned marketplace.
+  - `autoUpdate` defaults to false for third-party marketplaces.
+- **Not documented (UNVERIFIED):**
+  - whether `..` inside an entry `name` is refused, as it is for the marketplace `name`;
+  - whether an entry `version` equal to the `plugin.json` value still warns (the docs show only the mismatch message).
+
+### CC-CI-P4: `claude plugin validate` and installing Claude Code in CI
+Sources: https://code.claude.com/docs/en/plugins/cli-reference.md, …/plugins/manifest-reference.md, …/plugins/marketplace-reference.md, …/plugins/create-marketplace.md, …/plugins/troubleshooting.md, …/plugins/publish.md, …/plugin-evals.md, …/setup.md, …/devcontainer.md, …/troubleshoot-install.md, …/network-config.md, …/env-vars.md, …/data-usage.md, …/plugins/anthropic-marketplaces.md (live docs, fetched 2026-11-17). https://registry.npmjs.org/@anthropic-ai/claude-code (packument modified 2026-11-16T22:09:51Z). https://registry.npmjs.org/-/npm/v1/keys. https://downloads.claude.ai/claude-code-releases/bootstrap.sh (Last-Modified 2026-11-16 18:33 GMT, sha256 `3a68d3406cf6…a944`). `…/2.1.326/manifest.json` and `…/2.1.311/manifest.json`, each with `.sig`. GitHub releases `v2.1.326` and `v2.1.311`. anthropics/claude-plugins-official `.github/workflows/validate-plugins.yml` and `.github/scripts/validate-plugin-folders.ts` @ `fd30cee3ecd5`. npm CLI `docs/lib/content/commands/npm-audit.md` (branch `latest`).
+Status: Partial. Offline behaviour is UNVERIFIED, and everything else is Verified. Signatures were checked with gpg in an isolated keyring. No Claude Code binary was downloaded or run.
+
+- **Command:** `claude plugin validate <path> [--strict] [--json]`. `claude plugins` is an alias. `--strict` fails on warnings. `--json` needs 2.1.259+.
+- **What a directory run validates:**
+  - It checks `.claude-plugin/marketplace.json` if present, otherwise `.claude-plugin/plugin.json`, otherwise component files. Component files means the files in a directory named `skills`, `agents` or `commands`, those three under a directory named `.claude`, or those under `<dir>/.claude`.
+  - A directory with both manifests gets both validated (2.1.289+; earlier versions validated the marketplace only).
+  - Given a file, naming it `marketplace.json` or `plugin.json` decides which checks run. Any other file in `.claude-plugin/` is a plugin manifest. Any other file elsewhere is classified by its fields.
+- **Marketplace runs:**
+  - They check the marketplace file and each local-path entry's `plugin.json`, with messages prefixed `plugins[N] plugin.json →`, and the version mismatch.
+  - **They don't open the listed plugins' skill, agent, command, hook or MCP files. Validate each plugin directory too.**
+- **What it reports:**
+  - JSON syntax of the manifest and of `hooks/hooks.json`; required fields and types;
+  - marketplace and plugin naming rules and reserved plugin names;
+  - component paths that are missing or contain `..`; skills entries that point at a file;
+  - unknown fields (warnings); missing `version`, `description` or `author`, non-kebab names, a root `CLAUDE.md` and an unquoted `${CLAUDE_PLUGIN_ROOT}` in shell form (warnings);
+  - `No frontmatter block found` (warning) and `YAML frontmatter failed to parse` in skill, agent and command files;
+  - MCP entries Claude Code would drop, an undeclared `${user_config.KEY}` and an invalid remote `url` (errors, 2.1.281+);
+  - `http://` or `ws://` to a non-loopback host, and header values that look like literal credentials (warnings);
+  - `renames` chains, entry/manifest version mismatches and symlinked local sources.
+- **What it doesn't catch:**
+  - exact official marketplace names;
+  - relative sources that point at missing directories;
+  - entry `hooks` given as a path or an array;
+  - errors fetching remote sources (they show only at install);
+  - anything in `.lsp.json`, which validate never reads;
+  - a `SKILL.md` at the plugin root in a plugin run.
+  - Anthropic's own script JSON-parses `.mcp.json`, `.lsp.json` and `hooks/hooks.json` itself, because the CLI doesn't report every invalid one.
+- **Symlinks:** validate doesn't follow links inside the named directory.
+  - A linked `skills`, `agents` or `commands` directory under the plugin or `.claude` root: warning that nothing in it was read.
+  - Linked entries inside such a directory: skipped, with a warning per directory.
+  - The named directory, or its `.claude` parent, is itself a link: error, and nothing in it is checked.
+- **Exit codes:**
+
+  | Exit | Verdict line | Meaning |
+  |---|---|---|
+  | `0` | `Validation passed` / `Validation passed with warnings` | Loads; with `--strict`, no warnings |
+  | `1` | `Validation failed` / `Validation failed (--strict treats warnings as errors)` | An error, or a warning under `--strict` |
+  | `2` | `Unexpected error during validation: <reason>` | Validator failure. Nothing on stdout; the message is on stderr |
+
+  - README `Advice` (2.1.295+) never changes the verdict or exit code.
+- **`--json` report:** a single JSON object.
+  - `success`, `strict`, `target`.
+  - `manifest`: the manifest's own result, or `null`. In a directory with both manifests it is the `marketplace.json` result.
+  - `contents[]`: `{file, errors, warnings, notes}`, with files that have nothing to report left out. Under it, `gatingHooks` (2.1.290+, mods only).
+  - `advice[]` (2.1.295+).
+  - Anthropic's script reads each issue as `{path, message}`. It validates each plugin folder alone, then again inside a throwaway marketplace, because a standalone run flags names reserved for Anthropic.
+- **Credentials and network:**
+  - The docs don't say whether `validate` needs network, a login or an API key. They do say `plugin test` needs no session, sign-in or network, and `plugin eval` needs credentials such as `ANTHROPIC_API_KEY`.
+  - Validation reads only files inside the directory and fetches no remote plugin source.
+  - **Evidence that no login is needed:** Anthropic's `validate-plugins.yml` runs `claude plugin validate --json` on `ubuntu-latest` with `permissions: contents: read`, and no Anthropic secret or login. It doesn't pass `--strict`.
+    - It installs with `npm install -g --include=optional @anthropic-ai/claude-code@latest`, retrying three times and falling back to `node "$(npm root -g)/@anthropic-ai/claude-code/install.cjs"`.
+  - CHANGELOG fixes show that `claude plugin` commands renew a stored sign-in token on signed-in machines.
+- **Install with npm at an exact version:**
+  - Docs pattern: `npm install -g @anthropic-ai/claude-code@X.Y.Z` with `DISABLE_AUTOUPDATER=1` (devcontainer.md). The package installs the same native binary as the native installer.
+  - **Package mechanics (2.1.326 and 2.1.311):**
+    - bin `claude` → `bin/claude.exe`; `scripts.postinstall` = `node install.cjs`;
+    - `engines.node` = `>=22.0.0`; an older Node only gets an `EBADENGINE` warning;
+    - no `dependencies`, and eight `optionalDependencies` `@anthropic-ai/claude-code-<platform>` at the same version.
+  - **Failure modes:**
+    - `--omit=optional` breaks the install, and there is no JS fallback.
+    - With `--ignore-scripts`, run `node …/install.cjs`, or launch through `cli-wrapper.cjs`.
+    - npm 12 skips postinstall unless `allow-scripts` includes `@anthropic-ai/claude-code`.
+  - Integrity:
+
+    | Version | `dist.integrity` |
+    |---|---|
+    | 2.1.326 | `sha512-F7OqxXKogQYUs+RN1903IWlXGuxn8iwAykx+umRbDKvoBeK0Xm6cdgQx9auu5dtsB+DczN58/EFrlaU8pLfgJg==` |
+    | 2.1.311 | `sha512-7SgBitii1ZscdbRJXLcub7Vv2pfvH3wo7RrCKg4vZpklIfz9HgigJFFJGIjCY6jzoPDvbQcwwugvm3A8PTejzw==` |
+
+  - **Registry signatures:** keyid `SHA256:DhQ8wR5APBvFHLF/+Tc+AYvPOdTpcIDqOhxsBHRwC7U`, the current key (no expiry) at `/-/npm/v1/keys`. `npm audit signatures` verifies registry signatures.
+  - **No provenance:**
+    - The attestations endpoint returns 404 for `@anthropic-ai/claude-code@2.1.326`, `@2.1.311` and `@anthropic-ai/claude-code-linux-x64@2.1.326`, and no version has `dist.attestations`.
+    - `_npmUser` shows a GitHub Actions trusted publisher (OIDC).
+    - No Claude Code doc mentions provenance.
+- **Install with the native installer:**
+  - `curl -fsSL https://claude.ai/install.sh | bash -s <version|stable|latest>`. The URL redirects (302) to `https://downloads.claude.ai/claude-code-releases/bootstrap.sh`. Native installs auto-update unless `DISABLE_AUTOUPDATER` or `DISABLE_UPDATES` is set.
+  - **bootstrap.sh always downloads the latest binary** and checks it with SHA-256 against `manifest.json`, fetched over HTTPS. It does no GPG check, then runs `<binary> install <target>`. A pinned install therefore executes the current latest binary first.
+  - **Per release:**
+    - `…/claude-code-releases/<VERSION>/manifest.json` gives `platforms.<platform>.{binary, checksum, size}`, plus the undocumented `manifestSignatureEnforcement: "flag"` and `sdkCompat`.
+    - A detached `manifest.json.sig` exists for 2.1.89 and later.
+    - Key: `https://downloads.claude.ai/keys/claude-code.asc`, fingerprint `31DD DE24 DDFA B679 F42D 7BD2 BAA9 29FF 1A7E CACE`.
+    - Verify with `gpg --verify manifest.json.sig manifest.json`, then sha256 the binary.
+    - **Checked 2026-11-17:** good signatures on the 2.1.326 and 2.1.311 manifests.
+  - From the bootstrap.sh source, not documented: the binary is at `…/<VERSION>/<platform>/claude`. linux-x64 sha256 is `b6b3647d981130dc44fc670846ae97b6cde531ffb667cf9c4d17cfcafb38cb37` for 2.1.326 (commit `e601e33ab7cb`, built 2026-11-16T17:26:18Z) and `86dc1fcc69498159eaf15f446613e847010f9036bfbbdffd4c49350be8489ada` for 2.1.311.
+  - **Platform signing:** Linux binaries aren't code-signed. macOS binaries are signed by Anthropic PBC and notarized. Windows binaries are Authenticode-signed.
+  - Signed apt, dnf and apk repositories offer `stable` and `latest` channels under `https://downloads.claude.ai/claude-code/`. apk uses `claude-code.rsa.pub`.
+  - GitHub releases carry eight platform archives plus `SHASUMS256.txt` and `SHASUMS256.txt.sig`. For v2.1.326 the API asset digests match `SHASUMS256.txt`. Not documented: `SHASUMS256.txt.sig` checked as a good signature from the same release key.
+- **Network hosts:**
+
+  | Host | Used for |
+  |---|---|
+  | `api.anthropic.com` | API requests, feature flags, telemetry event logging, WebFetch safety check |
+  | `downloads.claude.ai` | native installer, auto-updater, update checks, plugin executable downloads |
+  | `registry.npmjs.org` | npm installs of Claude Code, npm-source plugins, plugins' Node dependencies |
+  | `github.com` | cloning marketplaces and plugins, the official marketplace included |
+  | `storage.googleapis.com` | `/plugin` install counts and metadata |
+  | `raw.githubusercontent.com` | changelog; never fetched by non-interactive sessions |
+  | `http-intake.logs.us5.datadoghq.com`, `browser-intake-us5-datadoghq.com` | optional telemetry and error reports |
+
+- **Turning traffic off:**
+
+  | Variable | Effect |
+  |---|---|
+  | `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` | Any non-empty value, even `0` or `false`. Turns off auto-updates, telemetry, error reporting, `/feedback`, release notes, status-badge and availability checks, feature flags, background `command`-source runs, and the refresh before a `name@marketplace` install. **Doesn't cover** official-marketplace auto-install or the WebFetch preflight (`skipWebFetchPreflight: true`) |
+  | `DISABLE_TELEMETRY` | Any non-empty value; also stops feature-flag fetching |
+  | `DO_NOT_TRACK=1` | Standard boolean; same effect as `DISABLE_TELEMETRY` |
+  | `DISABLE_ERROR_REPORTING` | Any non-empty value |
+  | `CLAUDE_CODE_DISABLE_FEATURE_FLAGS=1` | 2.1.319+. `DISABLE_GROWTHBOOK` is the name 2.1.124–2.1.318 read, and it still works |
+  | `DISABLE_AUTOUPDATER=1` / `DISABLE_UPDATES=1` | Background updates only / also blocks `claude update` and `claude install` |
+  | `DISABLE_FEEDBACK_COMMAND=1` | `/feedback`, `/bug`, `/share` |
+  | `CLAUDE_CODE_DISABLE_OFFICIAL_MARKETPLACE_AUTOINSTALL=1` | Skips registering `claude-plugins-official`, which usually happens at the first interactive launch. The skip is permanent |
+  | `CLAUDE_CODE_PLUGIN_PREFER_HTTPS=1` | Clones `owner/repo` over HTTPS; the docs name CI runners |
+  | `CLAUDE_CODE_PLUGIN_CACHE_DIR`, `CLAUDE_CONFIG_DIR` | Move the plugins root (`~/.claude/plugins`) and the config directory (`~/.claude`) |
+
+  - Error reports are on by default only for Pro, Max or Ultra sign-ins on 2.1.198+.
+- **Not documented (UNVERIFIED):**
+  - whether `claude plugin validate` runs with no network at all, and which startup requests (feature flags, telemetry, update checks) a `claude plugin` subcommand makes when no one is signed in;
+  - whether non-interactive `claude plugin` subcommands trigger the official-marketplace auto-registration (set the variable anyway);
+  - whether the native binary's `install` step verifies `manifest.json.sig`;
+  - the per-platform binary URL, which comes from the bootstrap.sh source and not from the docs.
+
+### CODEX-P4: releases, AGENTS.md and project trust
+Sources: https://api.github.com/repos/openai/codex/releases and …/releases/latest (fetched 2026-11-17); https://registry.npmjs.org/-/package/@openai/codex/dist-tags (fetched 2026-11-17); source at https://github.com/openai/codex/tree/d32063f96c2dff1dc96af839b3952abb6acfeda4 (`rust-v0.169.0`), diffed against https://github.com/openai/codex/tree/57da98c18f84311dc23abfe1cda8f2c0dbd41cb9 (`rust-v0.171.0-alpha.11`). Files: `codex-rs/core/src/agents_md.rs`, `codex-rs/codex-home/src/instructions/`, `codex-rs/config/src/loader/mod.rs`, `codex-rs/config/src/config_toml.rs`, `codex-rs/config/src/state.rs`, `codex-rs/config/src/strict_config.rs`, `codex-rs/tui/src/onboarding/trust_directory.rs`. Docs (unversioned, no Last-Modified, fetched 2026-11-17): https://learn.chatgpt.com/docs/agent-configuration/agents-md.md, …/config-file/config-advanced.md, …/config-file/config-reference.md, …/non-interactive-mode.md, …/import.md.
+Status: Verified, except the gaps listed. An independent skeptic re-checked 100 researcher facts against the source and docs: 93 confirmed, 6 refuted, 1 uncertain. The refuted facts appear below in corrected form, and facts the skeptic added are included where an implementer needs them. Nothing was downloaded as a binary or run. Source paths below are relative to `codex-rs/` at `rust-v0.169.0`. Each file named was compared with alpha.11 and is identical unless noted.
+
+- **Releases checked:**
+
+  | Channel | Version | Published | Tag commit |
+  |---|---|---|---|
+  | Stable (GitHub `releases/latest`; npm `latest`) | `rust-v0.169.0` / 0.169.0 | 2026-11-13 | `d32063f96c2d` |
+  | Prerelease (npm `alpha`) | `rust-v0.171.0-alpha.11` / 0.171.0-alpha.11 | 2026-11-17 | `57da98c18f84` |
+  | Patch prerelease | `rust-v0.170.0-alpha.4.1` | 2026-11-17 | `9e07c55808e4` |
+
+  The prerelease supersedes the `alpha.10` recorded on 2026-11-16. The stable release is unchanged.
+- **Global instructions:** `$CODEX_HOME` (default `~/.codex`) `AGENTS.override.md`, otherwise `AGENTS.md`. The first non-empty file wins, so a whitespace-only override falls back. This text is user instructions and doesn't count against the project budget.
+- **Project walk** (`core/src/agents_md.rs`):
+  - The root is the nearest ancestor holding a `project_root_markers` entry (default `.git`). With no marker found, only cwd is checked. Markers are read from non-project layers only.
+  - In each directory from root to cwd, Codex takes the first file that **exists** among `AGENTS.override.md`, `AGENTS.md` and `project_doc_fallback_filenames` (default empty).
+  - An empty override still claims its directory, so that directory's `AGENTS.md` is not read. The docs only say that empty files are skipped.
+  - Files are joined with blank lines. `\n\n--- project-doc ---\n\n` separates user or internal text from the first project file.
+- **Size:** `project_doc_max_bytes` defaults to `32 * 1024`, and `0` disables project files.
+  - **One budget is shared by all project files and all turn environments.** The file that overflows is truncated, and later files are skipped, each with a warning.
+  - This settles the docs conflict. agents-md.md describes a combined cap, which is right. config-advanced.md describes a per-file cap, which is wrong.
+- **Instruction cross-reads:** Codex never reads `CLAUDE.md` unless a user lists it in `project_doc_fallback_filenames`.
+- **Trust storage and lookup:**
+  - Trust is stored as `[projects."<abs path>"] trust_level = "trusted" | "untrusted"` in user config, and managed config can also set it. Project layers can't.
+  - For each `.codex/` folder, the first saved decision wins, checked in this order: the folder's parent directory, the project root, then the git repo root. The repo root is the main checkout for linked worktrees.
+  - A root entry therefore covers nested folders that have no entry of their own. Windows keys compare case-insensitively. A new grant is saved under the repo-root key, or the project-root key when there is no repo.
+- **What trust gates:**
+  - **Project `.codex/` layers load only with an explicit `trusted`.** With no decision, or with `untrusted`, the layer is disabled: its `config.toml`, MCP servers, hooks, agents and exec policies don't load. The disabled reason tells the user to add the key as a trusted project in their user config.
+  - **Project `AGENTS.md` files are skipped only when the project is explicitly `untrusted`.** A project with no decision still loads them. This corrects the 2026-11-16 entry.
+  - Skills load in every case (`CODEX-SKILLS-P4`).
+  - The TUI asks "Trust this folder?" and offers "Trust and continue", which saves the decision. For a folder already marked untrusted it offers "Open restricted", which leaves the saved trust unchanged.
+  - `codex exec` and `codex review` load project config and project MCP servers only in trusted projects, even with `--sandbox workspace-write` (0.169.0, #60041).
+  - `--trust` saves trust. It can't override an explicit `untrusted` and can't be combined with `--ignore-user-config`.
+  - The docs warn that project MCP servers can run commands outside the sandbox.
+- **Project config loading:**
+  - A `.codex/` folder without `config.toml` is still a layer, so its `hooks.json`, `agents/` and `skills/` count.
+  - In a trusted project, a TOML syntax error in `.codex/config.toml` is a config-load error ("Error parsing project config file"). In an untrusted project the file is ignored.
+  - Even in a trusted project, Codex removes these keys from project config and prints a startup warning: `openai_base_url`, `chatgpt_base_url`, `apps_mcp_product_sku`, `model_provider`, `model_providers`, `notify`, `profile`, `profiles`, `experimental_realtime_ws_base_url` and `otel`. That is the docs list. The source also removes `responses_api_metadata`, `experimental_realtime_webrtc_call_base_url` and some `features.*` keys.
+  - Outside strict mode, unknown keys in the merged config cause a startup warning. A value that fails a typed table, though, fails the load (`CODEX-MCP-P4`, `CODEX-HOOKS-P4`).
+- **Claude Code cross-reads:** none at runtime.
+  - Nothing reads `CLAUDE.md`, `.claude/skills/`, `.claude/agents/`, a repo-root `.mcp.json` or `.claude/settings.json` hooks. `.mcp.json` is read only as a plugin's default MCP file.
+  - `/import` in the CLI, or Settings > Import in the desktop app, converts a Claude Code or Cursor setup once. It covers instruction files (to `AGENTS.md`), `settings.json` (to `config.toml`), skills, MCP config, hooks, slash commands (to skills) and subagents.
+
+### CODEX-MCP-P4: `[mcp_servers.<id>]` in `.codex/config.toml`
+Sources: `config/src/mcp_types.rs`, `config/src/config_toml.rs`, `rmcp-client/src/utils.rs`, `rmcp-client/src/stdio_server_launcher.rs`, `rmcp-client/src/program_resolver.rs`, `utils/pty/src/child_command.rs`, `codex-mcp/src/rmcp_client.rs`, `codex-mcp/src/tools.rs`, `codex-mcp/src/mcp/mod.rs`, `core/src/tools/handlers/mcp.rs`, `protocol/src/shell_environment.rs` and `network-proxy/src/certs.rs` at `rust-v0.169.0`; `codex-mcp/src/tools.rs` and `protocol/src/shell_environment.rs` at alpha.11. Docs: https://learn.chatgpt.com/docs/extend/mcp.md and …/config-file/config-reference.md (fetched 2026-11-17).
+Status: Verified, except the gaps listed.
+
+- **Transport is chosen by key.** `command` selects stdio. Otherwise `url` selects Streamable HTTP. With neither, the entry is an error ("invalid transport").
+- **Keys by transport:**
+
+  | Transport | Keys |
+  |---|---|
+  | stdio | `command` (string), `args` (array of strings), `env` (string map, literal), `env_vars` (array), `cwd` (string) |
+  | Streamable HTTP | `url`, `bearer_token_env_var`, `http_headers` (static map), `env_http_headers` (header → variable name), `http_headers_helper` (local command that prints a JSON object; must not be empty; local environment only), `auth` (`oauth` default, `chatgpt`, `ema_auth`), `oauth.{client_id, client_secret, token_endpoint_auth_method, callback_url, callback_port, authorization_server_issuer}`, `oauth_resource` (RFC 8707). An inline `bearer_token` is rejected. |
+  | both | `environment_id` (default `local`), `enabled`, `required`, `startup_readiness` (`connection` or `catalog`), `startup_timeout_sec` (float **seconds**, docs default 10) or `startup_timeout_ms`, `tool_timeout_sec` (float seconds, docs default 60), `supports_parallel_tool_calls`, `tool_input_schema_max_bytes` (default 5,000), `omit_tools_from`, `default_tools_approval_mode` (`auto`, `prompt`, `writes` or `approve`), `enabled_tools`, `disabled_tools`, `tools.<tool>.approval_mode`, `tools.<tool>.output_token_limit`, `scopes`, and a legacy `name` |
+
+- **Mixing transports is an error** ("<field> is not supported for <transport>"):
+  - On a stdio entry, these keys fail: `url`, `bearer_token_env_var`, `bearer_token`, `http_headers`, `env_http_headers`, `http_headers_helper`, `oauth`, `oauth_resource` and `auth`.
+  - On an HTTP entry, these keys fail: `args`, `env`, `env_vars`, `cwd` and `bearer_token`.
+  - *(source, not exercised)* `mcp_servers` belongs to the typed config, so one invalid entry fails config loading, not just that server.
+- **`env_vars`:** each item is a variable-name string or `{ name = "…", source = "local" | "remote" }`. The table form takes no other keys, and any other source is an error. A string means local.
+  - Each named variable is copied from Codex's own environment under the same name. An unset variable is skipped silently.
+  - `source = "remote"` makes a local stdio launch fail.
+  - A variable can't be forwarded under a different name.
+- **Stdio environment:** the child starts empty (`env_clear`). It then receives, in this order:
+  1. the default allowlist;
+  2. the `env_vars` names;
+  3. any non-empty custom-CA variables, made absolute: `CODEX_CA_CERTIFICATE`, `SSL_CERT_FILE`, `REQUESTS_CA_BUNDLE`, `CURL_CA_BUNDLE`, `NODE_EXTRA_CA_CERTS`, `GIT_SSL_CAINFO`, `CARGO_HTTP_CAINFO`, `PIP_CERT`, `BUNDLE_SSL_CA_CERT`, `npm_config_cafile`, `NPM_CONFIG_CAFILE`;
+  4. the literal `env` map, which overrides the rest.
+
+  Non-inheritable names are removed last, even when they come from `env`.
+  - Unix allowlist: `HOME`, `LOGNAME`, `PATH`, `SHELL`, `USER`, `__CF_USER_TEXT_ENCODING`, `LANG`, `LC_ALL`, `TERM`, `TMPDIR`, `TZ`.
+  - Windows allowlist: `PATH`, `PATHEXT`, `SHELL`, `COMSPEC`, `SYSTEMROOT`, `WINDIR`, `SYSTEMDRIVE`, `USERNAME`, `USERDOMAIN`, `USERPROFILE`, `HOMEDRIVE`, `HOMEPATH`, `PROGRAMFILES`, `PROGRAMFILES(X86)`, `PROGRAMW6432`, `PROGRAMDATA`, `LOCALAPPDATA`, `APPDATA`, `TEMP`, `TMP`, `TMPDIR`, `POWERSHELL`, `PWSH`. (Corrected: the research list missed two names.)
+  - Non-inheritable names (case-insensitive; also stripped from hooks): `CODEX_EXEC_SERVER_NOISE_AUTH_TOKEN`, `NODE_REPL_AUTH_TOKEN`, `CODEX_GUARDIAN_DECISIONS_API_KEY`, `OPENAI_FEDERATION_RULE_ID`, `OPENAI_IDENTITY_TOKEN_FILE`, `OPENAI_WORKLOAD_IDENTITY_CONTEXT`. alpha.11 adds `OPENAI_IDENTITY_TOKEN_SOURCE`, `OPENAI_SPIFFE_AUDIENCE` and `OPENAI_SPIFFE_ID`.
+- **No `${VAR}` interpolation** in user or project MCP config. The config, codex-mcp and rmcp-client crates have none, and the docs document none. Only a plugin's MCP `cwd` accepts `${PLUGIN_ROOT}` and `${PLUGIN_DATA}`.
+- **Working directory and program lookup:**
+  - Without `cwd`, a stdio server starts in the launcher's fallback directory. A doc comment describes it as the caller's runtime working directory.
+  - (Corrected) On Windows the program is resolved with `which` against the server's own `PATH`/`PATHEXT` and that cwd. On Unix it is passed to spawn unchanged.
+- **HTTP credentials:**
+  - If the variable named by `bearer_token_env_var` is unset, empty or not Unicode, that server fails to start.
+  - An `env_http_headers` entry whose variable is unset or blank is dropped silently. So are invalid header names and values.
+  - The docs list bearer tokens, OAuth (including CIMD and DCR) and ChatGPT-session auth for first-party origins.
+  - Users sign in with `codex mcp login <name>`, and `--no-browser` is available. With no credential, Codex may connect unauthenticated.
+- **Server and tool names:**
+  - Server names must match `^[a-zA-Z0-9_:@/.-]+$`. A server with any other name fails to start.
+  - Model-visible and hook-visible tool names replace every character outside `[A-Za-z0-9_]` with `_`. For example, server `docs-index` with tool `get.page` becomes `mcp__docs_index__get_page`.
+  - Names that collide or exceed 128 bytes get `_` plus 12 hex digits of SHA-1. Hook names always carry `mcp__`.
+  - alpha.11 only: a server in a non-default environment gets a 12-hex hash of the environment id before the server name.
+- **Required servers:** with `required = true`, startup fails, and `codex exec` exits with an error, if the server isn't ready. `startup_readiness = "catalog"` lets a valid cached catalog count as ready.
+- **Managed allowlist:** a `requirements.toml` `mcp_servers` table is matched on server name and identity (command or url). Any configured server not on it is disabled.
+- **UNVERIFIED:**
+  - whether unknown keys inside `[mcp_servers.<id>]` trigger the ignored-key startup warning;
+  - whether every frontend (TUI, `exec`, app server) refuses to start on an invalid entry, as the source suggests;
+  - the exact fallback directory for a stdio server.
+
+### CODEX-SKILLS-P4: skills
+Sources: `ext/skills/src/host_roots.rs`, `ext/skills/src/loader/host.rs`, `ext/skills/src/loader/host_merge.rs`, `skills/src/parser.rs`, `skills/src/lib.rs` and `tui/src/onboarding/trust_directory.rs` at `rust-v0.169.0`; https://learn.chatgpt.com/docs/build-skills.md (fetched 2026-11-17).
+Status: Verified, except the gaps listed.
+
+- **Roots:**
+
+  | Root | Scope |
+  |---|---|
+  | `.agents/skills` in each directory from cwd up to the project root | Repo |
+  | `<project>/.codex/skills` for each project layer | Repo (found only in source) |
+  | `$CODEX_HOME/skills` | User (deprecated) |
+  | `$HOME/.agents/skills` | User |
+  | `$CODEX_HOME/skills/.system` | System (bundled) |
+  | `/etc/codex/skills` (the system layer folder) | Admin |
+  | enabled plugins' skill roots | Plugin |
+
+  Duplicate root paths are removed. `.claude/skills/` is never read.
+- **Skills load in untrusted projects.** Roots come from every config layer, disabled ones included, and the `.agents/skills` walk ignores trust. The TUI text for restricted folders says "Skills still load".
+- **Frontmatter:**
+  - The first line must be `---`, and a closing `---` must follow with at least one line between them.
+  - Codex reads only `name`, `description` and `metadata.short-description`, and ignores other keys.
+  - `name` is optional and defaults to the parent directory name. Whitespace is collapsed, and the result may be at most 64 characters. No character set is enforced.
+  - `description` is required and must be non-empty.
+  - If the YAML fails to parse, Codex retries once after quoting unquoted `key: a: b` values.
+- **`agents/openai.yaml`** (docs): `interface.{display_name, short_description, icon_small, icon_large, brand_color, default_prompt}`, `policy.allow_implicit_invocation` (default `true`) and `dependencies.tools[]`.
+- **Duplicate names:** when two skills share a `name`, the docs say both are kept and both can appear in skill selectors. In source, deduplication is by canonical `SKILL.md` path only.
+- **Configuration:**
+  - Codex follows symlinked skill folders.
+  - Each `[[skills.config]]` entry takes exactly one selector, an absolute `path` or a `name`, plus `enabled = false`. The last matching entry wins.
+  - `[skills.bundled] enabled = false` in a trusted project config turns off the bundled skills.
+- **UNVERIFIED:** whether two skills with the same name are both offered for implicit invocation.
+
+### CODEX-SUBAGENTS-P4: custom agents
+Sources: `agent-roles/src/discovery.rs`, `agent-roles/src/loader.rs`, `agent-roles/src/agent_role_config.rs`, `core/src/agent/role.rs`, `core/src/tools/spec_plan.rs`, `core/src/tools/handlers/multi_agents_spec.rs`, `features/src/lib.rs` and `config/src/state.rs` at `rust-v0.169.0`; https://learn.chatgpt.com/docs/agent-configuration/subagents.md (fetched 2026-11-17).
+Status: Verified, except the gaps listed.
+
+- **Files:** every `*.toml` file under `<layer folder>/agents/`, subdirectories included.
+  - That covers project `.codex/agents/` (trusted layers only), `~/.codex/agents/` and the system folder (`/etc/codex/agents/`). Corrected: the research listed only the first two.
+  - `[agents.<name>] config_file = "…"` in a config.toml also declares an agent.
+- **Required fields:** `name`, `description` and `developer_instructions`.
+  - `name` must be non-empty. Codex identifies the agent by it, not by the filename.
+  - `description` and `developer_instructions` must be non-blank.
+  - Optional `nickname_candidates` must be non-empty and unique, using ASCII letters, digits, spaces, `-` and `_`.
+- **Malformed files:** every other top-level key must be a config.toml key, because the file is parsed with serde `deny_unknown_fields`. A malformed file is skipped with a startup warning beginning "Ignoring malformed agent role definition".
+- **Same name:** within one layer, the later file is skipped with a warning. A higher layer overrides a lower one and inherits its missing fields. A custom `default`, `explorer` or `worker` replaces the built-in agent of that name.
+- **Overrides that take effect:** `developer_instructions`, `model`, `model_reasoning_effort`, `model_reasoning_summary`, `model_verbosity`, `personality` and `service_tier`; `features.<key> = false` for `shell_tool`, `apps`, `plugins`, `memories` or `request_permissions_tool`; `skills.config` entries with `enabled = false`, `skills.bundled.enabled = false` and `skills.include_instructions = false`.
+- **Everything else is ignored silently.** That includes `sandbox_mode`, `approval_policy`, `mcp_servers`, `model_provider`, `hooks`, `web_search` and any feature set to `true`. The child inherits the parent turn's sandbox, approvals, provider and MCP servers.
+- **What `features.shell_tool = false` removes:** only `exec_command` and `write_stdin`. `apply_patch`, `view_image`, MCP tools, MCP resource tools, `web_search` and the agent tools stay.
+- **A read-and-search-only agent can't be expressed** (an inference from the tool plan). Reading and searching go through `exec_command`. Disabling it still leaves `apply_patch`, and an agent file can't set a read-only sandbox. The docs confirm that agent instructions don't create a separate read-only sandbox.
+- **Flags:** none are needed. `agents.enabled` defaults to `true`. The `multi_agent` feature is Deprecated but on by default, and `multi_agent_v2` is Stable but off by default.
+- **How the parent picks an agent:** through the `agent_type` parameter of `spawn_agent`.
+  - The tool description lists "Available roles:" with each role's `description`, user-defined roles first. It notes any `model` or `model_reasoning_effort` that the role file fixes.
+  - `agent_type` is offered only when at least one user-defined role exists.
+  - The docs say local Codex spawns subagents only on a direct request, or when applicable AGENTS.md or skill instructions call for it.
+- **Spawn-time validation:** a role file is re-validated as full config when the agent is spawned. On failure, the model gets "agent type is currently not available".
+- **UNVERIFIED:** whether `service_tier` in an agent file takes effect. The source applies it, while the docs say the service tier follows the root session.
+
+### CODEX-HOOKS-P4: hooks
+Sources: `protocol/src/hooks.rs`, `config/src/hook_config.rs`, `config/src/fingerprint.rs`, `config/src/loader/mod.rs`, `hooks/src/engine/discovery.rs`, `hooks/src/engine/matcher.rs`, `hooks/src/engine/command_runner.rs`, `hooks/src/engine/output_parser.rs`, `hooks/src/engine/mod.rs`, `hooks/src/schema.rs`, `hooks/src/events/common.rs`, `hooks/src/events/pre_tool_use.rs`, `hooks/src/events/user_prompt_submit.rs`, `hooks/src/events/session_end.rs`, `hooks/src/config_rules.rs`, `hooks/src/lib.rs`, `hooks/src/registry.rs`, `hooks/schema/generated/pre-tool-use.command.input.schema.json`, `hooks/schema/generated/user-prompt-submit.command.input.schema.json`, `core/src/tools/hook_names.rs`, `core/src/tools/registry.rs`, `core/src/hook_runtime.rs`, `core/src/session/mod.rs`, `core/src/shell.rs`, `features/src/lib.rs` and `tui/src/startup_hooks_review.rs` at `rust-v0.169.0`. In alpha.11, `command_runner.rs`, `pre_tool_use.rs` and `user_prompt_submit.rs` changed, but only by adding structured content. Docs: https://learn.chatgpt.com/docs/hooks.md (fetched 2026-11-17).
+Status: Verified, except the gaps listed.
+
+- **Sources:** `hooks.json` and inline `[hooks]` next to each active config layer (`~/.codex/`, trusted `<repo>/.codex/` and the system folder), plus managed requirements and enabled plugins (default `hooks/hooks.json`).
+  - All sources run, and higher layers don't replace lower ones.
+  - A layer with both forms gets them merged, with a warning.
+  - In a linked worktree, both `hooks.json` and `[hooks]` come from the matching `.codex/` in the main checkout, not from the worktree.
+- **Shape:** `{"description"?: string, "hooks": {"<Event>": [{"matcher"?: string, "hooks": [handler, …]}]}}`. In TOML the same structure is `[[hooks.<Event>]]` followed by `[[hooks.<Event>.hooks]]`.
+  - The top level uses `deny_unknown_fields`, so any other key makes the file fail to parse. The file is skipped with a warning.
+  - Unknown event, group and handler keys in `hooks.json` are ignored silently.
+  - An unknown handler `type`, or a field of the wrong type, fails the whole file. Examples: `command` as an array, or a negative `timeout`.
+  - *(source, not exercised)* Inline `[hooks]` is part of the typed config, so the same mistakes there fail config loading.
+- **Events (14):** `PreModelRequest`, `PostModelRequest`, `PreToolUse`, `PermissionRequest`, `PostToolUse`, `PreCompact`, `PostCompact`, `SessionStart`, `SessionEnd`, `UserPromptSubmit`, `SubagentStart`, `SubagentStop`, `Stop`, `Interrupt`.
+- **Handlers:**
+
+  | `type` | Fields |
+  |---|---|
+  | `command` | `command` (one string; required; not blank); `commandWindows`, alias `command_windows` (replaces `command` on Windows); `timeout` (integer **seconds**, default 600, minimum 1; SessionEnd and Interrupt default to 1 and are clamped to 1–3 with a warning); `async` (bool); `statusMessage`; `additionalContextLimit` (approximate tokens, default 2,500, `0` removes the cap; honoured only on PreToolUse, PostToolUse, SessionStart, UserPromptSubmit and SubagentStart) |
+  | `mcp_tool` | `server` and `tool` (both non-empty); `input` (object with `${field.path}` placeholders; no nulls); `timeout`; `statusMessage`. Not supported on SessionEnd. |
+  | `prompt`, `agent` | Parsed, then skipped with a warning. |
+
+  **There is no `args`, argv or exec form, and no `onFailure`.** Claude-style keys of that kind are dropped silently.
+- **Execution:**
+  - A hook always runs through a shell. With a session shell, that is bash, zsh or sh as `-c <command>` (not a login shell), PowerShell as `-NoProfile -Command <command>`, or cmd as `/c`.
+  - The fallback is `$SHELL -lc` (else `/bin/sh`) on Unix, and `%COMSPEC% /C` (else `cmd.exe`) on Windows.
+  - Under cmd `/C`, the command string is passed raw inside one extra pair of `"`.
+  - The working directory is the session cwd. The docs suggest locating repo hooks from the git root.
+  - Up to 8 async hooks run at once. Unix hooks run in a new session.
+- **Environment and I/O:**
+  - A hook inherits the environment Codex had when the session started, minus the non-inheritable names.
+  - Plugin hooks also get `PLUGIN_ROOT`, `PLUGIN_DATA`, `CLAUDE_PLUGIN_ROOT` and `CLAUDE_PLUGIN_DATA`. `${KEY}` for exactly those four names is replaced as text in the command. User and project hooks get no substitution.
+  - stdin receives the whole input JSON, and no size cap was found. stdout and stderr are read as lossy UTF-8.
+  - The timeout also covers writing stdin. On timeout, Codex kills the process group on Unix, or the job on Windows.
+- **Matchers:**
+  - An omitted matcher, `""` or `"*"` matches everything.
+  - A matcher made only of `[A-Za-z0-9_|]` is an exact list separated by `|`. A `-` is not in that set, so it makes the matcher a regex.
+  - Anything else is a Rust `regex` and is **not anchored** (`is_match`). An invalid regex skips its group with a warning.
+  - Which events use the matcher, and what it is tested against:
+
+    | Event | Matcher tested against |
+    |---|---|
+    | PreToolUse, PermissionRequest, PostToolUse | tool name and its aliases |
+    | SessionStart | `startup`, `resume`, `clear`, `compact` or `fork` |
+    | SessionEnd | always `other` |
+    | SubagentStart, SubagentStop | `agent_type` |
+    | PreCompact, PostCompact | `manual` or `auto` |
+    | PreModelRequest, PostModelRequest, UserPromptSubmit, Stop, Interrupt | matcher ignored |
+
+- **Tool names that hooks see.** stdin always carries the canonical name, never an alias.
+
+  | Codex tool | Hook `tool_name` | Also matched by | `tool_input` |
+  |---|---|---|---|
+  | `exec_command` | `Bash` | – | `{"command": "<cmd string>"}`; stdin `cwd` = the resolved workdir |
+  | `write_stdin` | no PreToolUse; PostToolUse as `Bash`; PermissionRequest as `write_stdin` | – | – |
+  | `apply_patch` | `apply_patch` | `Edit`, `Write` | `{"command": "<raw patch>"}` in the `*** Begin Patch` grammar, with no `file_path` or `content` |
+  | MCP tool | `mcp__<server>__<tool>`, sanitized | – | the argument object |
+  | `spawn_agent` | `spawn_agent` | `Agent` | the argument object |
+  | other default-namespace tools (`update_plan`, `request_user_input`, `tool_search`, `view_image`, `list_mcp_resources`, `list_mcp_resource_templates`, `read_mcp_resource`) | plain name | – | the argument object; `{}` when empty; the raw string when not JSON |
+  | hosted `web_search` | never reaches tool hooks | – | – |
+
+  An `updatedInput` for a shell or patch call must contain a string `command`.
+- **PreToolUse stdin:**
+  - Required: `session_id`, `turn_id`, `transcript_path` (string or null), `cwd`, `hook_event_name`, `model`, `permission_mode` (`default`, `acceptEdits`, `plan`, `dontAsk` or `bypassPermissions`), `tool_name`, `tool_use_id` and `tool_input`. Optional: `agent_id` and `agent_type`. The schema sets `additionalProperties: false`.
+  - A subagent's hooks carry the parent's `session_id`.
+- **UserPromptSubmit stdin:** the same common fields plus `prompt` (string), without the tool fields.
+- **How a PreToolUse hook blocks.** Only synchronous hooks can block, and any matching hook's block wins:
+  - exit 2 with non-empty stderr, which becomes the reason;
+  - exit 0 with `hookSpecificOutput{hookEventName: "PreToolUse", permissionDecision: "deny", permissionDecisionReason: <non-empty>}`;
+  - the legacy exit-0 form `{"decision": "block", "reason": <non-empty>}`.
+
+  The model then sees "Command blocked by PreToolUse hook: <reason>. Command: <command>" for shell and patch calls, or "Tool call blocked by PreToolUse hook: <reason>. Tool: <name>" for other tools.
+- **PreToolUse outputs that mark the hook failed and let the tool run:**
+  - exit 2 with empty stderr;
+  - `deny` without a non-empty reason;
+  - `ask`;
+  - `allow` without `updatedInput`, or `updatedInput` without `allow`;
+  - legacy `approve`;
+  - `continue: false`, `stopReason` or `suppressOutput`;
+  - JSON with unknown fields, such as Claude's top-level `additionalContext`, or a `hookSpecificOutput` without `hookEventName`;
+  - stdout that starts with `{` or `[` but doesn't parse;
+  - any other exit code, or no exit status.
+
+  Plain non-JSON stdout on exit 0 is ignored.
+- **UserPromptSubmit:** it blocks on exit 2 with non-empty stderr, on `{"decision": "block", "reason": <non-empty>}`, or on `continue: false`. On exit 0, plain stdout becomes model context.
+- **Hooks fail open, and no fail-closed option exists** for user, project and plugin hooks.
+  - These all let the tool call or prompt go ahead: a spawn error; a missing binary, which shows up as a shell exit such as 127; a crash; a timeout; and an input serialization failure.
+  - Managed `requirements.toml` hooks that fail to *load* stop hook setup.
+  - The docs describe tool hooks as a guardrail rather than a full enforcement boundary.
+- **Coverage gaps:**
+  - Hosted tools such as `web_search` never reach tool hooks.
+  - `write_stdin` doesn't run PreToolUse when it sends input or polls. A command typed into an interactive shell that `exec_command` opened is therefore unseen.
+  - An `apply_patch` typed through `exec_command` is intercepted inside that handler. PreToolUse sees it only as `Bash`, because `core/src/tools/registry.rs` is the only PreToolUse caller.
+- **Trust:**
+  - A non-managed hook (user, project, session or plugin) runs only if it is enabled and its stored `trusted_hash` equals its current hash. New hooks are Untrusted and changed hooks are Modified. Both are listed but skipped.
+  - Trust is stored only in user config or session flags, as `[hooks.state."<abs source file>:<event_key>:<group>:<handler>"]` with `trusted_hash = "sha256:…"` and an optional `enabled`. Event keys are snake_case, such as `pre_tool_use`. **A repo can't trust its own hooks.**
+  - The hash is SHA-256 over sorted JSON of the event, the matcher and the normalized handler: the command selected for the platform, the normalized timeout, `async`, `statusMessage` and `additionalContextLimit`.
+  - The state key includes the group and handler positions. Editing a hook, or inserting a group before it, therefore forces another review.
+  - At startup the TUI shows "Hooks need review", with the choices "Review hooks", "Trust all and continue" and "Continue without trusting (hooks won't run)". `/hooks` reviews hooks individually.
+  - `--dangerously-bypass-hook-trust` runs enabled hooks for one invocation without persisted trust.
+  - System, MDM, cloud and `requirements.toml` hooks are managed and trusted by policy. `allow_managed_hooks_only = true` skips user, project, session and plugin hooks.
+- **Flags:** the `[features] hooks` feature is Stable and on by default. `codex_hooks` is a deprecated alias, and `requirements.toml` can force the value.
+- **Output cap:** model-visible hook output is limited to about 2,500 tokens. The full text is saved under `<temp>/hook_outputs/<session_id>/<uuid>.txt`, and the model gets a preview.
+- **PermissionRequest:** a hook decides with `hookSpecificOutput.decision.behavior = "allow" | "deny"`, plus an optional `message` for deny. Any deny wins. Returning `updatedInput`, `updatedPermissions` or `interrupt` fails closed.
+- **UNVERIFIED:**
+  - whether invalid inline `[hooks]` aborts startup in every frontend;
+  - whether unknown keys in inline `[hooks]` produce the ignored-key warning;
+  - how cmd.exe and PowerShell actually quote a binary path with spaces plus arguments (the source was read, nothing was run);
+  - any operating-system limit on hook stdin size.
+
+### CODEX-TOOLS-P4: built-in tools for agent and hook mapping
+Sources: `core/src/tools/spec_plan.rs`, `core/src/tools/handlers/shell_spec.rs`, `core/src/tools/handlers/unified_exec.rs`, `core/src/tools/handlers/apply_patch_spec.rs`, `core/src/tools/handlers/mcp_resource_spec.rs`, `core/src/tools/handlers/multi_agents_spec.rs`, `core/src/tools/handlers/plan_spec.rs`, `core/src/tools/mod.rs`, `core/src/tools/registry.rs` and `protocol/src/config_types.rs` at `rust-v0.169.0`; https://learn.chatgpt.com/docs/config-file/config-reference.md (fetched 2026-11-17).
+Status: Verified, except the gaps listed.
+
+| Grimoire capability | Codex tool | Notes |
+|---|---|---|
+| `read`, `search` | `exec_command` | No dedicated read, grep, glob or list tool exists. `view_image` covers local images. With MCP servers configured, `list_mcp_resources`, `list_mcp_resource_templates` and `read_mcp_resource` are added. |
+| `edit` | `apply_patch` | A freeform tool with a Lark grammar, registered whenever the model defines `apply_patch_tool_type`, whatever the features say. |
+| `execute` | `exec_command` + `write_stdin` | `exec_command` takes `cmd` plus optional `workdir`, `shell`, `login`, `tty`, `yield_time_ms` and `max_output_tokens`. `login` defaults to the config's `allow_login_shell`, which defaults to `true`. When managed requirements turn unified exec off, only a one-shot `exec_command` exists. |
+| `web` | hosted `web_search` | (Corrected) `web_search = "disabled" \| "cached" \| "indexed" \| "live"`. The default is `cached`, and the docs say full-access sandbox settings default it to `live`. Not per agent, and never hooked. A standalone `web.run` is used when the model sets `use_responses_lite`, or when the `standalone_web_search` feature is on (UnderDevelopment, default off). |
+| agents | `spawn_agent` | Hook alias `Agent`. |
+
+- **Other tools:** `update_plan`, `request_user_input`, `tool_search`, and `request_permissions` (UnderDevelopment, default off).
+- **Multi-agent namespaces:** the multi-agent tools sit in namespace `multi_agent_v1` (v1) or `collaboration` (v2): `send_input`, `send_message`, `followup_task`, `wait_agent`, `list_agents`, `close_agent`, `interrupt_agent` and `resume_agent`.
+- **UNVERIFIED:** the hook-visible names of the namespaced multi-agent tools other than `spawn_agent`. `flat_tool_name` joins namespace and name with no separator, which would give names such as `multi_agent_v1send_input`. This was not exercised.
+
+### CODEX-PLUGINS-P4: plugin and marketplace layouts
+Sources: `core-plugins/src/marketplace.rs`, `utils/plugins/src/plugin_namespace.rs`, `exec-server-protocol/src/protocol.rs`, `core-plugins/src/loader.rs` and `hooks/src/engine/discovery.rs` at `rust-v0.169.0`; https://developers.openai.com/plugins/build/plugins.md (fetched 2026-11-17); https://agent-plugins.org/schemas/1.0.0/plugin.schema.json (Last-Modified 2026-11-13, fetched 2026-11-17).
+Status: Verified, except the gaps listed.
+
+- **Marketplace file:** under a marketplace root, Codex checks `.agents/plugins/marketplace.json`, `.agents/plugins/api_marketplace.json`, `.claude-plugin/marketplace.json` and `.cursor-plugin/marketplace.json`, in that order, and uses the first that exists. Corrected: the 2026-11-16 entry listed only two of these.
+- **Documented locations:** the docs list three marketplace files for the desktop app: `$REPO_ROOT/.agents/plugins/marketplace.json`, the legacy-compatible `$REPO_ROOT/.claude-plugin/marketplace.json`, and `~/.agents/plugins/marketplace.json`.
+- **Marketplace format:** `name`, optional `interface.displayName`, and `plugins[]` entries of `{name, source, policy, category, …other manifest fields}`.
+  - `source` is a path string, or an object whose `source` is `local {path}`, `url {url, path?, ref?, sha?}`, `git-subdir {url, path, ref?, sha?}` or `npm {package, version?, registry?}`.
+  - Other kinds, such as Claude's `github`, parse as unsupported.
+  - A local path must be `.` or start with `./`, and may contain only normal components. Only under `.cursor-plugin/` may the `./` be omitted.
+- **Plugin manifest:** a root `plugin.json` counts only when its `$schema` starts with `https://agent-plugins.org/schemas/`; 1.0.0 is the supported version. Otherwise Codex checks `.codex-plugin/plugin.json`, `.claude-plugin/plugin.json` and `.cursor-plugin/plugin.json`, in that order.
+- **Agent Plugins 1.0.0 schema:**
+  - Required: `$schema` (a constant) and `name` (1–64 characters, matching `^(?!.*(?:--|\.\.))[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$`).
+  - Optional: `version`, `description`, `author{name, email, url}`, `homepage`, `repository`, `license`, `keywords[]` and `extensions`, an object of objects keyed by reverse-domain namespace.
+  - `additionalProperties: false`.
+- **Plugin parts:** plugin hooks default to `hooks/hooks.json` and receive `CLAUDE_PLUGIN_ROOT` and `CLAUDE_PLUGIN_DATA` (`CODEX-HOOKS-P4`). A plugin's default MCP file is `.mcp.json` inside the plugin root.
+- **UNVERIFIED:** whether the CLI, as opposed to the desktop app, discovers `$REPO_ROOT/.claude-plugin/marketplace.json` without `codex plugin marketplace add`. CLI discovery scans caller-supplied roots, and the callers were not traced.
+
+### CURSOR-P4: Cursor facts for Phase 4
+Sources: https://cursor.com/docs/rules.md, …/mcp.md, …/skills.md, …/subagents.md, …/hooks.md, …/reference/third-party-hooks.md, …/reference/plugins.md, …/reference/permissions.md, …/agent/security.md, …/sdk/typescript.md, …/cli/using.md, …/cli/reference/parameters.md, …/cli/reference/permissions.md, …/cloud-agent/self-hosted/pool.md; https://cursor.com/help/customization/rules.md, …/mcp.md, …/skills.md, https://cursor.com/help/troubleshooting/minimum-version.md (all unversioned, fetched 2026-11-17). Release notes: https://cursor.com/docs/release-notes/rss.xml, …/release-notes/ide.md, …/release-notes.md, https://cursor.com/docs/cli/changelog.md (fetched 2026-11-17). https://cursor.com/api/download?platform=<p>&releaseTrack=<t> and https://cursor.com/install (read as text, not run), queried 2026-11-17. https://github.com/cursor/plugins at `e1cc03121a0e` (main, 2026-11-17). Status: Partial. An independent skeptic re-read every source. Of 94 facts, 89 were confirmed, 2 refuted (corrected below) and 3 left uncertain (listed under UNVERIFIED). This entry supersedes the 2026-11-16 CURSOR-* entries where they differ.
+
+- **Releases checked (2026-11-17):**
+  - Release notes: IDE **3.27** and CLI **v2026.10.22**, both 2026-10-22. Nothing newer for either. Same feed: Cursor SDK 1.2.0 (2026-10-27), Origin CLI (2026-11-03).
+  - Shipped builds are newer than the notes. The download API returns IDE `3.30.14` (commit `5f54c8173e55`) on `releaseTrack=stable` and `latest` for linux-x64, darwin-arm64 and win32-x64. The CLI installer pins agent build `2026.11.13-eacade1` from `downloads.cursor.com/lab/`. No notes exist for IDE 3.28–3.30 or CLI 2026.11.13.
+  - No prerelease channel is named. `prerelease`, `early-access`, `nightly`, `insiders` and `beta` all return HTTP 500 "Failed to fetch download link". Any unknown value does the same, so this proves nothing. CLI v2026.06.22 mentions "release channels" without naming them.
+  - The docs are unversioned and don't say which build they describe. A fact with no version comes from the live docs.
+  - Minimum versions (schedule as of 2026-10-26): allowed 3.6 and supported 3.18. Allowed becomes 3.12 on 2026-11-22 and 3.18 on 2026-12-14.
+- **Rules (`.cursor/rules/`):**
+  - Only `.mdc` files are rules. A plain `.md` file there is ignored. Subfolders work, though help recommends a flat folder.
+  - Frontmatter has `description`, `globs` and `alwaysApply`:
+
+    | `alwaysApply` | `description` | `globs` | Behaviour |
+    |---|---|---|---|
+    | `true` | – | – | Always included; `globs` and `description` ignored |
+    | `false` | – | set | Attached when a matching file is in context |
+    | `false` | set | unset | Agent decides from the description |
+    | `false` | unset | unset | Only when @-mentioned |
+
+  - `globs` in rules.md is a string, with patterns separated by commas (`docs/**/*.md, docs/**/*.mdx`). Its example is unquoted: `globs: src/components/**/*.tsx`. Only the plugin reference types `globs` as "string or array", for plugin `rules/`, with a quoted example `"**/*.ts"`.
+  - Rules are identified by full path. Two rules with the same filename in different folders both apply.
+  - Nested `.cursor/rules/` and `.cursor/skills/` in project subdirectories are discovered (CLI changelog May 14, 2026: "matching the IDE").
+  - User rule files can also live in `~/.cursor/rules` (not synced). Precedence: Team → Project → User. All applicable rules are merged, and the earlier source wins on conflict. Keep rules under 500 lines. `.cursorrules` is legacy.
+  - A file mention such as `@x.ts` in a rule is not inlined. The agent reads the file with its tools when it needs it.
+- **`AGENTS.md` and `CLAUDE.md`:**
+  - `AGENTS.md` is read at the root and in any subdirectory. A nested file is combined with its parents, and the more specific one wins. Since CLI v2026.10.22, editing or creating a file in a subdirectory brings in that directory's `AGENTS.md` and nested always-apply rules, each once per conversation.
+  - `CLAUDE.md` is read "the same way" as `AGENTS.md` and is always applied, whatever its `alwaysApply`. The docs name only the project root, and the CLI reads both files at the root.
+  - De-duplication: IDE 3.26 delivers the instructions once when `CLAUDE.md` is a symlink, a hard link or an identical copy of `AGENTS.md`. Cloud Agents (week of 2026-10-12) no longer get duplicate `AGENTS.md` or `CLAUDE.md` instructions, with no condition given.
+- **MCP (`.cursor/mcp.json`):**
+  - Files are `.cursor/mcp.json` and `~/.cursor/mcp.json`, each with top-level `mcpServers`. They are merged, and the project entry wins on a name clash.
+  - **The root `.mcp.json` is not read.** The documented sources are those two files, plugins, team servers and the extension API (`vscode.cursor.mcp.registerServer()`). SDK `settingSources` are `project`, `user`, `team`, `mdm`, `plugins` and `all`.
+  - stdio fields: `type` (`"stdio"`, marked required, though every example omits it), `command` (on PATH or a full path), `args`, `env`, `envFile` (stdio only).
+  - Remote fields: `url`, `headers`, and `auth{CLIENT_ID (required), CLIENT_SECRET, scopes: [..]}`. Supported transports: stdio, SSE and Streamable HTTP. mcp.md and help never show `type` on a `url` server.
+  - Evidence on `type`:
+    - The plugin reference says Cursor Plugins "infer the transport from `command` or `url`".
+    - The SDK `McpServerConfig` has `type?: "stdio"` (`command`, `args`, `env`, `cwd`, with `cwd` local only) or `type?: "http" | "sse"` (`url`, `headers`, `auth`). It has no `streamable-http`.
+    - cursor/plugins @ `e1cc0312` has 121 entries. Of 119 remote entries, 118 have `"type": "http"` and 1 has none. Of 2 stdio entries, 1 has `"type": "stdio"` and 1 has none.
+  - Interpolation applies to `command`, `args`, `env`, `url` and `headers`, and `auth` values support it too. Syntax: `${env:NAME}`, `${userHome}`, `${workspaceFolder}` (the folder that contains `.cursor/mcp.json`), `${workspaceFolderBasename}`, `${pathSeparator}` and `${/}`. No default syntax is documented for `${env:NAME}`.
+  - Unfilled variables: not documented for `.cursor/mcp.json`. History:
+    - IDE 3.20 fixed plugin `${env:NAME}` placeholders reaching the server as-is.
+    - CLI v2026.10.08 treats an unresolved `${VAR}` OAuth client ID as unset.
+    - On self-hosted workers, Cursor doesn't connect to an HTTP server whose URL still has an unfilled variable.
+  - Plugin variables are `${VAR}`, not `${env:NAME}`. Official plugins use `${VAR}` 35 times and `${VAR:-}` 4 times. CLI March 2026: `${VAR}` placeholders "expand in MCP configs everywhere". Plugin MCP `command`, `args`, `env` values and `cwd` expand `${CURSOR_PLUGIN_ROOT}` and `${CLAUDE_PLUGIN_ROOT}`. A plugin server shows as `plugin-<plugin>-<server>`.
+  - Environment: no doc says stdio servers inherit Cursor's environment. Help says shell-profile variables must be available to Cursor. Since IDE 3.20, processes Cursor starts no longer inherit code-injecting variables such as `NODE_OPTIONS` and `LD_PRELOAD`.
+  - `startupTimeoutSec` on a stdio server is honoured by SDK local agents (1.0.38: default 60 s, up to 5 min) and by self-hosted workers (CLI v2026.10.15). mcp.md doesn't list it.
+  - OAuth:
+    - Flow: authorization code with PKCE. Cursor reads RFC 9728 metadata for the authorization server and the RFC 8707 resource indicator. With DCR it registers as a public client.
+    - Static `auth` credentials are allowed. Without `auth.scopes`, Cursor reads `scopes_supported` from `/.well-known/oauth-authorization-server`.
+    - Refresh tokens are used. If the provider issues them only for a scope such as `offline_access`, add that scope to `auth.scopes`.
+    - Redirects are fixed: desktop `http://localhost:8787/callback`, web and Cloud `https://www.cursor.com/agents/mcp/oauth/callback`. The server is identified by `state`.
+  - Approval:
+    - IDE: every MCP connection needs approval, and then each tool call does too. `permissions.json` `mcpAllowlist` entries are `server:tool`, matched case-insensitively with `*`, where the server is the mcp.json key. Auto-review (the default since 3.6) runs allowlisted tools and sends the rest to a classifier.
+    - `permissions.json` is read from `~/.cursor/` and `<workspace>/.cursor/`, and the arrays are concatenated. **A committed project file can pre-approve tools.**
+    - CLI: project servers need approval, while `~/.cursor/mcp.json` servers are auto-approved (April 2026). `--approve-mcps` approves all servers, and `agent mcp enable <id>` adds one to the local approved list.
+    - CLI tokens are `Mcp(server:tool)` in `~/.cursor/cli-config.json` or `<project>/.cursor/cli.json`.
+  - Trust:
+    - CLI headless runs in an untrusted workspace fail unless `--trust` or `--force` is passed (January 2026).
+    - `--trust` also works interactively since v2026.07.20, though parameters.md still says "headless mode only".
+    - IDE workspace trust is disabled by default.
+- **Skills:**
+  - Locations: `.agents/skills/`, `.cursor/skills/`, `~/.agents/skills/` and `~/.cursor/skills/`. For compatibility Cursor also reads `.claude/skills/`, `.codex/skills/`, `~/.claude/skills/` and `~/.codex/skills/`.
+  - The skills root is walked recursively. A skill's identity is the folder that holds `SKILL.md`, not a category folder above it.
+  - A `.cursor/skills/` or `.agents/skills/` folder anywhere in the repo is discovered and scoped to files under its directory. The docs don't say this for `.claude/skills/` or `.codex/skills/`.
+  - Frontmatter:
+    - `name` is required, uses lowercase letters, digits and hyphens, and must match the parent folder.
+    - `description` is required.
+    - Optional: `paths` (a list or a comma-separated string), `disable-model-invocation`, `icon`, `color` and `metadata`. The legacy `globs` is still accepted as a fallback.
+    - The CLI also accepts `user-invocable: false` (v2026.07.06), which hides the skill from `/` while keeping it available to the model.
+  - CLI v2026.10.08 still loads a skill that breaks the spec, with a warning. That covers a `name` that doesn't match its folder or isn't lowercase-hyphen, a name over 64 chars, a description over 1,024 chars, and a body over about 5,000 tokens.
+  - Skills that share a name show as separate rows in the `/` menu (IDE 3.25). No precedence between locations is documented.
+  - CLI skill and subagent scans skip hidden dot-directories (v2026.08.11). Skill discovery follows symlinked directories (v2026.06.22).
+- **Subagents:**
+  - Locations: `.cursor/agents/`, `.claude/agents/`, `.codex/agents/`, and the same three under `~/`. Project beats user on a name clash, and `.cursor/` beats `.claude/` and `.codex/`.
+  - Fields (none required): `name` (defaults to the filename), `description`, `model` (default `inherit`; a model ID can take `[k=v,…]` options), `readonly` (default `false`) and `is_background` (default `false`).
+  - `readonly: true` is documented only as "no file edits, no state-changing shell commands".
+  - Subagents inherit all parent tools, MCP included. Cloud subagents use the team's MCP servers instead. **There is no per-tool allow-list in agent files.** The SDK's `tools` and `disallowedTools` exist only on `Agent.create` for local agents, and the SDK `AgentDefinition` has only `description`, `prompt`, `model` and `mcpServers`.
+  - A pinned model that is blocked, needs Max Mode or isn't available falls back to the parent's model (CLI v2026.10.22).
+  - Built-in subagents: Explore and Browser.
+- **Hooks: files, sources and merge:**
+  - Shape: `{"version": 1, "hooks": {"<event>": [definition, …]}}`. `version` is required and must be a positive integer.
+  - Sources, highest priority first: Enterprise, Team, Project (`.cursor/hooks.json`), User (`~/.cursor/hooks.json`), then Claude's `.claude/settings.local.json`, `.claude/settings.json` and `~/.claude/settings.json`. Plugin hooks come last and run command hooks only.
+  - Every matching hook from every source runs. `deny` beats `ask`, which beats `allow`, and `user_message` and `agent_message` are concatenated. For other fields hooks.md says the last response wins, so a lower-priority source overrides a higher one. third-party-hooks.md says the higher priority wins. The docs contradict each other here.
+  - Project hooks run only in a trusted workspace. Cursor watches `hooks.json` and reloads it on change.
+  - Events:
+    - Agent: `sessionStart`, `sessionEnd`, `preToolUse`, `postToolUse`, `postToolUseFailure`, `subagentStart`, `subagentStop`, `beforeShellExecution`, `afterShellExecution`, `beforeMCPExecution`, `afterMCPExecution`, `beforeReadFile`, `afterFileEdit`, `beforeSubmitPrompt`, `preCompact`, `stop`, `afterAgentResponse`, `afterAgentThought`.
+    - Tab: `beforeTabFileRead`, `afterTabFileEdit`.
+    - App: `workspaceOpen`.
+  - **There is no before-edit event.** Only `preToolUse` with tool `Write` runs before an edit, and its `tool_input` shape is undocumented.
+- **Hooks: per-hook options:**
+
+  | Key | Type | Default | Notes |
+  |---|---|---|---|
+  | `command` | string | required | "a shell string, an absolute path, or a relative path" |
+  | `type` | `"command"` \| `"prompt"` | `"command"` | Prompt hooks also take `prompt` and `model` |
+  | `timeout` | number | "platform default" | **Seconds** |
+  | `loop_limit` | number \| null | 5 (Cursor), null (Claude hooks) | `stop` and `subagentStop` follow-ups only |
+  | `failClosed` | boolean | `false` | Failures block instead of passing |
+  | `matcher` | string (regex) | – | `""` or `"*"` matches everything |
+
+  - Matcher input by event:
+    - `preToolUse`, `postToolUse`, `postToolUseFailure`: the tool name.
+    - `subagentStart`, `subagentStop`: the subagent type (`generalPurpose`, `explore`, `shell`, …). Cursor's own advisor plugin matches its custom subagent by name with `^advisor-subagent$`.
+    - `before/afterShellExecution`: the full command string.
+    - Fixed values: `beforeReadFile` `Read`, `afterFileEdit` `Write`, `beforeTabFileRead` `TabRead`, `afterTabFileEdit` `TabWrite`, `beforeSubmitPrompt` `UserPromptSubmit`, `stop` `Stop`, `afterAgentResponse` `AgentResponse`, `afterAgentThought` `AgentThought`.
+    - Not stated for `before/afterMCPExecution`.
+  - Anchoring isn't stated. The docs say `curl|wget|nc ` runs when the command "contains" one of them.
+  - Working directory: project hooks run from the project root (`.cursor/hooks/x.sh`) and user hooks from `~/.cursor/`. Plugin hooks run from the plugin directory (`CURSOR_PLUGIN_ROOT`), except plugin `stop` and `subagentStop`, which run from the workspace root.
+  - On Windows the desktop app runs hook commands through PowerShell. A command naming a script without an extension runs the matching `.ps1`, `.exe`, `.bat` or `.cmd` file next to it (IDE 3.23).
+- **Hooks: stdin and output:**
+  - Every event gets `conversation_id`, `generation_id`, `model`, `model_id`, `model_params`, `hook_event_name`, `cursor_version`, `workspace_roots`, `user_email` and `transcript_path`. `workspaceOpen` omits the conversation fields. Payloads arrive over stdin (CLI May 20, 2026).
+
+    | Event | Input beyond the common fields | Output |
+    |---|---|---|
+    | `preToolUse` | `tool_name`, `tool_input` (object; Shell `{command, working_directory}`), `tool_use_id`, `cwd`, `agent_message`; `parent_tool_call_id` in a subagent (IDE 3.22) | `permission` (`allow`/`deny`; `ask` accepted but **not enforced**), `user_message`, `agent_message`, `updated_input` |
+    | `beforeShellExecution` | `command` (full command line), `cwd`, `sandbox`; `tool_use_id` (IDE 3.24) | `permission` (`allow`/`deny`/`ask`), `user_message`, `agent_message` |
+    | `beforeMCPExecution` | `tool_name`, `tool_input` (JSON **string**), `mcp_server_name` (the mcp.json key); HTTP/SSE adds `url` and `mcp_server_url`; stdio adds `command` (the launch string joined with spaces); `tool_use_id` (IDE 3.24) | as for shell. The docs say to decide by `mcp_server_name` and to deny when it is missing or unexpected |
+    | `beforeReadFile` | `file_path` (absolute), `content` (whole file), `attachments[{type: file\|rule, file_path}]` | `permission` (`allow`/`deny`), `user_message` |
+    | `afterFileEdit` | `file_path`, `edits[{old_string, new_string}]` | none |
+    | `beforeSubmitPrompt` | `prompt`, `attachments` | `continue` (false blocks), `user_message` |
+    | `subagentStart` | `subagent_id`, `subagent_type`, `task`, `parent_conversation_id`, `tool_call_id`, `subagent_model`, `is_parallel_worker`, `git_branch?` | `permission` (`ask` is treated as deny), `user_message` |
+    | `postToolUse` | `tool_output` (JSON string), `duration` (ms) | `updated_mcp_tool_output` (MCP only), `additional_context` |
+    | `stop`, `subagentStop` | `status`, `loop_count` (plus subagent details) | `followup_message` |
+    | `sessionStart` | `session_id`, `is_background_agent`, `composer_mode` | `env` (passed to later hooks), `additional_context`. Fire and forget, so `continue` isn't enforced |
+
+- **Hooks: exit codes and failure:**
+
+  | Outcome | Default | `failClosed: true` |
+  |---|---|---|
+  | Exit 0 with valid JSON | JSON applies | same |
+  | Exit 0, invalid or off-schema JSON, on a permission hook¹ | **blocks** | blocks |
+  | Exit 0 with empty stdout on a permission hook | UNVERIFIED | blocks ("no output") |
+  | Exit 2 | blocks (same as `deny`) | blocks |
+  | Other exit, crash, timeout, command not found | **action proceeds** (fail-open) | blocks |
+
+  ¹ `beforeShellExecution`, `beforeMCPExecution`, `beforeReadFile`, `beforeTabFileRead`, `subagentStart`, `preToolUse`.
+  - A command that can't be found is reported as failed (CLI v2026.10.15, a Windows fix; before that it passed silently). It then follows the failure rules above.
+  - A fail-closed hook must print valid JSON on every path, including allow.
+- **Hooks: environment and cloud:**
+  - Hooks get `CURSOR_PROJECT_DIR`, `CURSOR_VERSION` (always), `CURSOR_USER_EMAIL`, `CURSOR_TRANSCRIPT_PATH`, `CURSOR_CODE_REMOTE` and `CURSOR_PLUGIN_ROOT` (plugin hooks). **`CLAUDE_PROJECT_DIR` is always set as an alias**, so a hook can't use it to tell Claude Code from Cursor.
+  - Cloud agents run command hooks only. They don't run `sessionStart`, `sessionEnd`, `before/afterMCPExecution`, Tab hooks or `workspaceOpen`. HTTP MCP tools there reach `preToolUse` as `MCP:<tool_name>`, where `updated_input` is ignored.
+- **Claude Code hooks in Cursor:**
+  - They load when **Include Third-Party Plugins, Skills, and Other Configs** (Settings → Agents → Third-Party Imports) is on. **It is on by default.**
+  - Event mapping: `PreToolUse`→`preToolUse`, `PostToolUse`→`postToolUse`, `UserPromptSubmit`→`beforeSubmitPrompt`, `Stop`→`stop`, `SubagentStop`→`subagentStop`, `SessionStart`→`sessionStart`, `SessionEnd`→`sessionEnd`, `PreCompact`→`preCompact`. `Notification` and `PermissionRequest` aren't supported, and no other Claude event is listed.
+  - Responses: both the nested `hookSpecificOutput` and flat forms work. `permissionDecision` becomes `permission`, `permissionDecisionReason` becomes `user_message` and `updatedInput` becomes `updated_input`. `Stop`/`SubagentStop` `decision: "block"` with a `reason` becomes a follow-up. SDK 1.0.40 fixed nested deny in local agents.
+  - Documented support covers command and prompt hooks, exit-2 blocking, regex tool matchers and timeouts. Since CLI v2026.10.17, Claude `PostToolUse` matchers for `Task` fire when a subagent finishes.
+  - **Exec-form `args` and `onFailure` are never mentioned.**
+- **Tool names:**
+
+  | Capability | Hook `tool_name` / matcher | Claude name mapped (third-party-hooks) | CLI permission token | SDK `ToolName` |
+  |---|---|---|---|---|
+  | read | `Read` | `Read`→`Read` | `Read(pathOrGlob)` | `read` |
+  | search | `Grep` | `Grep`→`Grep`; `Glob` unmapped | – | `grep`, `glob`, `ls` |
+  | edit | `Write`, `Delete` | `Write`, `Edit`→`Write` | `Write(pathOrGlob)` | `edit` |
+  | execute | `Shell` | `Bash`→`Shell` | `Shell(commandBase[:args])` | `shell` (group) |
+  | web | `WebFetch`, `WebSearch` (mapping table only) | same names | `WebFetch(domainOrPattern)` | `webSearch` |
+  | MCP | `MCP:<tool_name>` (no server name) | not stated | `Mcp(server:tool)` | `mcp` (group) |
+  | subagent | `Task` | `Task`→`Task` | – | `task` |
+
+  - SDK 1.2.0 names the native file tools Read, Write, StrReplace, LS, Grep, Glob and Delete.
+- **No official JSON Schema** exists for `hooks.json` or `mcp.json`. `cursor.com/schemas/hooks.json` returns HTML, and SchemaStore lists only `.cursor/environment.json`.
+- **Not documented (UNVERIFIED):**
+  - whether `.cursor/rules/*.mdc` accepts `globs` as a YAML list, and whether the frontmatter parser is strict YAML or strips quotes;
+  - what globs in a nested `.cursor/rules/` are relative to, and whether `CLAUDE.md` in subdirectories is read;
+  - whether an `@AGENTS.md` line in `CLAUDE.md` is expanded, and whether `AGENTS.md` then loads twice;
+  - de-duplication of `CLAUDE.md` and `AGENTS.md` beyond the IDE 3.26 cases;
+  - what an unset `${env:NAME}` becomes in `.cursor/mcp.json`, and whether a `:-` default exists;
+  - whether `"type": "http"` or `"streamable-http"` is accepted in `.cursor/mcp.json`, and how a typeless `url` picks SSE or Streamable HTTP;
+  - whether stdio servers inherit the parent environment, a stdio server's working directory, whether `cwd` is honoured in `.cursor/mcp.json`, and whether the IDE honours `startupTimeoutSec`;
+  - which copy the model uses when two skill locations hold the same name, whether nested `.claude/skills/` or `.codex/skills/` are scanned, and whether the third-party setting also gates `.claude/skills/` and `.claude/agents/`;
+  - what `readonly: true` does to MCP tools and web fetches, and how a state-changing shell command is judged;
+  - how Cursor treats a Claude agent's `tools`, `disallowedTools` and `permissionMode`;
+  - the default hook timeout, the shell used on macOS and Linux, and PATH lookup for `command`;
+  - matcher anchoring, and the matcher input on `before/afterMCPExecution`;
+  - whether empty stdout from an exit-0 permission hook blocks;
+  - the `tool_input` shapes for Write, Read, Grep, Delete and MCP in `preToolUse`, and the order of `preToolUse` and `beforeShellExecution` for one shell call;
+  - stdin size and encoding limits;
+  - whether Claude hooks honour exec-form `args` and `onFailure`, get Claude-format or Cursor-format stdin, and in which directory they run;
+  - whether Claude names inside matcher regexes (`^(Bash|PowerShell)$`, `mcp__x__.*`) are translated, and whether `PostToolUseFailure`, `SubagentStart` or `UserPromptSubmit` `decision: "block"` are mapped;
+  - whether hooks ever see `Glob`, `LS`, `StrReplace` or browser tools as `tool_name`, and the `MCP:<tool_name>` form for names containing `.` or `/`;
+  - how project-hook trust works while IDE workspace trust is disabled (the default);
+  - which shipped build (3.27 or 3.30.14) the docs describe.
+
+### GEMINI-P4: Gemini CLI facts for Phase 4
+Sources: https://api.github.com/repos/google-gemini/gemini-cli/releases and https://registry.npmjs.org/-/package/@google/gemini-cli/dist-tags (fetched 2026-11-17). Source at tag `v0.68.0`, commit `5a5c7180ff3f0a02511f54b54db7f228d4982a30` (https://github.com/google-gemini/gemini-cli/tree/5a5c7180ff3f0a02511f54b54db7f228d4982a30). Files read: `packages/core/src/` `tools/memoryTool.ts`, `utils/memoryDiscovery.ts`, `utils/memoryImportProcessor.ts`, `context/memoryContextManager.ts`, `utils/trust.ts`, `utils/envExpansion.ts`, `utils/shell-utils.ts`, `services/environmentSanitization.ts`, `tools/mcp-client.ts`, `tools/mcp-client-manager.ts`, `tools/mcp-tool.ts`, `tools/tool-names.ts`, `tools/definitions/`, `mcp/oauth-utils.ts`, `mcp/oauth-provider.ts`, `skills/`, `agents/`, `hooks/`, `scheduler/`, `config/config.ts`, `config/storage.ts`; `packages/cli/src/` `config/settings.ts`, `config/settingsSchema.ts`, `config/settings-validation.ts`, `config/trustedFolders.ts`, `config/config.ts`, `utils/envVarResolver.ts`, `utils/commentJson.ts`, `commands/mcp/add.ts`, `commands/hooks/migrate.ts`. Docs at the tag: https://raw.githubusercontent.com/google-gemini/gemini-cli/v0.68.0/docs/ (`cli/gemini-md.md`, `reference/memport.md`, `reference/configuration.md`, `cli/trusted-folders.md`, `tools/mcp-server.md`, `cli/skills.md`, `core/subagents.md`, `hooks/index.md`, `hooks/reference.md`, `hooks/best-practices.md`, `extensions/reference.md`, `reference/tools.md`), plus `schemas/settings.schema.json` at the tag. Dependencies as pinned at the tag: https://unpkg.com/strip-json-comments@3.1.1/index.js and https://unpkg.com/dotenv-expand@12.0.3/lib/main.js. Diff `v0.68.0...v0.69.0-preview.0` from the GitHub compare API.
+Status: Verified (Phase 4) from source at v0.68.0, except the gaps listed. Where the docs at the tag disagree with the source, this entry records the source and lists the doc as stale. A skeptic re-checked 68 researcher facts: 61 confirmed, 5 refuted (shown corrected), 2 uncertain (listed as UNVERIFIED). Nothing was run.
+
+- **Releases checked (2026-11-17):**
+
+  | Channel | Version | Published | Tag commit |
+  |---|---|---|---|
+  | stable, npm `latest` | v0.68.0 | 2026-11-10T21:17:07Z | `5a5c7180ff` |
+  | preview, npm `preview` | v0.69.0-preview.0 | 2026-11-10T21:05:08Z | `d8f2b28dec` |
+  | npm `nightly` | 0.67.0-nightly.20261104.g89e9d25d6 | 2026-11-04 | older than stable |
+
+  - There has been no release since the 2026-11-16 entry. `docs/changelogs/latest.md` at the tag still names v0.66.0, so the Releases list is authoritative.
+  - v0.69.0-preview.0 is 34 commits ahead. In the areas below it only adds `model.requestTimeoutMs`, a dummy-key fix in `envExpansion.ts`, a macOS Seatbelt trust prompt and new numeric minimums in validation. Every fact here holds for both versions.
+  - On main, unreleased: `aeb6c04b09` (2026-11-11) makes `${VAR:-default}` use the default when `VAR` is set but empty; `4fa64e71b9` (2026-11-16) skips system MCP servers whose command has insecure permissions.
+- **Stale docs at v0.68.0** (the source wins):
+  - `trusted-folders.md` says folder trust is disabled by default; the default is `true`.
+  - `configuration.md`:
+    - It describes a 200-directory downward GEMINI.md scan; memory discovery has none.
+    - It puts project settings at the project root; the code uses the launch directory.
+    - It names `security.allowedEnvironmentVariables` and `blockedEnvironmentVariables`; the real keys are under `security.environmentVariableRedaction`.
+  - `mcp-server.md` calls `url` SSE and `httpUrl` Streamable HTTP. It also describes automatic OAuth on a 401 without `oauth.enabled`.
+  - `subagents.md` names the field `mcpServers`; the strict schema accepts only `mcp_servers`.
+  - `hooks/index.md` and `hooks/reference.md`:
+    - They say exit codes other than 0 and 2 are warnings, and that exit 2 takes its reason from stderr.
+    - They say `tool_input` "merges with" the arguments.
+    - They give a layer "precedence" for hooks.
+  - The `gemini-md.md` example implies that `context.fileName` replaces GEMINI.md.
+- **Context files:**
+  - The default name is `GEMINI.md`. `context.fileName` (a string or array, default undefined) adds names in front of `GEMINI.md` rather than replacing it, so `"fileName": "AGENTS.md"` loads both `AGENTS.md` and `GEMINI.md`. `AGENTS.md` and `CLAUDE.md` are not read by default.
+  - Global: each configured name in `~/.gemini/`. These load whatever the trust state, as do extension context files and the user's private per-project memory under `~/.gemini`.
+  - Project:
+    - The walk starts at each workspace directory (the cwd plus include directories). It goes up to the first directory holding a boundary marker (`context.memoryBoundaryMarkers`, default `[".git"]`). With no marker, only the start directory is checked. Every configured name is checked in each directory.
+    - These files load only in a trusted folder.
+  - Order: the project list is deduplicated, then sorted as plain strings of absolute paths. That is usually root before leaf, but not always: `/repo/Apps/GEMINI.md` sorts before `/repo/GEMINI.md`. Within a directory, names sort alphabetically, whatever order the config gives.
+  - Duplicates are removed by file identity (`stat` dev and inode, following symlinks), so a symlink `AGENTS.md` → `GEMINI.md` loads once.
+  - There is no startup scan of subdirectories. Just in time: when a tool touches a path inside a workspace directory, the files from that path up to the git root (or the workspace root) load, each once. This happens only in a trusted folder. `context.discoveryMaxDirs` (default 200) still exists, but discovery doesn't use it.
+  - Each file is wrapped in `--- Context from: <path> ---` … `--- End of Context from: <path> ---`.
+- **Imports:**
+  - Syntax: an `@` at the start of the text or after a space, tab or newline. The path runs to the next whitespace and must start with `.`, `/` or an ASCII letter, so `@AGENTS.md` and `@./x.md` both qualify. An `@` inside backtick code is ignored.
+  - Imports nest at most 5 deep. The target, resolved through realpath, must lie inside the project root found from the importing file's directory (by boundary marker, else that directory). `file://` and `http(s)://` targets are rejected.
+  - Output:
+    - A successful import is wrapped in `<!-- Imported from: X -->` … `<!-- End of import from: X -->`.
+    - A rejected path becomes `<!-- Import failed: X - Path traversal attempt -->`.
+    - A repeat within the same import chain becomes `<!-- File already processed: X -->`.
+    - A read error becomes `<!-- Import failed: X - <message> -->`.
+- **Settings files:**
+  - Layers, with later layers winning for single values:
+    1. schema defaults;
+    2. `system-defaults.json`;
+    3. `~/.gemini/settings.json`;
+    4. `<cwd>/.gemini/settings.json`;
+    5. system `settings.json`.
+
+    Environment variables and CLI arguments sit above all files. The system directory is `/etc/gemini-cli/`, `C:\ProgramData\gemini-cli\` or `/Library/Application Support/GeminiCli/`; the overrides are `GEMINI_CLI_SYSTEM_SETTINGS_PATH` and `GEMINI_CLI_SYSTEM_DEFAULTS_PATH`. This resolves the precedence conflict noted in GEMINI-SETTINGS.
+  - Merging: `mcpServers` is a shallow merge, so a same-named entry from a higher layer replaces the whole entry. `hooks.<Event>` and `context.includeDirectories` are concatenated across layers.
+  - The workspace file is only `<cwd>/.gemini/settings.json`, with no upward search. It is skipped when the cwd is the home directory.
+  - **The format is JSONC:** the file is parsed as `JSON.parse(stripJsonComments(text))` with strip-json-comments 3.1.1. `//` and `/* */` comments are allowed, but trailing commas are not. The CLI's own writes go through comment-json 4.2.5, which keeps comments, and use an atomic rename.
+  - Parse errors: a syntax error, or a file that isn't an object, throws `FatalConfigError` and the CLI exits. This includes the workspace file in an untrusted folder, because it is read before trust is decided.
+  - Schema failures only produce a warning, and the invalid values are put back unvalidated and used. Top-level unknown keys pass through. `MCPServerConfig` is strict (`additionalProperties: false`), but that too only warns.
+  - Environment expansion at load:
+    - It applies to every string value (not to keys) in every layer, hook `command` strings included: `$VAR`, `${VAR}` and `${VAR:-default}`, read from `process.env` after `.env` files load.
+    - An unset variable with no default keeps its placeholder literally. A variable set to an empty string gives `""` even when a default is given (v0.68.0).
+    - There is no escape for `$`.
+- **Folder trust:**
+  - `security.folderTrust.enabled` defaults to `true`. A folder with no decision is untrusted, and interactive mode shows a dialog.
+  - Overrides, checked in this order:
+    1. `GEMINI_RESTRICTED_MODE=true` or `GEMINI_CLI_TRUST_WORKSPACE=false`: untrusted.
+    2. `GEMINI_CLI_TRUST_WORKSPACE=true`, which `--skip-trust` also sets: trusted.
+    3. Folder trust disabled: trusted.
+    4. The IDE's trust signal.
+    5. `~/.gemini/trustedFolders.json`, with `TRUST_FOLDER`, `TRUST_PARENT` or `DO_NOT_TRUST`. Its location can be overridden with `GEMINI_CLI_TRUSTED_FOLDERS_PATH`.
+  - **An untrusted folder ignores:**
+    - the workspace settings, which are replaced by `{}`, so its `mcpServers`, `hooks` and `context.fileName` are all ignored;
+    - project `.env` files;
+    - project and just-in-time context;
+    - workspace skills and project agents.
+
+    Beyond that, no MCP server starts, whatever its layer or transport. Every settings-file hook is skipped, user and system ones too, and only extension hooks run. Approval modes are limited to `default` and `plan`.
+- **MCP servers (`mcpServers.<name>`):**
+  - Schema fields: `command`, `args`, `env`, `cwd`, `url`, `httpUrl`, `headers`, `tcp`, `type` (`stdio`|`sse`|`http`), `timeout` (ms, default 600000), `trust` (default false), `description`, `includeTools`, `excludeTools`, `extension`, `oauth`, `authProviderType`, `targetAudience`, `targetServiceAccount`.
+  - **Stdio:** `{"command": …, "args": […], "env": {…}}`. Leave out `type`: the runtime type is only `sse`|`http`, and `gemini mcp add` writes none.
+  - **Streamable HTTP:** `{"url": …, "type": "http"}`, which is what `gemini mcp add --transport http` writes.
+    - Transport choice: `httpUrl` (deprecated), then `url` with `type`, then `url` without `type`. A `url` without `type` is tried as Streamable HTTP and falls back to SSE on a non-401 failure.
+    - `url`/`httpUrl` are checked before `command`.
+  - **Stdio environment:**
+    - The server gets a sanitized copy of `process.env`, with redaction forced on for MCP servers whatever the setting says. Extension env and a Gemini CLI identification variable are added, then the explicit `env` entries.
+    - Explicit entries are not redacted, except the `BLOCKED_EXECUTION_ENVS` names (`NODE_OPTIONS`, `NODE_PATH`, `LD_PRELOAD`, `LD_LIBRARY_PATH`, `DYLD_*`, `PYTHONPATH`, `RUBYOPT`, `PERL5OPT` and others), which are dropped with a warning.
+  - **Redaction:**
+    - Names containing `TOKEN`, `SECRET`, `PASSWORD`, `PASSWD`, `KEY`, `AUTH`, `CREDENTIAL`, `CREDS`, `PRIVATE` or `CERT` are dropped (case-insensitive), as is a fixed list (`CLIENT_ID`, `DB_URI`, `CONNECTION_STRING`, `DATABASE_URL`, `GOOGLE_CLOUD_PROJECT`, `AWS_DEFAULT_REGION` and others).
+    - Values that look like secrets are dropped too: PEM keys, credentials in URLs, `ghp_`/`github_pat_`, `AIzaSy`, `AKIA`, JWTs, Stripe and Slack tokens.
+    - `GEMINI_CLI_*`, `GIT_CONFIG_*` and basic system variables are kept. With `GITHUB_SHA` set or `SURFACE=Github`, everything not explicitly allowed is dropped.
+    - Settings: `security.environmentVariableRedaction.{allowed, blocked, enabled}`, where `enabled` defaults to false and affects hooks, not MCP. An `allowed` entry overrides the name rules but not the value rules.
+  - **Two expansion passes for `env` and `headers`:**
+    - The first runs at load, against the unsanitized `process.env`.
+    - The second runs at connect, with dotenv-expand 12.0.3 against the sanitized environment. An unresolved placeholder becomes `""`. Any `$NAME` or `${…}` left inside an already-resolved value is expanded again, usually to `""`, and `\$` becomes `$`. `%VAR%` is supported only on Windows.
+    - So `"GH_TOKEN": "${GH_TOKEN}"` passes the real value when `GH_TOKEN` is set, and the server gets `""` when it is unset. `command`, `args`, `cwd` and `url` get only the load-time pass.
+  - **`trust`** bypasses confirmations only in a trusted folder, and extension servers can't set it.
+  - **Names:**
+    - A tool is exposed as `mcp_<server>_<tool>`. Characters outside `[A-Za-z0-9_.:-]` become `_`, and a name over 63 characters becomes its first 30 + `...` + its last 30.
+    - Parsers split at the first `_` after `mcp_`, so a server name must not contain `_`.
+    - `mcp.allowed` and `mcp.excluded` filter servers by name.
+  - **OAuth** (http and sse):
+    - A 401 marks the server as needing auth. Only with `oauth.enabled: true` does the CLI then discover endpoints, register dynamically, open the browser at `http://localhost:<random-port>/oauth/callback` (or `oauth.redirectUri`) and retry. Otherwise it fails with a message to run `/mcp auth <name>`.
+    - Tokens are stored in `~/.gemini/mcp-oauth-tokens.json` by default.
+    - Discovery tries the RFC 9728 path-inserted protected-resource URL, then the root one, and checks that the metadata's `resource` matches the server URL. It then reads RFC 8414/OIDC metadata.
+    - The flow uses PKCE, sends an RFC 8707 `resource`, and validates the RFC 9207 `iss`. Endpoints must use HTTPS unless they are loopback.
+    - `oauth` fields: `enabled`, `clientId`, `clientSecret`, `authorizationUrl`, `issuer`, `authorizationResponseIssParameterSupported`, `tokenUrl`, `scopes`, `redirectUri`, `tokenParamName`, `audiences`, `allowPrivateNetwork`. `authProviderType` is `dynamic_discovery` (the default), `google_credentials` or `service_account_impersonation`.
+- **Skills:**
+  - Precedence, lowest to highest: built-in, extensions, `~/.gemini/skills`, `~/.agents/skills`, `<cwd>/.gemini/skills`, `<cwd>/.agents/skills`. Workspace paths are relative to the cwd and load only in a trusted folder.
+  - A skill is `SKILL.md` directly in the directory or one level down (`*/SKILL.md`); `node_modules` and `.git` are ignored.
+  - Frontmatter must start with `---`; a BOM is allowed. Both `name` and `description` must be strings, or the skill is skipped silently. When YAML fails, a line parser is tried. Other keys are ignored, and the directory name need not match. In `name`, the characters `:\/<>*?"|` become `-`.
+  - Collisions are matched on the exact, case-sensitive name: the later tier wins and a warning is shown. `activate_skill` lookup and `skills.disabled` are case-insensitive.
+  - `skills.enabled` and `admin.skills.enabled` both default to `true`. Activating a skill shows a consent prompt (docs).
+- **Subagents:**
+  - Files: `<cwd>/.gemini/agents/*.md` (skipped when the cwd is home) and `~/.gemini/agents/*.md`. Only regular files load, so symlinks are skipped; so are names starting with `_`. Each file must begin with YAML frontmatter, and the body becomes the system prompt.
+  - Local frontmatter (strict zod; an unknown key fails the whole file):
+
+    | Key | Rule / default |
+    |---|---|
+    | `kind` | `local` (default) or `remote` |
+    | `name` | required, `^[a-z0-9-_]+$` |
+    | `description` | required, non-empty |
+    | `display_name` | optional |
+    | `tools` | optional list of names; validated, wildcards allowed |
+    | `mcp_servers` | inline servers; snake_case fields (`http_url`, `include_tools`, `exclude_tools`, `auth`) |
+    | `model` | default `inherit` |
+    | `temperature` | default 1 |
+    | `max_turns` | positive integer, default 30 |
+    | `timeout_mins` | positive integer, default 10 |
+
+  - Remote agents: `kind: remote` with `agent_card_url` or `agent_card_json`, plus optional `auth`. A YAML list as frontmatter defines several.
+  - **`tools`:**
+    - When omitted, the agent gets every parent tool except other agents and `update_topic`. `tools: []` gives only the mandatory `complete_task`.
+    - A name that isn't registered at runtime is skipped silently, but a syntactically invalid name rejects the file. Subagents can never call subagents.
+  - Built-in tool names:
+
+    | Function | Name |
+    |---|---|
+    | read | `read_file`, `read_many_files` |
+    | search | `grep_search` (legacy alias `search_file_content`), `glob` |
+    | list | `list_directory` |
+    | edit | `replace` |
+    | write | `write_file` |
+    | shell | `run_shell_command` |
+    | web | `web_fetch`, `google_web_search` |
+
+  - MCP tools in lists: `mcp_<server>_<tool>`, or the wildcards `*`, `mcp_*` and `mcp_<server>_*`. `mcp_*_<tool>` is rejected. The parts must match `/^[a-z0-9_.:-]+$/i`, and the server part can't contain `_`.
+  - Subagents are on by default: `experimental.enableAgents` is `true`, and the docs no longer call them a preview.
+  - A project agent registers only in a trusted folder (or with trust off), and only once acknowledged. The acknowledgment is keyed by project root, name and the file's sha256, and stored in `~/.gemini/acknowledgments/agents.json`. Any edit means acknowledging it again.
+  - On a duplicate name, the first registered wins and a warning is shown. The order is built-ins (`codebase_investigator`, `cli_help`, `generalist`, `browser_agent` if enabled), then project, user, and extension agents.
+- **Hooks (`hooks.<Event>` in settings.json):**
+  - Shape: `[{ "matcher"?, "sequential"?, "hooks": [{ "type": "command", "command", "name"?, "description"?, "timeout"?, "env"? }] }]`. `env` exists only in source, and the schema doesn't forbid extra keys. The keys `enabled`, `disabled` and `notifications` inside `hooks` are skipped, and an unknown event name is skipped with a warning.
+  - Events, matchers and stdin additions:
+
+    | Event | Matcher | stdin adds |
+    |---|---|---|
+    | `BeforeTool` | regex on `tool_name` | `tool_name`, `tool_input`, `mcp_context?`, `original_request_name?` |
+    | `AfterTool` | regex on `tool_name` | `tool_name`, `tool_input`, `tool_response` |
+    | `BeforeAgent` | ignored | `prompt` (after a prompt is submitted, before the model; once per `prompt_id`) |
+    | `AfterAgent`, `Notification` | ignored | event-specific |
+    | `BeforeModel`, `AfterModel`, `BeforeToolSelection` | ignored | `llm_request` (`model`, `messages`, `config`, `toolConfig`), plus `llm_response` on AfterModel |
+    | `SessionStart` | exact `source` (`startup`, `resume`, `clear`) | `source` |
+    | `SessionEnd` | exact `reason` | `reason`; not awaited |
+    | `PreCompress` | exact `trigger` | `trigger` |
+
+  - Tool matchers use `new RegExp(matcher).test(tool_name)`, unanchored, so write `^(…)$` for exact names. An invalid regex falls back to exact equality, and `""` or `*` matches everything.
+  - Common stdin fields: `session_id`, `transcript_path`, `cwd`, `hook_event_name`, `timestamp` (ISO 8601), written as one `JSON.stringify` with no size cap. `mcp_context` is `{server_name, tool_name, command?, args?, cwd?, url?, tcp?}`.
+  - `tool_input` is the call's validated arguments as the model gave them; paths aren't made absolute.
+
+    | Tool | Fields |
+    |---|---|
+    | `run_shell_command` | `command`, `description?`, `dir_path?`, `is_background?`, `delay_ms?`, `additional_permissions?` (with tool sandboxing) |
+    | `write_file` | `file_path`, `content` |
+    | `replace` | `file_path`, `instruction`, `old_string`, `new_string`, `allow_multiple?` |
+    | `read_file` | `file_path`, `start_line?`, `end_line?` |
+    | `web_fetch` | `prompt` |
+    | `google_web_search` | `query` |
+
+  - **Execution:**
+    - `command` is a shell string; there is no argv form. On Unix it runs as `bash -c <command>`, with `bash` resolved on PATH. On Windows it runs through `ComSpec` if that is PowerShell, else `pwsh.exe`, else `powershell.exe`, with `-NoProfile [-NonInteractive] -Command` and `; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }` appended.
+    - Before the hook runs, the text forms `$GEMINI_PROJECT_DIR`, `$GEMINI_CWD`, `$GEMINI_PLANS_DIR`, `$GEMINI_SESSION_ID` and `$CLAUDE_PROJECT_DIR` are replaced with shell-escaped values; the `${…}` forms are not.
+    - The working directory is the session cwd.
+  - Timeout: `timeout` is in ms, default 60000. On expiry the CLI sends SIGTERM (`taskkill /f /t` on Windows), then SIGKILL 5 s later.
+  - Environment: `process.env`, sanitized only when `security.environmentVariableRedaction.enabled` is true or in GitHub Actions. The CLI adds `GEMINI_PROJECT_DIR`, `GEMINI_CWD` and `CLAUDE_PROJECT_DIR` (all the session cwd), `GEMINI_PLANS_DIR` and `GEMINI_SESSION_ID`, then the hook's `env`.
+  - **Output.** The CLI reads trimmed stdout, or stderr when stdout is empty:
+
+    | Output | Exit | Result |
+    |---|---|---|
+    | JSON object (or a JSON string holding one) | any | the fields decide; the exit code is ignored |
+    | plain text | 0 | allow; the text becomes `systemMessage` |
+    | plain text | 1 | allow; `Warning: <text>` |
+    | plain text | anything else (2, 126, 127…) | **deny**; the text is the reason |
+    | nothing | any | allow |
+
+    Any result other than exit 0 shows a "Hook(s) […] failed" warning. Only the parsed output can block; errors never do.
+  - **Failures fail open:** a timeout, a failure to spawn (for example, no `bash` on PATH), a kill by signal (close code null, read as 0), a crash with exit 1, or a crash that prints nothing all let the action through, with a warning.
+  - **JSON fields:**
+    - `decision` (`allow`, `deny`, `block` or `ask`), `reason`, `continue`, `stopReason`, `systemMessage`, `suppressOutput`, `hookSpecificOutput`.
+    - On BeforeTool:
+      - `deny`/`block` gives the model `Tool execution blocked: <reason>`.
+      - `continue: false` stops the agent.
+      - `ask` forces a confirmation.
+      - **`hookSpecificOutput.tool_input` replaces the whole argument object**, which must pass the tool's validation. With several hooks, the last one wins.
+    - On BeforeAgent, a block stops the turn, and `hookSpecificOutput.additionalContext` is appended with `<` and `>` escaped.
+    - If any hook blocks, the action is blocked.
+    - The hook runs before the policy check, so `allow` never skips policy or confirmations.
+    - The docs recommend `{"decision":"deny","reason":…}` with exit 0.
+  - Registration and trust:
+    - Settings hooks from every layer are concatenated (system-defaults, user, workspace, system), tagged `project`, and registered only in a trusted folder; the runner checks again. Extension hooks always run.
+    - Workspace hooks are fingerprinted as `name:command` per project root in `~/.gemini/trusted_hooks.json`. A new or changed hook triggers one warning, then is trusted and run with no consent step.
+    - `hooksConfig.enabled` defaults to `true`. `hooksConfig.disabled` matches a hook by `name`, or by `command` when it has no name.
+    - Within an event, identical `name:command` hooks run once. They run in parallel unless any matching definition sets `sequential: true`.
+    - Subagents' tool calls go through the same scheduler, so BeforeTool and AfterTool fire for them.
+  - `gemini hooks migrate` maps PreToolUse→BeforeTool, PostToolUse→AfterTool, UserPromptSubmit→BeforeAgent, Stop and SubagentStop→AfterAgent, PreCompact→PreCompress, and keeps SessionStart, SessionEnd and Notification. It converts seconds to ms and drops `args`. Its tool table (`Grep`→`grep`, `LS`→`ls`) is wrong, so it isn't authoritative.
+- **Extensions:**
+  - Extensions load only from `~/.gemini/extensions`. A workspace can only enable or disable them (`--scope workspace`), and installing, updating or uninstalling needs a trusted folder.
+  - When an extension server and a settings server share a name, the settings entry wins. Extensions can't set `trust`.
+  - Out of scope for project files.
+- **Not verified (UNVERIFIED):**
+  - Inferred from source, not run:
+    - whether `@AGENTS.md` in GEMINI.md, with AGENTS.md also in `context.fileName`, loads the content twice;
+    - whether a missing hook binary on Unix exits 127 and so denies.
+  - Not checked:
+    - the Windows exit code for a missing hook binary;
+    - how a relative `mcpServers.<name>.cwd` is resolved;
+    - whether a configured `Authorization` header suppresses the OAuth path (`mcp-client.ts` has no such check; the SDK was not traced);
+    - how an unacknowledged project agent can be acknowledged in headless (`-p`) runs;
+    - the encoding of hook stdin;
+    - whether a BOM in `settings.json` parses.
+  - Docs only:
+    - Headless runs in an untrusted folder exit with `FatalUntrustedWorkspaceError` (the class exists, but no throw site was found in the files read).
+    - Subagents are exposed as a tool named after the agent; the source also defines `invoke_agent`.
+
+### COPILOT-P4: GitHub Copilot facts for Phase 4
+Sources: Copilot CLI releases at https://api.github.com/repos/github/copilot-cli/releases (read 2026-11-17) and https://github.com/github/copilot-cli/blob/16604af55c440e9e6bac7ea14a6c48c1b0a7e0c9/changelog.md (through 1.0.112). GitHub docs rendered via https://docs.github.com/api/article/body?pathname=/en/copilot/… at `github/docs` main `afa12590d7` (2026-11-16):
+- reference/: hooks-reference (`2d5d2a6c26`, 2026-11-09; the exec form was already there at `b87a8cfb59`, 2026-09-01), copilot-cli-reference/cli-command-reference (`4c6da2fbbf`, 2026-11-11), copilot-cli-reference/cli-config-dir-reference, copilot-cli-reference/cli-plugin-reference, custom-agents-configuration (`8e7396e5e2`, 2026-10-28), custom-instructions-support, customization-cheat-sheet.
+- how-tos/copilot-cli/customize-copilot/: add-custom-instructions (`b4ab111fb6`, 2026-10-19), add-mcp-servers (`59cb2c2429`, 2026-11-09), add-skills, create-custom-agents-for-cli, use-hooks.
+- how-tos/copilot-on-github/customize-copilot/: configure-mcp-servers (`ba073ff7c2`, 2026-11-16), add-custom-instructions/add-repository-instructions, and customize-cloud-agent/ create-custom-agents, add-skills, configure-secrets-and-variables, use-hooks.
+- concepts/customizations/: mcp, hooks.
+
+VS Code docs at https://github.com/microsoft/vscode-docs/tree/f7a9f9debe92e1c9226a44e596b9b965bf5f1442 (2026-11-16; every page `DateApproved: 11/11/2026`):
+- docs/agents/reference/: custom-instructions-reference.md, custom-agent-file-reference.md, mcp-configuration.md, ai-settings.md, tools-reference.md.
+- docs/agents/concepts/agent-harnesses.md; docs/agents/run/agent-harnesses.md and manage-mcp-servers.md.
+- docs/agent-customization/: agent-skills.md, custom-instructions.md, hooks.md, migrate-customizations.md.
+- release-notes/v1_146.md and v1_147.md.
+
+VS Code update API: https://update.code.visualstudio.com/api/update/linux-x64/stable/latest and …/insider/latest.
+
+Status: Partial. Every fact was read in the docs or the changelog on 2026-11-17. The Copilot CLI runtime is not public, so nothing here comes from source code or an experiment. A skeptic re-read every source for the researcher's 92 facts: 81 confirmed, 6 corrected (4 were version gates), and 5 uncertain. Gaps are listed under UNVERIFIED.
+
+- **Releases checked (2026-11-17):**
+  - Copilot CLI: stable `v1.0.112` (2026-11-13T23:59Z). Prereleases `v1.0.113-0` (2026-11-16) and `v1.0.113-1` (2026-11-17) change no customization format. `-1` adds the managed setting `features.browserUse`.
+  - VS Code: stable 1.146.0 (commit `69047191fc42`, GitHub release 2026-11-11). Insiders 1.147.0-insider (commit `95906867e076`, built 2026-11-16). The 1.147 notes are dated 2026-11-18, were last updated November 13, and change no customization format.
+  - VS Code 1.146 **deprecates the Local harness**, which is removed in February 2027. The Copilot harness, built on the Copilot SDK, has been the default since 1.143. 1.146 also adds Skills over MCP (preview, `chat.agentHost.mcpSkills.enabled`).
+  - **Changelog quirk:** the `1.0.107` section repeats `1.0.106` exactly, and `v1.0.106` is a stable release (2026-11-06). So every change listed under 1.0.107 shipped in 1.0.106.
+  - Facts below apply to CLI 1.0.112 and VS Code 1.146 unless a version is given.
+- **Surfaces:**
+  - "Copilot harness" is VS Code's default harness. It shares a runtime with Copilot CLI and the Copilot app.
+  - "Cloud agent" is Copilot cloud agent on GitHub.com.
+  - VS Code's Local harness is deprecated and is not a Phase 4 target.
+  - Hooks: VS Code is public preview; GitHub.com and the CLI are supported.
+
+**Instructions**
+- **Files:**
+  - `.github/copilot-instructions.md` is Markdown. VS Code says project instruction files need no frontmatter.
+  - `.github/instructions/**/NAME.instructions.md` takes frontmatter `applyTo`: one glob, or several separated by commas. The CLI also accepts a YAML list (1.0.6) and unquoted globs (1.0.48).
+  - `excludeAgent` takes `"code-review"` or `"cloud-agent"`. Without it, both use the file. No doc says whether the CLI or VS Code acts on it.
+  - VS Code also reads `name` (defaults to the file name) and `description`.
+  - Globs are relative to the workspace or repository root, not to the file's directory. `**` matches every file. There is no default pattern. VS Code writes the list as `**/*.ts, **/*.tsx`; GitHub writes it without the space.
+- **Copilot CLI discovery:**
+  - The "standard locations" are the repo root, the cwd, the directories between them, and directories on the path to a file the CLI works on. `.github/copilot-instructions.md`, `AGENTS.md`, `CLAUDE.md` (also `.claude/CLAUDE.md`) and `GEMINI.md` are read there.
+  - `*.instructions.md` is read from the standard locations except the directories in between. The command-reference table says "Git root and cwd" for every file.
+  - All files are merged with no general precedence. Only identical copies are deduplicated (1.0.26). Since 1.0.26, files with a specific `applyTo` are listed in a table instead of inlined.
+  - The CLI also reads `.claude/rules/**/*.md` like `.instructions.md` files, scoped by `paths` or `applyTo` (1.0.89). A scoped rule is delivered when the agent reads or edits a matching file.
+  - Subagents: a custom agent that runs as a subagent gets no repository instruction files unless it sets `include-custom-instructions: true` (1.0.86). The session agent and `general-purpose` always get them. The built-in `explore`, `task` and `code-review` subagents never do. `--no-custom-instructions` overrides every agent.
+- **CLI `@` imports:**
+  - A line that starts with `@` followed by a path inlines that file. This works in `AGENTS.md`, `CLAUDE.md` and `.github/copilot-instructions.md` (1.0.66).
+  - Imports resolve recursively, with depth, cycle and size guards. Since 1.0.106 they respect Markdown code fences.
+  - They are not expanded in `GEMINI.md` or `*.instructions.md`.
+  - The docs disagree on paths. The how-to says paths are relative and must stay inside the repository, and it skips absolute and `~/` paths. The command reference allows paths relative to the file, or absolute. `@AGENTS.md` is valid under both.
+  - **So Copilot CLI expands Grimoire's `@AGENTS.md` block in `CLAUDE.md`.**
+- **Cloud agent:** reads `.github/copilot-instructions.md` and `.github/instructions/**/*.instructions.md`. It also reads `AGENTS.md` (the nearest file takes precedence) or, "alternatively", a single root `CLAUDE.md` or `GEMINI.md`.
+- **Code review:** on GitHub.com it reads repo-wide and path-specific files plus `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` or `REVIEW.md`. In VS Code it reads only `.github/copilot-instructions.md`.
+- **VS Code, by harness:**
+  - Copilot harness: `.github/copilot-instructions.md` or `AGENTS.md`, plus `.github/instructions/**/*.instructions.md` and nested `AGENTS.md` files. Nested files are found at the root, the cwd, the directories between, and along the paths of files the agent works on.
+  - Claude harness: `CLAUDE.md`, `.claude/CLAUDE.md` and `.claude/rules` (`paths`).
+  - Local harness: reads `CLAUDE.md` while `chat.useClaudeMdFile` is on, which is the default (`true`).
+  - The VS Code docs never say whether the Copilot harness reads `CLAUDE.md` or expands `@` imports. They link to the CLI page for "additional native formats".
+
+**Custom agents**
+- **Files:**
+  - Agents live in `.github/agents/` as `.agent.md` or `.md` files.
+  - The CLI agent ID is the path relative to `agents/`, without the extension, with `/` replaced by `--`. For example, `agents/team/reviewer.agent.md` becomes `team--reviewer`.
+  - On the cloud agent, filenames may use only `.`, `-`, `_`, `a-z`, `A-Z` and `0-9`, and the file must be merged into the default branch.
+- **Shared fields (custom-agents-configuration):**
+  - `description` is **required**. Optional: `name`, `target`, `tools`, `model`, `disable-model-invocation`, `user-invocable`, `mcp-servers`, `metadata`.
+  - `target` is `vscode` or `github-copilot`; unset means both.
+  - `disable-model-invocation` defaults to `false` and wins over `infer`. `user-invocable` defaults to `true`. `infer` is retired.
+  - IDE agents don't use `mcp-servers` or `metadata`.
+  - The body is capped at 30,000 characters.
+  - The cloud agent ignores `argument-hint` and `handoffs`.
+- **CLI fields:**
+  - The CLI reference lists `description`, `include-custom-instructions` (default `false`), `infer` (default `true`), `mcp-servers` (same schema as `~/.copilot/mcp-config.json`), `model`, `models`, `modelPolicy`, `name` (defaults to the agent ID, and also selects the agent with `--agent`), `reasoningEffort` and `tools`.
+  - `tools` defaults to `["*"]`, and a `*` anywhere in the list grants every tool.
+  - The CLI how-to example spells `model-policy` instead and adds `strict-tools-list: true`. That key limits the agent to the listed tool groups without the "usual default tools", which are not named.
+- **VS Code Copilot schema:**
+  - It adds `skills`, `deferred-tool-loading`, `strict-tools-list`, `include-custom-instructions`, `github`, `hooks`, `model-policy` and `reasoning-effort`. `model` may be a list.
+  - When VS Code converts agents for the runtime, it **does not forward** `model-policy`, `mcp-servers`, `github`, `deferred-tool-loading`, `strict-tools-list` or `include-custom-instructions`. It does forward `hooks`.
+  - The Copilot target rejects `handoffs`, `agents`, `argument-hint` and `advancedOptions`.
+  - `target` changes only how the editor reads the file, not which harness runs it.
+  - VS Code also reads `.claude/agents/` in Claude format.
+- **`name` and duplicates:**
+  - `name` defaults to the agent ID in the CLI, to the file name without `.md`/`.agent.md` on the cloud agent, and to the file name in VS Code.
+  - Agents are deduplicated by ID (file name), never by `name`. On the cloud agent a repository agent beats an organization agent, which beats an enterprise agent.
+- **`tools`:**
+  - Omitted or `["*"]` grants every tool. A list grants only what it names. `[]` grants none.
+  - Unknown names are ignored silently, aliases are case-insensitive, and a comma-separated string also works.
+  - MCP tools are named `server/tool` or `server/*`. Tool names that contain `/` match since 1.0.89.
+  - Extension tools are named `<extensionId>/<tool>`.
+  - The cloud agent has `github/*` and `playwright/*` built in.
+- **Aliases:**
+
+  | Alias | Also accepts | Cloud agent tool |
+  |---|---|---|
+  | `execute` | `shell`, `Bash`, `powershell` | `bash` or `powershell` |
+  | `read` | `Read`, `NotebookRead` | `view` |
+  | `edit` | `Edit`, `MultiEdit`, `Write`, `NotebookEdit` | e.g. `str_replace`, `str_replace_editor` |
+  | `search` | `Grep`, `Glob` | `search` |
+  | `agent` | `custom-agent`, `Task` | custom-agent tools |
+  | `web` | `WebSearch`, `WebFetch` | not available |
+  | `todo` | `TodoWrite` | not available |
+
+  - In the CLI, a shell alias also grants the matching read, list and stop shell tools (1.0.71).
+  - `search`, `web`, `todo` and `github-mcp-server/web_search` grant their tools since 1.0.100.
+  - The CLI's runtime tools behind `read`, `edit` and `search` are not listed.
+- **CLI load order, first ID wins:**
+  1. `~/.copilot/agents/`
+  2. `.github/agents/`, from the cwd up to the Git root
+  3. `.claude/agents/`, the same walk
+  4. `--add-dir` roots
+  5. plugins
+  6. organization or enterprise agents
+
+  So `.github/agents/x.agent.md` beats `.claude/agents/x.md`.
+- **Unknown fields:** they cause a warning and the agent still loads (0.0.402, 0.0.415). Since 1.0.106, `-p --agent` prints ignored keys to stderr.
+- **`mcp-servers` on the cloud agent:**
+  - `stdio` maps to `local`.
+  - Values may use `$X`, `${X}`, `${X:-d}`, `${{ secrets.X }}` and `${{ vars.X }}`, where X is a `COPILOT_MCP_` name.
+  - Processing order: built-in servers, then the agent's servers, then repository settings.
+
+**Skills**
+- **CLI locations,** with the first one found winning for a duplicate name:
+  1. `.github/skills/`
+  2. `.agents/skills/`
+  3. `.claude/skills/`
+  4. parent `.github/skills/`
+  5. `~/.copilot/skills/`
+  6. `~/.agents/skills/`
+  7. plugins
+  8. `COPILOT_SKILLS_DIRS`
+  9. `--add-dir` roots
+  10. built-in skills (lowest)
+
+  **A skill in both `.agents/skills/` and `.claude/skills/` loads once in the CLI, from `.agents/skills/`.**
+  - `.claude/commands/*.md` commands rank below skills of the same name.
+  - Since 1.0.35 and 1.0.36, nothing is loaded from `~/.claude/`.
+- **Other surfaces:**
+  - GitHub's how-tos list `.github/skills`, `.claude/skills` and `.agents/skills` for the cloud agent, code review, the CLI, the app and VS Code agent mode.
+  - VS Code's table gives only `.github/skills/` and `~/.copilot/skills/` for the Copilot harness. It notes that the table shows "not every directory it recognizes".
+  - VS Code documents how duplicate names behave only for Marketplace installs, where both copies are listed.
+- **CLI frontmatter:**
+  - `name` (required): up to 64 characters; starts with a letter or digit; may contain letters, digits, `-`, `_`, `.`, `:` and spaces.
+  - `description` (required): up to 1024 characters.
+  - Optional: `argument-hint`; `allowed-tools` (a string or a list; `"*"` means all tools); `user-invocable` (default `true`); `disable-model-invocation` (default `false`).
+  - The GitHub how-to adds an optional `license` and asks for names that are lowercase with hyphens.
+- **VS Code is stricter:**
+  - `name` may contain only lowercase letters, digits and hyphens, and must match the parent directory. Otherwise the skill **silently fails to load**.
+  - VS Code also documents `context: fork`, behind a feature flag.
+- **`allowed-tools`:** pre-approves the listed tools, so Copilot doesn't ask for confirmation while the skill is active.
+
+**MCP**
+- **Copilot CLI files:**
+  - The CLI reads `.mcp.json` and `.github/mcp.json` in each directory from the cwd up to the Git root, after folder trust. Untrusted folders are skipped silently.
+  - When the same directory has both files, `.github/mcp.json` is ignored rather than merged (help text clarified in 1.0.108).
+  - On a name clash, the file closer to the cwd wins.
+  - Precedence: `--additional-mcp-config`, then plugins, then workspace files, then `~/.copilot/mcp-config.json`.
+  - The top level may be an `mcpServers` object, or bare server names (0.0.401).
+  - The CLI does not read `.vscode/mcp.json` (removed in 1.0.22).
+  - An invalid entry is skipped with `Warning: workspace MCP config …` and its siblings still load. A malformed or unreadable file is skipped entirely.
+- **CLI types:**
+  - `local` or `stdio` (default `local`).
+  - `http`, meaning Streamable HTTP; `streamable-http` is normalized to `http`.
+  - `sse`.
+  - A remote entry without `type` defaults to `http` (1.0.29), although the reference table marks `type` as required.
+- **CLI local fields:**
+  - `command`, `args`, `tools`, `env`, `cwd`, `type`, `deferTools` (`auto` | `never`), `disableToolCache`, `slowConnectionThresholdMs` (default 10000).
+  - `timeout` is in **milliseconds** (default 30000, connection floored at 60000).
+  - The table marks `args` and `tools` as required. In practice a missing `args` means `[]` (1.0.49) and a missing `tools` means all tools (0.0.404).
+- **CLI remote fields:** `type`, `url`, `tools`, `headers`, `oauthClientId`, `oauthScopes` (needs `oauthClientId`), `oauthPublicClient` (default `true`), `oauthGrantType` (`authorization_code` | `client_credentials`), `oidc`, `timeout`, `deferTools`, `slowConnectionThresholdMs`.
+- **Compared with Claude Code:** the format is not identical. OAuth uses flat fields, not a nested `oauth` object, and there is a `tools` filter. Claude's `headersHelper` and `alwaysLoad` are not documented. Claude-style `{type: "stdio", command, env}` and `{type: "http", url}` entries are accepted.
+- **CLI variables:**
+  - `env` supports `$VAR`, `${VAR}` and `${VAR:-default}`, and `headers` "supports variable expansion".
+  - Since 1.0.108, interactive sessions pass `env` values literally unless they use `${NAME}`.
+  - Variables referenced in `command`, `args` or `cwd` are added to the server's environment (0.0.419).
+- **CLI stdio environment:**
+  - Only `PATH` is inherited; every other variable must be in `env`.
+  - The CLI also sets `COPILOT_AGENT_SESSION_ID` (1.0.29).
+  - Non-JSON stdout lines are dropped. Lines over 1 MB bypass that check.
+  - Since 1.0.106, a response over 16 MiB fails the request.
+- **CLI prompt mode:**
+  - In a trusted folder, `-p` loads workspace servers.
+  - Otherwise it loads them only when `GITHUB_COPILOT_PROMPT_MODE_WORKSPACE_MCP=true`, or when `COPILOT_ALLOW_ALL` is exactly `true`. Other truthy spellings of `COPILOT_ALLOW_ALL` only auto-approve tools.
+- **CLI tool names and permissions:**
+  - The model sees `serverName-toolName`, sanitized to `[A-Za-z0-9_-]` with other characters replaced by `-`, Punycode for Unicode, and at most 64 characters.
+  - Permission rules write MCP tools as `Server(tool)`.
+- **VS Code Copilot harness:**
+  - It reads workspace-root `.mcp.json` and `$COPILOT_HOME/mcp-config.json` (default `~/.copilot/mcp-config.json`), both with `mcpServers`.
+  - Fields: `type` (`stdio` | `http` | `sse`), `command`, `args`, `env`, `cwd`, `url`, `headers`, `tools`, `oauthClientId`.
+  - `${NAME}` and `${NAME:-default}` work in stdio `command`, `args` and `env`, and in HTTP header values. **Use the braced form**: VS Code's MCP client treats a bare `$NAME` as literal text.
+  - The workspace-root form editor rejects `${…}`, so edit the JSON directly.
+  - `.vscode/mcp.json` (`servers`, `${env:NAME}`) is the Local format. It reaches Copilot only through editor forwarding.
+  - The docs don't mention `.github/mcp.json` or parent directories.
+  - `.mcp.json` inherits Workspace Trust. Restricted mode stops its servers, and a trusted workspace starts them with no separate MCP prompt.
+- **Cloud agent:**
+  - There is no repository file. Configuration is JSON under repository **Settings → Copilot → MCP servers**, a page shared with code review.
+  - The JSON needs an `mcpServers` object. Every entry needs `tools` (`string[]`) and `type` (`local`, `stdio`, `http` or `sse`).
+  - Local entries need `command` and `args` (`string[]`) and may add `env`. Remote entries need `url` and may add `headers`.
+  - `$VAR`, `${VAR}` and `${VAR:-default}` work in every string and `string[]` field except `tools` and `type`. Referenced names must start with `COPILOT_MCP_`. The env key the server sees may differ, for example `"TOKEN": "$COPILOT_MCP_TOKEN"`.
+  - Values come from **Agents** secrets or variables at repository or organization level. A cloud sandbox gets only secrets.
+  - Secret and variable names use only `A-Z`, `0-9` and `_`, may not start with `GITHUB_` or a digit, and are upper-cased.
+  - Limits: tools only, with no resources or prompts. Remote servers that use OAuth are not supported. Tools run without approval. HTTP and SSE URLs can't contain query parameters. At most 50 servers across personal and repository config, and the repository wins a name clash with a personal server.
+  - Code review uses only tools with `annotations.readOnlyHint: true`.
+  - **Doctor snippet:** `{"mcpServers":{"<id>":{"type":"local","command":"<binary>","args":[],"env":{"VAR":"${COPILOT_MCP_VAR}"},"tools":["*"]}}}`, with `${COPILOT_MCP_VAR:-}` for an optional variable. What an unset reference without a default becomes on the cloud agent is UNVERIFIED.
+
+**Hooks**
+- **Format:**
+  - Hook files are `{"version": 1, "hooks": {"<event>": [entries]}}`. `version` may be omitted (1.0.5).
+  - A top-level `disableAllHooks: true` in one `.github/hooks/*.json` file skips only that file. In repository `settings.json`, it skips every non-policy source (CLI only).
+- **Command hook fields:**
+
+  | Field | Notes |
+  |---|---|
+  | `type` | `"command"`, the default |
+  | `bash`, `powershell` | Shell strings for Unix and Windows |
+  | `command` | Cross-platform fallback, copied to `bash` and `powershell` when they are absent |
+  | `exec`, `args` | Shell-free executable and argument list. CLI only. Never combined with `bash`, `powershell` or `command` |
+  | `cwd` | Repo-relative or absolute. Without it, the hook runs in the project root (1.0.88) |
+  | `env` | Merged into the inherited environment; supports expansion |
+  | `timeoutSec` | **Seconds**, default 30. `timeout` is an alias, used only when `timeoutSec` is absent |
+  | `matcher` | See Matchers |
+
+  - The VS Code Copilot harness documents `exec`/`args` too.
+  - **The cloud agent honors only `bash`, falling back to `command`**, so it doesn't run `exec` entries.
+- **Other hook types:**
+  - `http`: a JSON `POST` with `url`, `headers`, `allowedEnvVars` and `timeoutSec`. Only https is allowed, except `localhost`, `127.*` and `[::1]` when `COPILOT_HOOK_ALLOW_LOCALHOST=1`. `preToolUse` and `permissionRequest` always require https.
+  - `prompt`: `sessionStart` only, and only for new interactive CLI sessions.
+- **Agent-scoped hooks (CLI):**
+  - A `hooks` map in agent frontmatter. `command` is the fallback, with `windows`, `linux` and `osx` overrides.
+  - Repository agents need workspace admission. Remote or organization agents don't run scoped hooks.
+- **Events:**
+
+  | Event | Behaviour on the cloud agent |
+  |---|---|
+  | `sessionStart`, `sessionEnd` | Once per job |
+  | `userPromptSubmitted` | At most once |
+  | `userPromptTransformed` | Fires |
+  | `preToolUse` | `ask` counts as deny |
+  | `postToolUse`, `postToolUseFailure` | Fire |
+  | `permissionRequest` | No effect |
+  | `agentStop`, `subagentStart`, `subagentStop`, `errorOccurred` | Fire |
+  | `preCompact` | Only with `trigger: "auto"` |
+  | `notification` | Never fires |
+
+  - The CLI handles every event in the table.
+- **Payload format, chosen by the case of the event name:**
+  - camelCase names send camelCase fields with an epoch-ms `timestamp`.
+  - PascalCase names (`SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `Stop`, `SubagentStop`, `ErrorOccurred`, `PreCompact`, `PermissionRequest`) send snake_case fields with an ISO `timestamp` and `hook_event_name` (1.0.21).
+  - Inside a subagent, payloads also carry `agentId`, `agentType` and `parentAgentId` (snake_case under PascalCase names).
+- **`preToolUse` stdin:**
+  - camelCase: `{sessionId, timestamp, cwd, toolName, toolArgs}`.
+  - PascalCase: `{hook_event_name, session_id, timestamp, cwd, tool_name, tool_input}`, where `tool_input` is "parsed from JSON string when possible".
+  - `toolArgs` is typed `unknown`, and the docs' test fixture passes it as a JSON string.
+- **`userPromptSubmitted` stdin:** `{sessionId, timestamp, cwd, prompt}`, or `{hook_event_name: "UserPromptSubmit", session_id, timestamp, cwd, prompt}`.
+- **Decisions:**
+  - A `preToolUse` hook decides with top-level stdout JSON: `permissionDecision` (`allow`, `deny` or `ask`), `permissionDecisionReason` (required with `deny`) and `modifiedArgs`. Empty output means no decision.
+  - If any hook denies, the call is blocked. `ask` is denied on the cloud agent and in CLI autopilot.
+  - **Config-file `userPromptSubmitted` hooks cannot block a prompt: their output is dropped** (the reference as of 2026-11-09). `modifiedPrompt` works only in SDK hooks.
+  - `postToolUse` can return `modifiedResult` and `additionalContext`. Contexts are joined and capped at 10 KB.
+  - `agentStop` and `subagentStop` can return `decision: "block"` with a `reason`. After 8 consecutive blocks, the CLI ends the turn anyway.
+  - `permissionRequest` (CLI only) returns `behavior` (`allow` | `deny`), `message` and `interrupt`.
+- **Exit codes and failure:**
+  - **0:** success, and stdout is parsed.
+  - **2:** denies `preToolUse` and `permissionRequest`, even if the JSON says allow. On `postToolUseFailure`, stdout is added to the failure the agent sees. On every other event it is a warning.
+  - **Other non-zero exit or a crash:** denies `preToolUse` ("hook errored"; 1.0.57). On other events it is logged and skipped.
+  - **Timeouts always fail open**, policy hooks included (1.0.67). **HTTP `preToolUse` hooks fail open** on a network error, a timeout or a non-2xx response.
+- **stdout parsing:**
+  - Lines that are complete `{"type":"progress",…}` objects are removed first. The rest is parsed as one JSON document.
+  - Empty output, invalid JSON or two objects count as no output.
+  - Output over 10 MiB per call is truncated.
+- **Sources and combining (CLI):**
+  - The CLI reads, in this order:
+    1. policy files (`/etc/github-copilot/policy.d/*.json`, alphabetical)
+    2. `.github/hooks/*.json` at the repo root
+    3. `~/.copilot/hooks/*.json`
+    4. inline `hooks` in `.github/copilot/settings*.json` and `.claude/settings*.json`
+    5. `~/.copilot/settings.json`
+    6. plugins
+  - **Every entry from every source runs**, and no deduplication is documented. The order of files within `.github/hooks/` is not documented.
+  - Hooks for one call run in order. Hooks for parallel calls run concurrently.
+- **Validation:**
+  - In a `.github/hooks` file, a malformed entry is dropped and its siblings still load (1.0.71). Invalid JSON, a bad `version` or a non-array event list rejects the whole file.
+  - **Inline settings hooks are strict:** any item-level error rejects the whole `hooks` field.
+- **Trust:**
+  - Repo hooks load only after folder trust (1.0.8). In `-p` they also load with `GITHUB_COPILOT_PROMPT_MODE_REPO_HOOKS=true` or `COPILOT_ALLOW_ALL`.
+  - Since 1.0.111, `-p --trust-folder` started in a subdirectory warns that the root hooks were not loaded.
+  - When the session sandbox is on, repo hooks run inside it, and `cwd` or `env` can't widen their access. Policy hooks run on the host.
+  - Since 1.0.106, command hooks receive `COPILOT_HOOK_DEPTH`.
+- **Cloud agent environment:**
+  - Linux, in `/workspace`. `HOME` is `/root`. `GITHUB_COPILOT_API_TOKEN`, `GITHUB_COPILOT_GIT_TOKEN` and `COPILOT_AGENT_PROMPT` are set, but `GITHUB_TOKEN` is not.
+  - The network is firewalled.
+  - Only `.github/hooks/*.json` is read, with no `settings.json` or plugins, and it must be on the default branch.
+- **VS Code:**
+  - The Copilot harness uses the CLI hook format. It reads `.github/hooks`, inline `.github/copilot/settings*.json`, `~/.copilot/settings.json` and repository `.claude/settings*.json`.
+  - The Local harness reads Claude settings only with `chat.useClaudeHooks` (default `false`). It ignores matchers and sends its own payloads.
+- **Claude compatibility:**
+  - Claude event names in `.claude/settings.json` are PascalCase, so they get the snake_case payload. Claude's nested `{matcher, hooks: [...]}` groups are accepted (1.0.6, 1.0.10; inline settings since 1.0.66).
+  - For PascalCase `PreToolUse` and `PermissionRequest`, Claude matcher rules apply and `tool_name` is the Claude name (1.0.62).
+  - `PostToolUse` matchers such as `Edit|Write` are honored (1.0.63).
+  - Changelog 1.0.24 says `preToolUse` respects "modifiedArgs/updatedInput". The docs list only `modifiedArgs`.
+
+**Matchers and tool names**
+- **Native matchers:**
+  - A matcher compiles to `^(?:PATTERN)$` and must match the whole value. An invalid regex skips the entry.
+  - `preToolUse`, `postToolUse` and `permissionRequest` match against `toolName`; `notification` against `notification_type`; `preCompact` against `trigger`; `subagentStart` against `agentName`.
+- **Claude-format matchers (PascalCase `PreToolUse`):**
+  - `*`, `**` or an empty matcher matches every tool.
+  - A literal name or an `A|B` list matches either the runtime name or the Claude name.
+  - Anything else is a case-sensitive `^(?:P)$` regex, tested against the Claude name (or the runtime name for tools without one).
+- **Runtime names and their Claude names:**
+
+  | Runtime tool | Claude name |
+  |---|---|
+  | `bash`, `powershell` | `Bash` |
+  | `view` | `Read` |
+  | `create` | `Write` |
+  | `edit`, `str_replace_editor`, `apply_patch` | `Edit` |
+  | `grep`, `rg` | `Grep` |
+  | `glob` | `Glob` |
+  | `web_fetch` | `WebFetch` |
+  | `web_search` | `WebSearch` |
+  | `ask_user` | `AskUserQuestion` |
+  | `update_todo` | `TodoWrite` |
+  | `task` | `Agent` (`Task` also accepted) |
+
+  - Other tools keep their runtime names: `list_`, `read_`, `stop_` and `write_` `bash`/`powershell`, plus `list_agents`, `read_agent`, `write_agent` and `skill`.
+  - `powershell` never appears on the cloud agent.
+- **CLI permission kinds:** `read`, `shell`, `write`, `url`, `memory`, and an MCP server name, as in `shell(git:*)` or `MyMCP(create_issue)`.
+
+**Plugins (for the Phase 4 marketplace)**
+- **Marketplace lookup order:** `marketplace.json`, then `.plugin/marketplace.json`, `.github/plugin/marketplace.json`, `.claude-plugin/marketplace.json`.
+- **Plugin manifest:** a root `plugin.json` that targets Agent Plugins takes precedence. Legacy plugins are checked in the order `.plugin/plugin.json`, `plugin.json`, `.github/plugin/plugin.json`, `.claude-plugin/plugin.json`.
+- **Claude settings:** the CLI also reads `enabledPlugins`, `extraKnownMarketplaces`, `disableAllHooks` and `hooks` from `.claude/settings*.json`.
+
+**Not documented (UNVERIFIED)**
+- whether Copilot CLI loads `AGENTS.md` twice when `CLAUDE.md` imports it. Only identical files are documented as deduplicated, and Grimoire's block adds marker lines, so a double load is likely;
+- whether the VS Code Copilot harness reads `CLAUDE.md` or expands `@` imports; whether the cloud agent expands imports, or reads both `AGENTS.md` and a root `CLAUDE.md`;
+- whether the CLI or VS Code honors `excludeAgent`;
+- which "usual default tools" the CLI adds without `strict-tools-list`, and whether CLI `tools: []` grants none;
+- which runtime tools the `read`, `edit`, `search` and `web` aliases map to in the CLI and VS Code;
+- how the CLI and VS Code treat `target` when loading an agent, and whether the cloud agent reads `.claude/agents/`;
+- which spellings the CLI accepts: `modelPolicy` or `model-policy`, `reasoningEffort` or `reasoning-effort`;
+- how VS Code and the cloud agent resolve a skill name found in both `.claude/skills/` and `.agents/skills/`;
+- whether an unknown key (`headersHelper`, `alwaysLoad`, nested `oauth`) makes a CLI `.mcp.json` entry invalid; whether `url` is expanded in the CLI; what VS Code does when `tools` is missing;
+- whether stdio servers in VS Code and on the cloud agent inherit the parent environment; whether VS Code reads `.github/mcp.json` or parent-directory `.mcp.json` files;
+- how Copilot treats Claude-format `command` plus `args`, `onFailure`, or any unknown key in `.claude/settings.json` hooks. Inline validation is strict, so one bad item might reject the whole `hooks` field;
+- whether `hookSpecificOutput.permissionDecision` is honored for PascalCase hooks;
+- whether camelCase `toolArgs` arrives as a JSON string or an object in command hooks;
+- the argument schemas of Copilot runtime tools (`create`, `edit`, `view`, `bash`, `apply_patch`);
+- whether a missing `exec` executable fails closed on `preToolUse`; the maximum `timeoutSec`; the hook stdin size limit; the order of files in `.github/hooks/`; whether `.claude/settings.json` hooks wait for folder trust;
+- whether PascalCase `PostToolUse` gets Claude tool names and Claude matcher rules;
+- the `toolName` a hook receives for an MCP tool, and how `mcp__server__.*` style matchers behave;
+- whether command `userPromptSubmitted` hooks can add context or handle a prompt. Changelog 1.0.44, 1.0.65 and 1.0.111 describe `handled`, `responseContent` and `additionalContext` without naming the hook type, while the reference says command and HTTP output is dropped.
+
+### EDIT-P4: TOML and JSONC entry editing
+Sources: https://unpkg.com/strip-json-comments@3.1.1/index.js (the version Gemini CLI v0.68.0 pins, `GEMINI-P4`; fetched 2026-11-17); toml_edit 0.25.19 and jsonc-parser 0.34.0 as locked in `Cargo.lock` (read in `~/.cargo/registry`). Status: Verified, except the gaps listed.
+
+- **Format by path:** Grimoire edits an entry file as TOML when its name ends in `.toml` (`.codex/config.toml`), as JSONC when it is exactly `.gemini/settings.json`, and as strict JSON otherwise. The format comes from the path because removing a locked entry has nothing else to go on.
+- **JSONC:** Gemini CLI reads settings as `JSON.parse(stripJsonComments(text))`.
+  - Grimoire finds comments with jsonc-parser, blanks them, and requires the rest to parse as strict JSON, so trailing commas, single quotes and raw control characters in strings are refused, as Gemini CLI refuses them.
+  - strip-json-comments 3.1.1 ends a `//` comment only at `\r\n` or `\n` (index.js lines 51 and 57), while jsonc-parser also ends it at a lone `\r`. Grimoire refuses a `//` comment that ends in a lone `\r`, where the two would disagree.
+  - It blanks a comment with `replace(/\S/g, ' ')` (index.js line 5), so whitespace inside a comment reaches `JSON.parse`, which accepts only space, tab, CR and LF. Grimoire keeps JavaScript's whitespace when blanking (Rust's set without U+0085, plus U+FEFF), so serde_json refuses the same files: a non-breaking space, form feed, vertical tab, U+2028 or U+3000 in a comment.
+- **TOML:** toml_edit keeps the user's tables, comments and order. Grimoire owns whole member keys only (`/mcp_servers/<id>`), writes the entry as a standard table, and refuses `null`, array-element keys, a plain value where it would add a `[parent]` header, files that don't parse, and duplicate keys. A datetime or non-finite float on disk never matches a desired value, so it shows as a conflict rather than being overwritten.
+  - toml_edit writes every line ending as `\n`, drops a byte-order mark and adds a final newline. So an unchanged file is returned as its original bytes, and a changed one gets its CRLF line endings (each lone `\n`; multi-line strings already hold `\r\n`) and byte-order mark back.
+  - toml_edit attaches comment lines before a `[header]` to that header. They usually belong to the item above, such as a setting commented out at the end of the previous table, so when Grimoire removes its table it moves them to the next header or the end of the file.
+- **Comments inside an entry:** values are hashed without their comments, so a comment the user adds inside Grimoire's TOML table or JSONC object would be lost by an update or a removal. The planner makes that update or removal a conflict (`Conflict::Commented`).
+- **UNVERIFIED:** toml_edit 0.25 targets TOML 1.1. What Grimoire writes uses only TOML 1.0 syntax (single-line inline tables, `\uXXXX` escapes), but which TOML version Codex's own parser accepts was not checked.

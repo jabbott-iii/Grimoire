@@ -45,7 +45,8 @@ A **rule** is a Markdown instruction document that a client loads into the model
 - **Source:** `catalog/rules/<id>/rule.md`, plus `asset.toml` with `[rule] paths = [...]`. An absent `paths` means always-on.
 - **Rendering:** a per-rule file wherever the client has one; otherwise a managed block in the client's shared instruction file. See §8.
   - Per-rule files: Claude Code `.claude/rules/`, Cursor `.cursor/rules/*.mdc`, Copilot `.github/instructions/*.instructions.md`.
-  - Shared files: `AGENTS.md`, `GEMINI.md`, `.github/copilot-instructions.md`.
+  - Shared files: `AGENTS.md`, `GEMINI.md`.
+  - Phase 4 exception ([ADR-0008](adr/0008-phase-4-client-adapters.md)): when a rule is in `AGENTS.md`, Claude Code, Cursor, Gemini CLI and Copilot read it from there and get no per-rule file or block of their own (§8.2).
 - **Clients without path scoping** (`AGENTS.md`, `GEMINI.md`): a path-scoped rule is rendered with an explicit natural-language scope line ("Applies when working on files matching …").
 - **Not a rule:** content the model should load only when relevant to a task (that is a skill), or a persona with its own tools (that is an agent).
 - **Quality bar:** concise, scoped, actionable. Catalog lints reject exact or near-duplicate rules and flag declared conflicts between rules that can be installed together (§6.4).
@@ -315,7 +316,7 @@ Declared `[permissions]` are not just documentation. Resolution fails if an asse
 - deprecated assets name an existing replacement.
 
 **Per kind:**
-- Skills: Agent Skills rules (`SKILLS`), spec-only frontmatter, referenced files exist.
+- Skills: Agent Skills rules (`SKILLS`), spec-only frontmatter, referenced files exist, and no `.claude-plugin/` anywhere in the skill, which would make Claude Code load the installed copy as a plugin (`skill/plugin-manifest`, Phase 4).
 - Agents: `tools` present and consistent with `[permissions]` (e.g. `execute` requires `shell`).
 - Tools and MCP servers: the crate builds, `binary` matches a `[[bin]]`, and the declared tools match the server's `tools/list` in tests.
   - Phase 3, for every asset crate:
@@ -328,7 +329,8 @@ Declared `[permissions]` are not just documentation. Resolution fails if an asse
     - a test that calls `agent_grimoire_mcp::testing::declared_tools_match` (`crate/declared-tools-test`).
 
     The last two are text searches that catch the usual mistakes, not proofs; code review still guarantees them.
-- Rules: no permissions, plus duplicate and near-duplicate detection across rules.
+- Phase 4, for every asset: `cargo xtask validate` renders it for each client it declares, through the real adapters, so a refusal only an adapter makes (a Cursor agent with other tools, a comma in a Cursor or Copilot glob, an MCP tool name a client would change) fails validation rather than a user's `apply`.
+- Rules: no permissions, plus duplicate and near-duplicate detection across rules. Every client's output uses the same `src`, because clients read each other's rule files (`manifest/rule-src`; Phase 4 extends it from `claude-code` and `agents-md` to every client).
 
 **Catalog-wide:**
 - unique IDs;
@@ -384,7 +386,7 @@ The lock is sorted deterministically and uses normalized `/` paths, so it diffs 
 | Unit | Used for | What Grimoire owns | Drift check |
 |---|---|---|---|
 | `file` | rule and agent files, skill payload files | the whole file | file hash vs lock |
-| `block` | `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md` | the text between `<!-- grimoire:begin <id> -->` and `<!-- grimoire:end <id> -->` | block-content hash vs lock |
+| `block` | `AGENTS.md`, `CLAUDE.md`, `GEMINI.md` | the text between `<!-- grimoire:begin <id> -->` and `<!-- grimoire:end <id> -->` | block-content hash vs lock |
 | `entry` | `.mcp.json` `mcpServers.<id>`, `.cursor/mcp.json`, `.gemini/settings.json`, `.codex/config.toml` `[mcp_servers.<id>]`, hook arrays | one key (by JSON-Pointer-style path) or one array element (by value) | canonical-value hash vs lock |
 
 Details:
@@ -398,6 +400,11 @@ Details:
 - **JSON editing** (Phase 2, settles §11.1) uses `jsonc-parser`'s concrete syntax tree (`EDIT-CRATES` in `specs.md`), so no ADR is needed.
   - Unrelated keys, values and order are always preserved, as is all formatting outside the container Grimoire edits.
   - Inserting into a container written on a single line reflows that container across lines. Removing the entry later restores the values, not the single line. Grimoire edits only **strict JSON**: Claude Code reads its settings as strict JSON, and a file a client can't parse should not be "fixed" silently. Comments, trailing commas, or duplicate keys on Grimoire's path make the file unreadable for Grimoire (§7.3).
+- **Phase 4: three entry formats, chosen by path** (`EDIT-P4`), because removing a locked entry has no desired content to say which format the file is:
+  - `.toml` files (`.codex/config.toml`): TOML through `toml_edit`. Only whole member keys such as `/mcp_servers/<id>`, written as a standard table; a plain value that would add a `[parent]` header is refused. The hash is of the value converted to JSON, so drift detection works the same way. A file Grimoire doesn't change keeps its bytes; a changed one keeps its byte-order mark and CRLF line endings. Comments above a removed table move to the next header or the end of the file, and an empty table Grimoire created stays if the user gave it a header or comments.
+  - `.gemini/settings.json`: JSONC. Comments are allowed and kept; everything else is as strict as JSON, which is what Gemini CLI accepts.
+  - Values are hashed without their comments, so a comment the user adds *inside* Grimoire's entry in a TOML or JSONC file would be lost by an update or removal. Planning that update or removal is a conflict instead (`commented`; `--force` drops the comment).
+  - Every other entry file: strict JSON, as above.
 
 ### 7.3 Drift and conflicts
 
@@ -448,7 +455,7 @@ Each of these is a distinct, actionable diagnostic (exit 3):
 - unsupported client for an asset (naming the clients it supports);
 - `min-cli-version` too new;
 - unaccepted permissions;
-- an agent whose tool restriction a selected client can't enforce;
+- an agent a selected client can't limit to its tools at all (Codex has no agents; Cursor takes only exactly `read` and `search`, as `readonly`). Where a client limits the tools only partly, `plan` warns instead (ADR-0008);
 - a pinned version unavailable in this CLI's catalog when content is needed (ADR-0001).
 
 **Phase 2 refinement of the last item.** With one embedded version per asset, `plan`, `apply` and `update --no-apply` stop whenever a selected asset's locked version (or manifest digest) differs from the catalog's. That includes cases where no file would change, because telling whether content is needed would mean rendering the pinned version, which is not available. The error names `grimoire update <id>`.
@@ -470,52 +477,63 @@ Snapshot tests (`insta`) cover every adapter × kind × representative asset.
 
 ### 8.2 Client read matrix and cross-client planning
 
-Clients read each other's files (2026-11-16, from `specs.md`). **✓** means documented as read; **–** means not documented as read.
+Clients read each other's files (re-checked 2026-11-17 in the `*-P4` entries of `specs.md`). **✓** means documented as read; **–** means not documented as read.
 
 | Location | Claude Code | Codex | Cursor | Gemini CLI | Copilot |
 |---|---|---|---|---|---|
-| `AGENTS.md` | only if no `CLAUDE.md`¹ | ✓ (32 KiB budget) | ✓ | only via `context.fileName` | ✓ cloud agent, CLI, VS Code |
-| `CLAUDE.md` | ✓ | – | ✓ | – | ✓ cloud agent, CLI |
-| `GEMINI.md` | – | – | – | ✓ | ✓ cloud agent, CLI |
-| `.claude/rules/*.md` | ✓ (`paths`) | – | – | – | VS Code Claude harness |
+| `AGENTS.md` | only if no `CLAUDE.md`¹ | ✓ (32 KiB budget shared with nested files) | ✓ always applied | only via `context.fileName` | ✓ cloud agent, CLI, VS Code |
+| `CLAUDE.md` | ✓ | – | ✓ always applied² | – | ✓ CLI (expands `@` imports), cloud agent |
+| `GEMINI.md` | – | – | – | ✓ trusted folders only | ✓ CLI (no imports), cloud agent |
+| `.claude/rules/*.md` | ✓ (`paths`) | – | – | – | ✓ CLI (`paths`); VS Code Claude harness |
 | `.cursor/rules/*.mdc` | – | – | ✓ | – | – |
 | `.github/instructions/*.instructions.md` | – | – | – | – | ✓ |
 | `.claude/skills/` | ✓ | – | ✓ | – | ✓ |
-| `.agents/skills/` | – | ✓ | ✓ | ✓ | ✓ |
-| `.claude/agents/` | ✓ | – | ✓ (as `readonly` only) | – | ✓ VS Code |
+| `.agents/skills/` | – | ✓ | ✓ | ✓ trusted folders only | ✓ (the CLI loads a name found in both skill folders once, from here) |
+| `.claude/agents/` | ✓ | – | ✓ (with all of the parent's tools) | – | ✓ CLI (after `.github/agents/`), VS Code |
 | `.mcp.json` | ✓ | – | – | – | ✓ CLI, VS Code |
-| `.claude/settings.json` hooks | ✓ | – | ✓ | – | ✓ |
+| `.claude/settings.json` hooks | ✓ | – | ✓ (on by default) | – | ✓ CLI, VS Code |
 
 ¹ In the default `claude-md-or-agents-md` mode (`CC-MEM`).
+² Whether Cursor expands an `@AGENTS.md` line in `CLAUDE.md` is undocumented.
 
-Consequences:
+**Placement (Phase 4, ADR-0008).** Adapters render to their own client's locations, then one placement pass moves content that several selected clients can read from one place, so it is written once and attributed to all of them in the lock:
 
-1. **Plan over the selected set, not per client.** For each asset and anchor, the planner chooses the smallest set of locations that reaches every selected client exactly once, using a deterministic greedy cover with a fixed priority order. Shared outputs are written once and attributed to several clients in the lock. Examples:
-   - `{claude-code, cursor, copilot}` gets skills only in `.claude/skills/`.
-   - `{codex, gemini-cli, cursor}` gets skills only in `.agents/skills/`.
-   - Unavoidable duplicates are reported by `plan`. Example: all six clients need both skill directories, so Cursor and Copilot see each skill twice.
-2. **Rules with Claude Code + `agents-md` (implemented in Phase 2).**
-   - When a rule is installed for both clients from the same source, it lives once in `AGENTS.md`, attributed to both clients in the lock.
-   - A Grimoire-owned block in `CLAUDE.md` holds `@AGENTS.md`. Claude Code documents that this "never makes Claude read `AGENTS.md` twice, whichever Project instructions value you use" (`CC-P2`). Claude then reads the rules whether or not the user later adds their own `CLAUDE.md`.
-   - **Refinement:** path-scoped rules are shared the same way, carrying a scope line, instead of also going to `.claude/rules/`. Claude Code reads the whole of `AGENTS.md` through the import, so a `.claude/rules/` copy would load the rule a second time whenever matching files are touched.
-     - Cost: Claude Code sees a shared path-scoped rule at launch rather than only on matching files.
-     - With `claude-code` alone, rules go to `.claude/rules/<id>.md`, with `paths` when scoped. This settles §11.3.
-   - The import block is removed when no shared rule is left. Its file is deleted only if Grimoire created it.
-   - Still to test in Phase 4: Copilot CLI expands `@` imports in `CLAUDE.md`, which may double-load there.
-3. **Permissions can leak across clients.** Cursor reads `.claude/agents/` without tool restrictions, and Cursor and Copilot also execute hooks from `.claude/settings.json`. Installing for one client can therefore grant something in another, even an *unselected* one. `plan` prints a warning for these cases, and `docs/security-model.md` covers them.
+1. **Rules: `AGENTS.md` covers Cursor and Copilot.** When `agents-md` or `codex` puts a rule in `AGENTS.md`:
+   - `cursor` and `copilot` get no rule file of their own, because they read `AGENTS.md` (Copilot's cloud agent alongside a root `CLAUDE.md` is undocumented);
+   - `claude-code` reads it through a Grimoire-owned `@AGENTS.md` block in `CLAUDE.md` (Phase 2);
+   - `gemini-cli` reads it through the same block in `GEMINI.md`.
 
-### 8.3 Per-client mapping (v1 proposal; client order per [ADR-0005](adr/0005-client-priority.md))
+   Otherwise each client gets its own file. A path-scoped rule in `AGENTS.md` carries its scope line, so Claude Code, Cursor and Copilot apply it everywhere. Manifest validation requires every client of a rule to use the same `src` (`manifest/rule-src`), so a shared block never holds two versions of a rule.
+2. **Skills.** `.claude/skills/` is written when `claude-code` is selected, and `.agents/skills/` when `agents-md`, `codex` or `gemini-cli` is. Cursor's and Copilot's copy goes to `.agents/skills/` when that is written, else to `.claude/skills/` when that is, else to `.agents/skills/`. Examples:
+   - `{claude-code, cursor, copilot}` gets skills only in `.claude/skills/`;
+   - `{codex, gemini-cli, cursor}` gets skills only in `.agents/skills/`;
+   - `{claude-code, codex, cursor}` needs both, so Cursor lists the skill twice.
+3. **MCP.** `copilot` writes the same `.mcp.json` entry as `claude-code`, once.
+
+**What `plan` reports** (warnings, never silent):
+- `plan/duplicate-rule`: a client selected for a rule that may still read it twice. Copilot CLI may read `AGENTS.md` and the `CLAUDE.md` import, or `.claude/rules/` and `.github/instructions/` (it deduplicates only identical copies). Cursor may read `AGENTS.md` and the `CLAUDE.md` import.
+- `plan/duplicate-skill`: Cursor, selected for a skill, seeing it in both skill folders.
+- `plan/cross-client-rule`: an `AGENTS.md` rule not installed for Claude Code or Gemini CLI that they read anyway, through Grimoire's import in `CLAUDE.md` or `GEMINI.md` (or, for Claude Code, natively when there is no `CLAUDE.md`).
+- `plan/cross-client-agent`, `plan/cross-client-hooks`, `plan/cross-client-mcp`: a `.claude/agents/` agent, a `.claude/settings.json` hook or a `.mcp.json` server that Cursor, Copilot or Claude Code also loads. Installing for one client can grant something in another: Cursor has no per-tool allow-list and may run a `.claude/agents/` agent with every tool, and Cursor and Copilot run `.claude/settings.json` hooks. `docs/security-model.md` covers these.
+- `plan/codex-instructions-size`: a planned `AGENTS.md` of 24 KiB or more when `codex` is a project client, because Codex reads at most 32 KiB of project instructions in total (§11.5).
+- `plan/codex-override`: a root `AGENTS.override.md` when `codex` is a project client, because Codex then reads it instead of `AGENTS.md`.
+
+Other cases a client reads Grimoire's content without being selected for it, such as Cursor reading an `AGENTS.md` rule installed only for `agents-md`, are not reported.
+
+### 8.3 Per-client mapping (client order per [ADR-0005](adr/0005-client-priority.md), amended by [ADR-0008](adr/0008-phase-4-client-adapters.md))
 
 | Kind | `claude-code` | `agents-md` (portable) | `codex` | `cursor` | `gemini-cli` | `copilot` |
 |---|---|---|---|---|---|---|
-| Rule, always-on | see §8.2 (2) | `AGENTS.md` block | `AGENTS.md` (via agents-md) | `.cursor/rules/<id>.mdc` `alwaysApply` | `GEMINI.md` block | `.github/instructions/<id>.instructions.md` `applyTo: "**"` |
-| Rule, path-scoped | `.claude/rules/<id>.md` `paths` | `AGENTS.md` block + scope line | same | `.mdc` `globs` | `GEMINI.md` block + scope line | `.instructions.md` `applyTo` |
+| Rule, always-on | see §8.2 | `AGENTS.md` block | `AGENTS.md` block (shared) | `AGENTS.md` when written, else `.cursor/rules/<id>.mdc` `alwaysApply: true` | `@AGENTS.md` import block in `GEMINI.md` when `AGENTS.md` is written, else a `GEMINI.md` block | `AGENTS.md` when written, else `.github/instructions/<id>.instructions.md` `applyTo: "**"` |
+| Rule, path-scoped | `.claude/rules/<id>.md` `paths` | `AGENTS.md` block + scope line | same | `.mdc` with `alwaysApply: false` and `globs` | block + scope line | `.instructions.md` `applyTo` |
 | Skill | `.claude/skills/<id>/` | `.agents/skills/<id>/` | `.agents/skills/<id>/` | shared (§8.2) | `.agents/skills/<id>/` | shared (§8.2) |
-| Agent | `.claude/agents/<id>.md` with explicit `tools` | – | `.codex/agents/<id>.toml`, only if the restriction is enforceable | `.cursor/agents/<id>.md`, only for `readonly`-expressible agents | `.gemini/agents/<id>.md` (preview) | `.github/agents/<id>.agent.md` with explicit `tools` |
-| MCP server | `.mcp.json` entry, `${VAR}` | – | `.codex/config.toml` entry, `env_vars` / `bearer_token_env_var` | `.cursor/mcp.json` entry, `${env:VAR}` | `.gemini/settings.json` entry | `.mcp.json` entry (shared with Claude Code); cloud agent: guidance only |
-| Tool hooks | `.claude/settings.json` `hooks` | – | `.codex/hooks.json` | `.cursor/hooks.json` | `.gemini/settings.json` `hooks` | `.github/hooks/grimoire.json` |
+| Agent | `.claude/agents/<id>.md` with explicit `tools` | – | – (a Codex agent can't be restricted) | `.cursor/agents/<id>.md` `readonly: true`, only for an agent with exactly `read` and `search` | `.gemini/agents/<id>.md` with explicit `tools` | `.github/agents/<id>.agent.md` with `tools` and `strict-tools-list: true` |
+| MCP server | `.mcp.json` entry, `${VAR}` | – | `.codex/config.toml` `[mcp_servers.<id>]`, `env_vars` | `.cursor/mcp.json` entry, `${env:VAR}` | `.gemini/settings.json` entry, `${VAR}` | `.mcp.json` entry (shared with Claude Code); cloud agent: `doctor` prints the settings JSON |
+| Tool hooks | `.claude/settings.json` `hooks` | – | – | – | – | – |
 
-Project-scoped Codex config, rules and hooks load only in **trusted** projects (`CODEX-CONFIG`). `doctor` reports this, because Grimoire can't grant trust.
+Hooks are Claude Code only, and Codex has no agents (ADR-0008): no other client can keep a failed hook from letting the action through, and a Codex agent inherits the parent's sandbox, MCP servers and web search. An asset that declares those outputs fails validation (`manifest/anchor-client`). In a project that also selects such a client, an asset it can't host is installed for the others, with a warning (`resolve/client-not-covered`), for example that `secret-guard` doesn't guard Codex.
+
+Project-scoped content often loads only in a trusted project: Codex `.codex/config.toml` (and so its MCP servers); everything Gemini CLI reads from the project; Copilot's `.mcp.json`. `doctor` says so for each selected client, because Grimoire can't check or grant trust.
 
 **`claude-code` details as implemented in Phase 2** (`CC-P2`):
 
@@ -538,6 +556,21 @@ Project-scoped Codex config, rules and hooks load only in **trusted** projects (
   - They use exec form: `args` selects "no shell involved".
   - Matchers are an exact `A|B` list, or an anchored `^(…)$` regex when an MCP tool is involved.
 
+**Phase 4 adapters** (`*-P4` in `specs.md`):
+
+| Client | Output | Written as |
+|---|---|---|
+| `codex` | MCP server | `[mcp_servers.<id>]` in `.codex/config.toml`: `command` plus `env_vars` (the variable names to forward), or `url`. Codex starts stdio servers with an almost empty environment and has no `${VAR}`, so an `env` override that renames a variable is refused (`adapter/env-remap`). |
+| `cursor` | Rule | `.cursor/rules/<id>.mdc` with `alwaysApply: true`, or `alwaysApply: false` and `globs` as one quoted, comma-separated string. A glob containing a comma can't be written (`adapter/unsupported`). |
+| `cursor` | Agent | `name`, `description`, `readonly: true`. |
+| `cursor` | MCP server | `mcpServers.<id>` in `.cursor/mcp.json`: `{"type": "stdio", "command", "env": {"VAR": "${env:SOURCE}"}}`, or `{"url"}`. |
+| `gemini-cli` | Rule | A `GEMINI.md` block, with the scope line when path-scoped. |
+| `gemini-cli` | Agent | `name`, `description`, `tools`: `read` → `read_file`, `read_many_files`; `search` → `grep_search`, `glob`, `list_directory`; `edit` → `replace`, `write_file`; `execute` → `run_shell_command`; `web` → `web_fetch`, `google_web_search`; `mcp:<id>` → `mcp_<id>_*`. No tools is `tools: []`. |
+| `gemini-cli` | MCP server | `mcpServers.<id>` in `.gemini/settings.json`: `{"command", "env": {"VAR": "${SOURCE}"}}` (`${SOURCE:-}` when optional), or `{"url", "type": "http"}`. The file is JSONC: Grimoire keeps its comments and refuses trailing commas, as Gemini CLI does. |
+| `copilot` | Rule | `.github/instructions/<id>.instructions.md` with `applyTo`: `"**"`, or the globs joined by commas. |
+| `copilot` | Agent | `name`, `description`, `tools` (`read`, `search`, `edit`, `execute`, `web`, `<server>/*`, `<server>/<tool>`), `strict-tools-list: true`. A prompt over 30,000 characters is refused. |
+| `copilot` | MCP server | The `claude-code` `.mcp.json` entry. |
+
 ## 9. CLI (Proposal)
 
 ### 9.1 Commands
@@ -553,7 +586,7 @@ Project-scoped Codex config, rules and hooks load only in **trusted** projects (
 | `grimoire apply [--force] [--write-new]` | Make the managed content on disk match `grimoire.toml` + lock | managed outputs, `grimoire.lock` |
 | `grimoire update [<id>…] [--no-apply]` | Re-resolve to the newest versions the requirements allow and update the lock, then apply (`--no-apply` updates the lock only) | `grimoire.lock`, managed outputs |
 | `grimoire verify` | Check every locked output on disk against its hash (a CI gate; exit 5 on mismatch) | — |
-| `grimoire doctor` | Environment report: clients detected, tool and server binaries on `PATH` and their versions, Codex trust, config parse errors | — |
+| `grimoire doctor` | Environment report: each client's installed outputs and notes on what it needs (trust, approvals; not checked), tool and server binaries on `PATH`, the Copilot cloud-agent MCP settings, config parse errors | — |
 | `grimoire uninstall [--purge]` | Remove all managed content and the lock (`--purge` also removes `grimoire.toml`) | managed outputs, lock |
 
 `add`/`remove` only change the desired state. `apply` reconciles, which keeps CI flows explicit. `add --apply` (and `remove --apply`) is a convenience.
@@ -568,6 +601,9 @@ As implemented in Phase 2:
 - **`remove`** warns when another selector keeps the asset installed.
 - **`update [<id>…]`** lets the named (or all) pins move to the catalog's versions. `--no-apply` writes the lock with the new versions but keeps every output record describing the files as they are, so the next `apply` performs the update.
 - **`doctor`** never runs a binary. It only checks that each locked tool or MCP server binary is on `PATH`.
+- **Phase 4:**
+  - `init` detects every client: `claude-code` (`CLAUDE.md`, `.claude/`), `agents-md` (`AGENTS.md`, `.agents/`), `codex` (`.codex/`), `cursor` (`.cursor/`), `gemini-cli` (`GEMINI.md`, `.gemini/`) and `copilot` (`.github/copilot-instructions.md`, `.github/instructions/`, `.github/agents/`). Every client has an adapter.
+  - `doctor` counts each client's outputs from the lock, notes what the client needs before it reads them (Codex and Gemini CLI trust, Cursor's MCP approval, Copilot's folder trust), which Grimoire can't check, and prints the JSON to paste into Copilot cloud agent's MCP settings for each MCP server installed for `copilot`. Optional variables there get an empty default (`${COPILOT_MCP_<NAME>:-}`); a server configured over Streamable HTTP is given by its URL, which the cloud agent can use only if it can reach it without OAuth.
 
 ### 9.2 Machine use
 
@@ -595,21 +631,29 @@ As implemented in Phase 2:
 |---|---|---|
 | `schemas/*.schema.json` (asset, bundle, config, lock) | `cargo xtask schema` (schemars) | `--check` |
 | Packed builtin catalog | `cargo xtask pack-catalog` | `--check` (ADR-0001) |
-| `.claude-plugin/marketplace.json` + `plugins/claude-code/<name>/` | `cargo xtask gen-marketplace` (Phase 4) | `--check`, and also `claude plugin validate --strict` if the maintainer approves installing Claude Code in CI |
+| `.claude-plugin/marketplace.json` + `plugins/claude-code/<name>/` | `cargo xtask gen-marketplace` (Phase 4) | `--check`, and `claude plugin validate --strict` on the marketplace and each plugin |
 
-Marketplace notes, verified against `CC-PLUGIN` and `CC-MKT`:
-- Plugins can carry skills, agents, hooks and MCP servers, but **not rules** (a plugin's root `CLAUDE.md` is not loaded).
-- Plugin MCP servers still need the server binary on `PATH`.
-- Codex also reads `.claude-plugin/marketplace.json` as a legacy location (`CODEX-PLUGINS`). Compatibility is unverified and out of v1 scope.
-- Plugin granularity is decided in Phase 4. The expected shape is one plugin per eligible asset plus one per bundle that depends on its members.
+Marketplace (Phase 4, verified against `CC-PLUGIN-P4` and `CC-MKT-P4`):
+- **Layout:** `.claude-plugin/marketplace.json` at the repository root (name `grimoire`, owner `jabbott-iii`) lists one plugin per eligible asset and per bundle, each under `plugins/claude-code/<id>/` with its own `.claude-plugin/plugin.json` and a generated `README.md`.
+- **Eligible assets** are skills, agents and MCP servers that support `claude-code`. Their plugin holds the files the `claude-code` adapter installs: `skills/<id>/…`, `agents/<id>.md`, or `.mcp.json`. Agent tools name MCP tools the way Claude Code names a plugin's (`mcp__plugin_<server>_<server>__<tool>`), and an agent depends on the plugins of the MCP servers it uses.
+- **Left out:** rules, because a plugin's `CLAUDE.md` isn't loaded; and tools, because whether a plugin hook can fail closed is unverified while Grimoire never installs the binary (the maintainer's choice).
+- **Bundles** become plugins that depend on their eligible members' plugins (bare names, no version ranges, because ranges need per-plugin git tags). The description names the members left out.
+- **Names** must pass Claude Code's reserved-name rules, including the whole-word rule that `claude plugin validate --strict` enforces; `gen-marketplace` fails otherwise.
+- **Versions** live only in each `plugin.json`, as the docs advise: the asset or bundle version plus build metadata from a hash of the plugin's files (`0.2.0+<12 hex>`). Claude Code keeps a user on a cached copy until the version changes, and plugin content depends on the generator as well as the catalog.
+- **Dependencies:** an agent's plugin depends on the plugins of the MCP servers whose tools it names, and generation fails if such a server isn't a plugin. Any other `[requires]` entry that is a plugin becomes a dependency too; one that isn't is named in the description.
+- **Permissions:** each plugin's README lists what the catalog declares (files, network, shell, environment variables, an agent's tools). Installing a plugin grants these without the consent `grimoire add` asks for.
+- **Deprecated** assets say so, and name their replacement, at the start of the description.
+- **Adding it:** users add the marketplace as `owner/repo` or a GitHub repository URL. A raw `marketplace.json` URL can't resolve relative plugin sources.
+- **CI:** `gen-marketplace --check`, then a pinned, checksum-verified Claude Code 2.1.311 runs `claude plugin validate --strict` on the marketplace and on each plugin directory, with no secrets.
+- Plugin MCP servers still need the server binary on `PATH`. Codex also reads `.claude-plugin/marketplace.json` (`CODEX-PLUGINS-P4`); compatibility is unverified and out of v1 scope.
 
 ## 11. Open design issues (to settle in the phase noted)
 
 1. ~~**JSON/JSONC editing**~~ **Settled in Phase 2:** `jsonc-parser`'s CST, strict JSON only (§7.2, `EDIT-CRATES`).
-2. **Cross-client planning priorities** (Phase 4). In Phase 2 the only shared location is `AGENTS.md`, reached by Claude Code through the import (§8.2), and it has snapshot tests for each of the three client combinations. The general greedy cover over the read matrix arrives with the clients that share `.claude/skills/` and `.agents/skills/`.
+2. ~~**Cross-client planning priorities**~~ **Settled in Phase 4:** the placement pass in §8.2 ([ADR-0008](adr/0008-phase-4-client-adapters.md)).
 3. ~~**`.claude/rules/` vs a `CLAUDE.md` block**~~ **Settled in Phase 2:** `.claude/rules/` (§8.2).
 4. ~~**Server-side MCP auth**~~ **Settled in Phase 3:** RFC 9068 JWT access tokens checked against a local JWKS file, in `crates/agent-grimoire-mcp` ([ADR-0007](adr/0007-mcp-server-authorization.md)).
-5. **Codex AGENTS.md budget** (Phase 4): warn in `plan` when managed blocks push `AGENTS.md` near Codex's 32 KiB default.
-6. **Copilot cloud-agent MCP** can't be configured from repo files. Decide whether `doctor` emits the settings JSON for the user to paste (Phase 4).
+5. ~~**Codex AGENTS.md budget**~~ **Settled in Phase 4:** `plan/codex-instructions-size` warns at 24 KiB. The 32 KiB budget is shared by every project instruction file Codex reads (`CODEX-P4`).
+6. ~~**Copilot cloud-agent MCP**~~ **Settled in Phase 4:** `doctor` prints the settings JSON for each MCP server installed for `copilot`, with `$COPILOT_MCP_<NAME>` secrets.
 7. ~~**Environment variable consent**~~ **Settled in Phase 3:** each variable is its own grant, `env:<NAME>`, recorded in `grimoire.toml` like every other grant (§6.3). Consent stays in the one file users review; the lock only mirrors it.
 8. ~~**HTTP transport configuration**~~ **Settled in Phase 3:** a `url` option next to `transport = "streamable-http"`, validated as `ServerUrl` (§6.2).
