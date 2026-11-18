@@ -295,7 +295,7 @@ git diff --cached | docker run -i --rm --init --network none --read-only --cap-d
 
 ## 7. Limits and what is not tested
 
-- **Run locally** (2026-11-17, rootless Docker 29.9.3 on amd64; nothing has run on GitHub yet):
+- **Run locally** (2026-11-17, rootless Docker 29.9.3 on amd64, before anything ran on GitHub):
   - three builds of the two-platform image, one of them on a fresh builder. The platform manifest digests matched; the index digest didn't;
   - `cargo xtask release image check` passed on a real build, and refused a changed binary, a corrupted blob and all seven tampered layouts from the Phase 6 review;
   - the cases of the release's tag script, `.github/scripts/image-tags.sh`, that pull requests run (below);
@@ -303,10 +303,10 @@ git diff --cached | docker run -i --rm --init --network none --read-only --cap-d
   - distroless's signatures verified with cosign 3.1.4. crane v0.22.1 pushed the layout with its index digest unchanged, and a cosign signature landed in the `sha256-<index hex>` tag;
   - `grimoire --version`, both asset binaries' `--version`, `init`, `add --apply` and `verify` on a bind mount with `--user 0:0`, an MCP `initialize` over stdio, and `grimoire-tool-secret-guard scan` on stdin. All ran with `--network none --read-only --cap-drop ALL --security-opt no-new-privileges`.
   - The arm64 image was built and scanned, but not run: there is no emulation here.
-- **In CI** (written, not yet run): every pull request and release run pulls the image on `ubuntu-24.04` (linux/amd64) and `ubuntu-24.04-arm` (linux/arm64), whose Docker 28.0.4 is rootful. It pulls from a local registry that, like GHCR, has no referrers API.
+- **In CI** (first run on 2026-11-18, Release run 44353090397, a dry-run in which every step passed and Grype found nothing on either platform): every pull request and release run pulls the image on `ubuntu-24.04` (linux/amd64) and `ubuntu-24.04-arm` (linux/arm64), whose Docker 28.0.4 is rootful. It pulls from a local registry that, like GHCR, has no referrers API.
   - It runs every binary's `--version`; the CLI on a mounted repository with `--init` and `--user`, then checks who owns the files; and an MCP `initialize` over stdio.
   - Pull requests also sign the image with a throwaway key and verify it, offline. Then they run the release's tag script against the local registry: a push and a tag, each twice; a version tag that names another digest, refused by push and by tag; a registry that can't be read, refused; `latest` moved off an unsigned image that claims no newer version, refused for an unsigned image that claims a newer one, and kept on a newer signed release.
   - Every Monday, `security.yml` verifies the latest release's image signature and scans every platform again with the same Grype gate.
 - **The gate:** any medium, high or critical match fails the build, fixed or not. A finding with no fix blocks until it has an ignore rule with a reason in [`.grype.yaml`](../.grype.yaml).
 - **What the scan can't see:** Grype finds Rust crates through the cargo-auditable data in each binary, and the workflow fails if a binary shows none. cargo-auditable doesn't record statically linked C code, which by inference includes musl's libc.
-- **Never tested:** Docker Desktop, Podman, Windows hosts, rootful Docker and `--init` (CI runs both, but hasn't run yet), Streamable HTTP in a container (§5), a hook in a container (§6), and the client entries in §4 with a real client.
+- **Never tested:** Docker Desktop, Podman, Windows hosts, Streamable HTTP in a container (§5), a hook in a container (§6), and the client entries in §4 with a real client. Rootful Docker and `--init` are tested only in CI, since 2026-11-18.

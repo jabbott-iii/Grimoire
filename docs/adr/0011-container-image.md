@@ -179,7 +179,7 @@ That led to decisions 6 and 7, and to the changes marked "after the review" belo
 
 ### What ran locally, and what didn't
 
-Nothing has run on GitHub yet. These were checked locally during Phase 6, with rootless Docker 29.9.3:
+These were checked locally during Phase 6, with rootless Docker 29.9.3, before anything ran on GitHub. (The first Release dry-run there, Release run 44353090397 on 2026-11-18, ran `image`, `verify-image` and the offline signing; PLAN.md has the results.)
 
 - **Reproducibility:** three builds, one with a fresh builder, gave identical platform manifest digests. The index digest differed each time.
 - **`check`** passes on a real build, and refuses a changed binary and a corrupted blob. After the review it also refused all seven of a reviewer's tampered layouts (a second gzip member, a sized directory hiding a header, an extra directory, an xattr, an added `OnBuild` and `Env`, a swapped base layer and a wrong `diff_id`), including the two that had passed before and run another binary. Unit tests build a small layout like BuildKit's and change one thing at a time.
