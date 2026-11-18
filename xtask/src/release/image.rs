@@ -1691,8 +1691,9 @@ mod tests {
         );
     }
 
-    /// The image tools and the signing identity are pinned in three workflows; they must
-    /// agree, and name the image this module checks.
+    /// The image tools and the signing identities are pinned in four workflows; they must
+    /// agree, and name the image this module checks. The release files are signed by
+    /// sign.yml and the image by sign-image.yml, each with its own identity (SIGN-P6).
     #[test]
     fn the_image_pins_agree_across_workflows() {
         let value = |file: &str, key: &str| -> String {
@@ -1706,29 +1707,29 @@ mod tests {
             assert_eq!(found.len(), 1, "{file}: {key} is set {} times", found.len());
             found[0].clone()
         };
-        let everywhere = [
-            "IMAGE",
-            "CRANE_VERSION",
-            "CRANE_SHA256_X64",
-            "COSIGN_IDENTITY",
-            "COSIGN_ISSUER",
-            "COSIGN_REPOSITORY",
-            "COSIGN_REF",
-        ];
+        let image = ["IMAGE", "CRANE_VERSION", "CRANE_SHA256_X64"];
+        let caller = ["COSIGN_ISSUER", "COSIGN_REPOSITORY", "COSIGN_REF"];
         let scans = [
             "GRYPE_VERSION",
             "GRYPE_SHA256",
             "SHELLCHECK_VERSION",
             "SHELLCHECK_SHA256",
         ];
-        for key in everywhere.iter().chain(&scans) {
+        for key in image.iter().chain(&caller).chain(&scans) {
             assert_eq!(
                 value("release.yml", key),
                 value("security.yml", key),
                 "{key} differs"
             );
         }
-        for key in everywhere {
+        for key in image.iter().chain(&caller) {
+            assert_eq!(
+                value("release.yml", key),
+                value("sign-image.yml", key),
+                "{key} differs"
+            );
+        }
+        for key in caller {
             assert_eq!(
                 value("release.yml", key),
                 value("sign.yml", key),
@@ -1736,19 +1737,31 @@ mod tests {
             );
         }
         assert_eq!(value("release.yml", "IMAGE"), IMAGE);
-        // Signatures are made, and accepted, only from sign.yml called on main (SIGN-P6).
+        // Signatures are made, and accepted, only from the two signing workflows called on
+        // main (SIGN-P6): sign.yml for the release files, which release.yml's publish job
+        // checks, and sign-image.yml for the image, which security.yml's scan checks.
+        let identity = |file: &str| format!("{REPO_URL}/.github/workflows/{file}@refs/heads/main");
+        assert_eq!(value("sign.yml", "COSIGN_IDENTITY"), identity("sign.yml"));
         assert_eq!(
-            value("sign.yml", "COSIGN_IDENTITY"),
-            format!("{REPO_URL}/.github/workflows/sign.yml@refs/heads/main")
+            value("release.yml", "COSIGN_IDENTITY"),
+            identity("sign.yml")
         );
         assert_eq!(
-            value("sign.yml", "COSIGN_REPOSITORY"),
+            value("sign-image.yml", "COSIGN_IDENTITY"),
+            identity("sign-image.yml")
+        );
+        assert_eq!(
+            value("security.yml", "COSIGN_IDENTITY"),
+            identity("sign-image.yml")
+        );
+        assert_eq!(
+            value("sign-image.yml", "COSIGN_REPOSITORY"),
             "jabbott-iii/Grimoire"
         );
-        assert_eq!(value("sign.yml", "COSIGN_REF"), "refs/heads/main");
+        assert_eq!(value("sign-image.yml", "COSIGN_REF"), "refs/heads/main");
         assert_eq!(
-            value("sign.yml", "SIGNER_WORKFLOW"),
-            "jabbott-iii/Grimoire/.github/workflows/sign.yml@refs/heads/main"
+            value("sign-image.yml", "SIGNER_WORKFLOW"),
+            "jabbott-iii/Grimoire/.github/workflows/sign-image.yml@refs/heads/main"
         );
         for key in ["BUILDKIT_IMAGE", "SBOM_SCANNER_IMAGE"] {
             let pin = value("release.yml", key);

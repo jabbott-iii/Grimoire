@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The container image's registry steps (ADR-0011): push by digest, tag the version, move
-# `latest`. The release runs them (release.yml publish-image, then sign.yml), and every pull
-# request runs them against a local registry (release.yml verify-image), so the code that
+# `latest`. The release runs them (release.yml publish-image, then sign-image.yml), and every
+# pull request runs them against a local registry (release.yml verify-image), so the code that
 # guards the release tags never runs for the first time in a release.
 #
 #   image-tags.sh push   IMAGE DIGEST VERSION LAYOUT   push LAYOUT by digest, untagged
@@ -12,7 +12,8 @@
 #                                                       accepts it, and stop if not
 #
 # VERIFY is a command that exits 0 when the image reference appended to it carries the release
-# signature: cosign verify with the release identity, or a throwaway key in dry-runs.
+# signature: cosign verify with the image's signing identity (sign-image.yml's), or a throwaway
+# key in dry-runs.
 #
 # Rules: a VERSION tag that names another digest is an error, never overwritten. A tag
 # lookup that fails for any reason other than the registry's "unknown" answer stops the

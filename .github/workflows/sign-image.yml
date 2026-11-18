@@ -1,0 +1,207 @@
+# The container image's signature and provenance attestation (ADR-0011, SIGN-P6). Only jobs in
+# this reusable workflow get a Sigstore certificate that names it:
+#   https://github.com/jabbott-iii/Grimoire/.github/workflows/sign-image.yml@refs/heads/main
+# No other job in release.yml can, so the publish jobs can't sign the image as the release. The
+# release files are signed by sign.yml. They are two files because GitHub checks every job of a
+# called workflow against the calling job's permissions, even a job its `if:` would skip: one
+# file for both would make the files call grant this job's packages: write.
+#
+# Any repository can call a public reusable workflow and get a certificate with that same name,
+# with the caller recorded in other fields. So the job here runs only when release.yml on main
+# in this repository called it, and every verifier also pins the caller: cosign with
+# --certificate-github-workflow-repository and --certificate-github-workflow-ref, gh with
+# --repo and --source-ref.
+#
+# It signs and attests the image publish-image pushed (a cosign signature and a provenance
+# attestation), checks both in the registry, then tags X.Y.Z and moves latest.
+#
+# Inputs reach run steps only through env. Hardening as in release.yml (zizmor pedantic):
+# permissions {} at the top with minimal per-job grants (the calling job grants them first),
+# full-SHA pins, persist-credentials: false, no caches, no workflow-level concurrency (the
+# caller's governs the run).
+name: Sign the image
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: "the release version X.Y.Z"
+        type: string
+        required: true
+      index-digest:
+        description: "the pushed index digest"
+        type: string
+        required: true
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  IMAGE: ghcr.io/jabbott-iii/grimoire
+  # The same pins as release.yml; `cargo test -p xtask` fails when they differ.
+  CRANE_VERSION: "0.22.1"
+  CRANE_SHA256_X64: "0ab7a1d6932a213aed964ce97666c3077fe691c8606413674a8b3e0b9ec4cda0"
+  # What every self-check below accepts: this file, called from jabbott-iii/Grimoire on main.
+  COSIGN_IDENTITY: https://github.com/jabbott-iii/Grimoire/.github/workflows/sign-image.yml@refs/heads/main
+  COSIGN_ISSUER: https://token.actions.githubusercontent.com
+  COSIGN_REPOSITORY: jabbott-iii/Grimoire
+  COSIGN_REF: refs/heads/main
+  # With the ref: without it, gh also accepts sign-image.yml at a tag or commit, which our own
+  # release tags would make callable by any repository (SIGN-P6).
+  SIGNER_WORKFLOW: jabbott-iii/Grimoire/.github/workflows/sign-image.yml@refs/heads/main
+  # gh compares names only for --bundle-from-oci; these pin the repository and owner by ID.
+  REPOSITORY_ID: "1460666977"
+  OWNER_ID: "84321953"
+  CALLER: https://github.com/jabbott-iii/Grimoire/.github/workflows/release.yml@refs/heads/main
+
+jobs:
+  # The image publish-image pushed by digest. GHCR has no referrers API, so the signature and the
+  # attestation both go into the `sha256-<digest>` fallback tag; they are written one after the
+  # other, never at once. Every step skips what is already done, so "Re-run failed jobs" finishes.
+  image:
+    name: sign, attest and tag the image
+    if: >-
+      github.repository_id == '1460666977'
+      && github.workflow_ref == 'jabbott-iii/Grimoire/.github/workflows/release.yml@refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read # check out .github/scripts/image-tags.sh (actions/attest itself reads no contents)
+      packages: write # store the signature and the attestation next to the image, and tag it
+      id-token: write # cosign and actions/attest get their Sigstore signing certificates with the job's OIDC token
+      attestations: write # actions/attest stores the provenance attestation on this repository
+    env:
+      VERSION: ${{ inputs.version }}
+      INDEX_DIGEST: ${{ inputs.index-digest }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check the inputs
+        run: |
+          set -euo pipefail
+          if ! [[ "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || ! [[ "${INDEX_DIGEST}" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::unexpected version '${VERSION}' or digest '${INDEX_DIGEST}'"
+            exit 1
+          fi
+      - name: Install crane (checksum-verified)
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/crane"
+          cd "${RUNNER_TEMP}/crane"
+          curl -fsSLo crane.tar.gz "https://github.com/google/go-containerregistry/releases/download/v${CRANE_VERSION}/go-containerregistry_Linux_x86_64.tar.gz"
+          echo "${CRANE_SHA256_X64}  crane.tar.gz" | sha256sum -c -
+          tar -xzf crane.tar.gz crane
+          echo "${RUNNER_TEMP}/crane" >> "${GITHUB_PATH}"
+      - name: Install cosign
+        uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
+      # crane, cosign, gh and actions/attest all read ~/.docker/config.json; actions/attest reads
+      # nothing else (no DOCKER_CONFIG, no credential helper; REGISTRY-P6).
+      - name: Log in to GHCR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          printf '%s' "${GH_TOKEN}" | crane auth login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin
+          if ! jq -e '.auths["ghcr.io"].auth | length > 0' "${HOME}/.docker/config.json" > /dev/null; then
+            echo "::error::the GHCR login is not in ~/.docker/config.json, where actions/attest reads it"
+            exit 1
+          fi
+      # Keyless: the certificate names this file. It signs the index only.
+      - name: Sign the image with cosign (keyless)
+        run: |
+          set -euo pipefail
+          target="${IMAGE}@${INDEX_DIGEST}"
+          if cosign verify --certificate-identity "${COSIGN_IDENTITY}" \
+            --certificate-oidc-issuer "${COSIGN_ISSUER}" \
+            --certificate-github-workflow-repository "${COSIGN_REPOSITORY}" \
+            --certificate-github-workflow-ref "${COSIGN_REF}" "${target}" > /dev/null 2>&1; then
+            echo "${target} is already signed"
+          else
+            cosign sign --yes "${target}"
+          fi
+      # actions/attest writes to the attestations API before it pushes to the registry, and has no
+      # "already done" check. So a re-run looks in the registry itself (--bundle-from-oci): an
+      # attestation that reached only the API is attested again, which adds a harmless API record.
+      - name: Look for an existing provenance attestation in the registry
+        id: attested
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh attestation verify "oci://${IMAGE}@${INDEX_DIGEST}" --bundle-from-oci \
+            --repo "${COSIGN_REPOSITORY}" --signer-workflow "${SIGNER_WORKFLOW}" \
+            --source-ref "${COSIGN_REF}" --deny-self-hosted-runners > /dev/null 2>&1; then
+            echo "${IMAGE}@${INDEX_DIGEST} already has a provenance attestation"
+            echo "found=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "found=false" >> "${GITHUB_OUTPUT}"
+          fi
+      - name: Attest build provenance
+        if: steps.attested.outputs.found != 'true'
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ${{ env.IMAGE }}
+          subject-digest: ${{ inputs.index-digest }}
+          push-to-registry: true
+          # Storage records exist only for organisation-owned repositories.
+          create-storage-record: false
+      # cosign verify falls back silently to the legacy signature format, so the fallback tag
+      # itself must list a sigstore bundle of each kind, and each must verify (REGISTRY-P6).
+      - name: Check the signature and the attestation in the registry
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          crane manifest "${IMAGE}:sha256-${INDEX_DIGEST#sha256:}" > "${RUNNER_TEMP}/referrers.json"
+          for type in https://sigstore.dev/cosign/sign/v1 https://slsa.dev/provenance/v1; do
+            if ! jq -e --arg type "${type}" '[.manifests[] | select(.artifactType == "application/vnd.dev.sigstore.bundle.v0.3+json"
+                  and .annotations["dev.sigstore.bundle.predicateType"] == $type)] | length > 0' \
+                "${RUNNER_TEMP}/referrers.json" > /dev/null; then
+              echo "::error::the referrers fallback tag lists no ${type} bundle"
+              exit 1
+            fi
+          done
+          cosign verify --certificate-identity "${COSIGN_IDENTITY}" \
+            --certificate-oidc-issuer "${COSIGN_ISSUER}" \
+            --certificate-github-workflow-repository "${COSIGN_REPOSITORY}" \
+            --certificate-github-workflow-ref "${COSIGN_REF}" "${IMAGE}@${INDEX_DIGEST}" > /dev/null
+          gh attestation verify "oci://${IMAGE}@${INDEX_DIGEST}" --bundle-from-oci \
+            --repo "${COSIGN_REPOSITORY}" --signer-workflow "${SIGNER_WORKFLOW}" \
+            --source-ref "${COSIGN_REF}" --deny-self-hosted-runners --format json > "${RUNNER_TEMP}/attestation.json"
+          # What no gh flag pins: the caller workflow file, and the repository and owner IDs.
+          if ! jq -e --arg caller "${CALLER}" --arg repo "${REPOSITORY_ID}" --arg owner "${OWNER_ID}" \
+              'length > 0 and all(.[]; .verificationResult.signature.certificate
+                | .buildConfigURI == $caller and .sourceRepositoryIdentifier == $repo
+                  and .sourceRepositoryOwnerIdentifier == $owner)' "${RUNNER_TEMP}/attestation.json" > /dev/null; then
+            echo "::error::the image's provenance wasn't made by sign-image.yml called from ${CALLER} in repository ${REPOSITORY_ID}"
+            exit 1
+          fi
+          echo "signature and provenance verified for ${IMAGE}@${INDEX_DIGEST}"
+      # Only now does the image get its names: X.Y.Z, then latest (never moved back to an older
+      # release; a newer claim without the release signature stops the job).
+      - name: Tag the version and move latest
+        run: |
+          set -euo pipefail
+          bash .github/scripts/image-tags.sh tag "${IMAGE}" "${INDEX_DIGEST}" "${VERSION}"
+          bash .github/scripts/image-tags.sh latest "${IMAGE}" "${INDEX_DIGEST}" "${VERSION}" -- \
+            cosign verify --certificate-identity "${COSIGN_IDENTITY}" \
+            --certificate-oidc-issuer "${COSIGN_ISSUER}" \
+            --certificate-github-workflow-repository "${COSIGN_REPOSITORY}" \
+            --certificate-github-workflow-ref "${COSIGN_REF}"
+      - name: Log out of GHCR
+        if: always()
+        run: crane auth logout ghcr.io || true
+      # A new package is private until the maintainer makes it public, once (docs/release.md §2 D).
+      - name: Check that the image can be pulled anonymously
+        run: |
+          set -euo pipefail
+          code="$(curl -s -o /dev/null -w '%{http_code}' "https://ghcr.io/token?scope=repository:jabbott-iii/grimoire:pull&service=ghcr.io")"
+          if [ "${code}" != "200" ]; then
+            echo "::error::${IMAGE} can't be pulled anonymously (HTTP ${code}): make the package public (docs/release.md §2 D), then re-run this job"
+            exit 1
+          fi
+          echo "${IMAGE} is public"

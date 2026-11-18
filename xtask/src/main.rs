@@ -24,6 +24,8 @@ mod readme_links;
 mod release;
 mod render;
 mod schema;
+#[cfg(test)]
+mod workflow_permissions;
 
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;

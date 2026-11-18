@@ -60,8 +60,8 @@ jobs:
       CRANE_SHA256_X64: "0ab7a1d6932a213aed964ce97666c3077fe691c8606413674a8b3e0b9ec4cda0"
       GRYPE_VERSION: "0.121.3"
       GRYPE_SHA256: "e9da18cc1429e786722e32161288103600efffd8e483c90761f90485bd1bec85"
-      # sign.yml, called from jabbott-iii/Grimoire on main (SIGN-P6).
-      COSIGN_IDENTITY: https://github.com/jabbott-iii/Grimoire/.github/workflows/sign.yml@refs/heads/main
+      # sign-image.yml, called from jabbott-iii/Grimoire on main (SIGN-P6).
+      COSIGN_IDENTITY: https://github.com/jabbott-iii/Grimoire/.github/workflows/sign-image.yml@refs/heads/main
       COSIGN_ISSUER: https://token.actions.githubusercontent.com
       COSIGN_REPOSITORY: jabbott-iii/Grimoire
       COSIGN_REF: refs/heads/main
@@ -112,7 +112,7 @@ jobs:
             --certificate-oidc-issuer "${COSIGN_ISSUER}" \
             --certificate-github-workflow-repository "${COSIGN_REPOSITORY}" \
             --certificate-github-workflow-ref "${COSIGN_REF}" "${IMAGE}@${digest}" > /dev/null
-          echo "${tag}: ${IMAGE}@${digest}, signed by sign.yml"
+          echo "${tag}: ${IMAGE}@${digest}, signed by sign-image.yml"
           echo "digest=${digest}" >> "${GITHUB_OUTPUT}"
       - name: Scan every platform with Grype
         if: steps.find.outputs.digest != ''

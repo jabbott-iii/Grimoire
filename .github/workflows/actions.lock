@@ -21,9 +21,12 @@ workflows:
         - 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
         - 'sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532'
         - 'zizmorcore/zizmor-action@45d7276c9ca790aabd705e31ca99c6185c3e76dd'
-    '.github/workflows/sign.yml':
+    '.github/workflows/sign-image.yml':
         - 'actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6'
         - 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
+        - 'sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532'
+    '.github/workflows/sign.yml':
+        - 'actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6'
         - 'actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333'
         - 'actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9'
         - 'sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532'

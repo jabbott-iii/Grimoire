@@ -1,6 +1,6 @@
 # Releasing and installing Grimoire
 
-- **Status:** written in Phase 5 (2026-11-17), before the first release, revised after the Phase 5 review, revised in Phase 6 (2026-11-17) for the container image, revised after the Phase 6 review, which moved every signature and attestation into `.github/workflows/sign.yml`, revised in Phase 7 (2026-11-17) for the before-first-release markers, the README's channels and vulnerability reporting, and revised after the Phase 7 review (2026-11-18), when release-plz's first run on GitHub was refused by the ruleset (§2 A). **No release exists yet**, so no command in this file has been run against a real release. The image's build, checks, scan, push to a local registry and the tag script's cases were run only locally, with rootless Docker, never on GitHub or against GHCR.
+- **Status:** written in Phase 5 (2026-11-17), before the first release, revised after the Phase 5 review, revised in Phase 6 (2026-11-17) for the container image, revised after the Phase 6 review, which moved every signature and attestation into `.github/workflows/sign.yml`, revised in Phase 7 (2026-11-17) for the before-first-release markers, the README's channels and vulnerability reporting, revised after the Phase 7 review (2026-11-18), when release-plz's first run on GitHub was refused by the ruleset (§2 A), and revised again on 2026-11-18, when GitHub refused to start `release.yml` and the image's signing moved into `.github/workflows/sign-image.yml`. **No release exists yet**, so no command in this file has been run against a real release. The image's build, checks, scan, push to a local registry and the tag script's cases were run only locally, with rootless Docker, never on GitHub or against GHCR.
 - **Decisions:** [ADR-0009](adr/0009-release-pipeline.md) (the pipeline and channels), [ADR-0010](adr/0010-language-policy-exceptions.md) (the code that isn't Rust) and [ADR-0011](adr/0011-container-image.md) (the container image).
 - **Facts:** the `*-P5` and `*-P6` entries in [`specs.md`](specs.md); SIGN-P6 for the signing identity.
 
@@ -34,7 +34,8 @@ This file has six parts:
    - `plan` fails at once if the catalog has grown past GitHub's limits: 256 jobs in the SBOM attestation matrix, and 1000 assets in one release. With today's channels, the asset limit is reached at 39 asset binaries.
    - The run builds all six targets, packages every channel and runs the verification jobs. Then `sign-files` signs every file (below).
    - Every release-mode job downloads the release files by artifact ID. Before it attests, signs or publishes anything, it checks `SHA256SUMS` against the hash the package job recorded, and that the files are exactly the ones `SHA256SUMS` lists.
-   - **Signing.** Every signature and attestation, for the release files and the image, is made in `.github/workflows/sign.yml`, a reusable workflow that only `sign-files` and `sign-image` call. Its certificates name `https://github.com/jabbott-iii/Grimoire/.github/workflows/sign.yml@refs/heads/main`, which no job in `release.yml` can get, so the publish jobs, and the PyPI action's container, can't sign as the release. Its jobs run only when `release.yml` on `main` in this repository calls them.
+   - **Signing.** Every signature and attestation is made in one of two reusable workflows: `.github/workflows/sign.yml` for the release files, which only `sign-files` calls, and `.github/workflows/sign-image.yml` for the image, which only `sign-image` calls. Their certificates name `https://github.com/jabbott-iii/Grimoire/.github/workflows/sign.yml@refs/heads/main` and `…/sign-image.yml@refs/heads/main`, which no job in `release.yml` can get, so the publish jobs, and the PyPI action's container, can't sign as the release. Their jobs run only when `release.yml` on `main` in this repository calls them.
+   - They are two files because GitHub checks every job of a called workflow against the calling job's permissions when the run starts, even a job its `if:` would skip. With one file for both, GitHub refused to start any Release run (`SIGN-P6` in [`specs.md`](specs.md)). The xtask test `every_reusable_workflow_call_grants_what_its_jobs_ask_for` checks every call's grant.
    - `sign-files` makes one provenance attestation over every file, an SBOM attestation for each archive (one matrix job each), and a cosign bundle for each file, which it verifies at once with the identity and the caller pins (§5).
    - **The container image.** The `image` job builds it from the two Linux musl archives, for linux/amd64 and linux/arm64, as an OCI layout with an SBOM and provenance for each platform. It verifies the base image's signatures first, then checks the layout with `cargo xtask release image check` and scans each platform with Grype. Any medium, high or critical match fails the job (§3).
    - `verify-image` pushes the layout to a local registry, pulls it on an amd64 and an arm64 runner, and runs every binary in it. Pull requests run both jobs too. They also sign the image with a throwaway key, offline, and run the release's tag script, `.github/scripts/image-tags.sh`, against the local registry, refusals included.
@@ -51,8 +52,8 @@ This file has six parts:
    - `publish-npm` stages the six platform tarballs, then the launcher.
    - `publish-pypi` uploads the wheels with `pypa/gh-action-pypi-publish` (`skip-existing: true`).
    - `publish-image` pushes the checked layout to `ghcr.io/jabbott-iii/grimoire` by digest, untagged, with the job's `GITHUB_TOKEN` (`image-tags.sh push`). An existing `X.Y.Z` that names another digest stops the job; the tag is never overwritten. It has no OIDC token and runs no cargo.
-   - **Then `sign-image` runs, with no approval of its own.** A job that calls a reusable workflow can't name an environment, so the `ghcr` approval of the push is the approved step. It calls `sign.yml`, which signs the index digest with cosign (keyless), adds a build provenance attestation with `actions/attest`, checks that both are listed in the `sha256-<index hex>` tag, and verifies both.
-   - Only then does the image get its tags: `X.Y.Z`, then `latest` (`image-tags.sh tag` and `latest`). `latest` moves only past a release that carries the release signature, and never back to an older one (§3).
+   - **Then `sign-image` runs, with no approval of its own.** A job that calls a reusable workflow can't name an environment, so the `ghcr` approval of the push is the approved step. It calls `sign-image.yml`, which signs the index digest with cosign (keyless), adds a build provenance attestation with `actions/attest`, checks that both are listed in the `sha256-<index hex>` tag, and verifies both.
+   - Only then does the image get its tags: `X.Y.Z`, then `latest` (`image-tags.sh tag` and `latest`). `latest` moves to this release unless it names a newer version. It stays on a newer release that carries the image's release signature, and if the newer version doesn't verify, the job stops (§3).
    - `sign-image`'s last step fails while the package can't be pulled anonymously. That can happen only in the first release, before you make the package public (§2 D).
    - Each job's OIDC token names its own environment, and each registry's trusted publisher accepts only its own, so no job can publish to another registry. `publish-image` has no OIDC token. `publish-crates`, `publish-npm` and `publish-pypi` can still get Sigstore certificates, but those name `release.yml`, and no verifier accepts that identity.
 8. **Approve the npm versions with 2FA, platform packages first.**
@@ -90,7 +91,7 @@ Never store a token in GitHub at any step.
   - **Why.** The ruleset `BestBranch` covers every branch (`~ALL`), the `release-plz-*` branches included. Its pull-request rule and its code-scanning rule both refuse the commit, so lifting only one of them isn't enough.
   - **Your decision.** Either target the ruleset at the default branch only (`~DEFAULT_BRANCH`), or keep `~ALL` and exclude `refs/heads/release-plz-*`. With the first, other branches also lose the deletion and force-push rules. With either, pull requests into `main`, the release PR included, keep every rule.
   - **Don't add GitHub Actions as a bypass actor** instead. Any workflow job whose token has `contents: write` could then change `main` without a pull request.
-  - **Then delete the two orphan branches,** `release-plz-2026-11-17T23-18-49Z` and `release-plz-2026-11-18T05-09-04Z`. While the ruleset still covers them, its deletion rule allows that only through the administrator bypass.
+  - **Then delete the orphan branches:** `release-plz-2026-11-17T23-18-49Z`, `release-plz-2026-11-18T05-09-04Z` and `release-plz-2026-11-18T14-29-28Z` (run 44324738027, on the push of `dca6c1d`). Each push to `main` adds another until the ruleset lets release-plz commit, so list them with `gh api 'repos/jabbott-iii/Grimoire/branches?per_page=100' --jq '.[].name'` first. While the ruleset still covers them, its deletion rule allows that only through the administrator bypass.
   - Then run `release-plz.yml` on `main` (Actions → Release PR → Run workflow), or push to `main`, and check that the release PR opens. Opening it also needs the Actions setting below.
 - [ ] **Now: give the code-scanning rules their results, or drop them.** `BestBranch` also requires CodeQL code-scanning results and code-quality results. No workflow in this repository runs CodeQL, the repository's workflow list has no code-scanning workflow, and whether CodeQL default setup or Code Quality is on couldn't be read (UNVERIFIED, COMMUNITY-P7). While nothing produces those results, no pull request into `main`, a contributor's or the release PR, can be merged without the administrator bypass.
   - **Your decision.** Enable CodeQL default setup and Code Quality in the repository's settings, or remove the ruleset's `code_scanning` and `code_quality` rules. Which languages default setup offers for this repository wasn't checked.
@@ -226,7 +227,7 @@ Trusted publishing can't create a crate, so you publish the first version of eac
     - `publish-npm` skips versions already published (staged ones are below);
     - `publish-pypi` skips files already on PyPI (`skip-existing`);
     - `publish-image` pushes the same digest again, untagged, which is harmless. It stops if `X.Y.Z` names another digest, and if a tag lookup fails for any reason other than the registry's "unknown" answer (`MANIFEST_UNKNOWN`, `NAME_UNKNOWN`);
-    - `sign-image` skips the signature when one already verifies with the release identity and the caller pins, and the attestation when `gh attestation verify --bundle-from-oci` finds one in GHCR. An attestation that reached GitHub's attestations API but not GHCR is made again, which only adds a second record to the API, so a re-run after a partial attestation still finishes. It then checks and verifies both again, leaves `X.Y.Z` alone when it already names this digest, and applies the `latest` rule below.
+    - `sign-image` skips the signature when one already verifies with the image's signing identity (`sign-image.yml`) and the caller pins, and the attestation when `gh attestation verify --bundle-from-oci` finds one in GHCR. An attestation that reached GitHub's attestations API but not GHCR is made again, which only adds a second record to the API, so a re-run after a partial attestation still finishes. It then checks and verifies both again, leaves `X.Y.Z` alone when it already names this digest, and applies the `latest` rule below.
   - The registry jobs are separate, so a failure in one doesn't hold up the others. GitHub also re-runs the jobs that depend on a re-run job, so a re-run `publish-image` is followed by `sign-image`. Whether a re-run job waits for its environment's approval again isn't documented; expect it to. `sign-image` has no environment, so it never waits.
   - Use "Re-run failed jobs", not "Re-run all jobs". A new `image` run builds an index with another digest, because its SBOMs and provenance hold build times, and the published notes name the first one.
   - Don't wait for a new run instead. Once the tag exists, a run on `main` only skips.
@@ -234,13 +235,14 @@ Trusted publishing can't create a crate, so you publish the first version of eac
   - **A Grype finding, or a coverage failure.** Every platform is scanned before the step fails, so the `image-scan` artifact holds each platform's JSON and CycloneDX reports. A coverage failure (Grype detected no Debian 13 or no Debian packages, or a binary shows no Rust packages) means Grype couldn't see part of the image: investigate it, never ignore it. If a fix exists, take it: a base digest bump (§6) or a crate update. If none exists, add an ignore rule to `.grype.yaml` that names the vulnerability and the package and gives a reason, in a PR reviewed like the exceptions in `deny.toml`. Never lower the threshold or drop `--fail-on`.
   - Grype's database is rebuilt daily, so a re-run can fail where the pull request passed.
   - **A base signature, `context`, `check` or `coverage` failure.** Investigate; never skip or weaken the step. A base that doesn't verify, or an image whose layers aren't exactly the base's and the archived binaries, can mean a compromise.
-- **The image's tags.** Only `sign-image` sets them, and only after the signature and the attestation verify in GHCR. `X.Y.Z` is never overwritten. `latest` moves to this release unless it already names a newer release that verifies with the release identity, so it never moves back to an older signed release, and an image without the release signature never keeps it. `.github/scripts/image-tags.sh` makes these steps, and its errors mean:
-  - **`already points at <digest>, not at <digest>`** (`publish-image` or `sign-image`): `X.Y.Z` already names another digest. Stop and investigate. Never overwrite the tag and never delete it. Check whether that digest verifies with the release identity (§5).
+- **The image's tags.** Only `sign-image` sets them, and only after the signature and the attestation verify in GHCR. `X.Y.Z` is never overwritten. `latest` moves to this release unless it already names a newer version. It stays on a newer release that verifies with the image's signing identity, so it never moves back to an older signed release. If the newer version doesn't verify, the job stops and `latest` stays where it is. `.github/scripts/image-tags.sh` makes these steps, and its errors mean:
+  - **`already points at <digest>, not at <digest>`** (`publish-image` or `sign-image`): `X.Y.Z` already names another digest. Stop and investigate. Never overwrite the tag and never delete it. Check whether that digest verifies with the image's identity, `sign-image.yml` (§5, "The container image").
   - **`cannot tell whether <ref> exists`:** a tag lookup failed for a reason other than the registry's "unknown" answer, and crane's own error is printed just before it. The script never treats a tag it couldn't read as absent. Fix the cause, then re-run the failed job.
   - **`crane pushed <ref>, not <image>@<digest>`:** the push didn't keep the digest of the checked layout. Stop and investigate before you re-run.
   - **`latest is <version>, newer than X.Y.Z; leaving it`** is expected when you re-run an older release.
-  - **The warning `latest named <digest>, which doesn't carry the release signature; moving it`** means the image `latest` named didn't verify with the release identity. Someone with write access to the package moved `latest`, its signature was removed from its `sha256-<hex>` tag, or the check itself failed: the script can't tell these apart. Investigate, and check which release `latest` names afterwards.
-  - **`is not a sha256 digest`, `is not a release version`, a usage line, or `sign.yml`'s `unexpected version … or digest`:** the workflow passed bad input. That is a bug in the workflow, so a re-run can't fix it (below, "A re-run can't finish the release").
+  - **`latest (<digest>) claims <version>, newer than X.Y.Z, but doesn't verify with the release signature: investigate before moving it`** means the image `latest` names claims a newer version but didn't verify with the image's signing identity. Someone with write access to the package moved `latest`, its signature was removed from its `sha256-<hex>` tag, or the check itself failed, for example on a network error: the script can't tell these apart, so it stops and leaves `latest` alone. Investigate. If the check itself failed, re-run the failed job.
+  - **The warning `latest named <digest>, which has no release version; moving it`** means `latest` named an image without an `org.opencontainers.image.version` annotation, which no release makes. The script moves `latest` to this release. Find out who tagged that image.
+  - **`is not a sha256 digest`, `is not a release version`, a usage line, or `sign-image.yml`'s `unexpected version … or digest`:** the workflow passed bad input. That is a bug in the workflow, so a re-run can't fix it (below, "A re-run can't finish the release").
 - **The weekly image scan failed** (`security.yml`, job `image-scan`). Either the latest release's image isn't pushed, tagged, signed or public yet (finish its `publish-image` and `sign-image`, §2 D), which the job's error names, or a new advisory matches it. A released image is never changed, so if a fix exists, take it as for the `image` job and release a new patch version. If none exists, an ignore rule with a reason in `.grype.yaml` on `main` also clears the weekly scan.
 - **`publish-npm` failed after staging some versions.**
   - The job can't see versions that are staged but not approved, because `npm view` reads only published ones. npm refuses to stage the same version twice. So a re-run stops with an error that says to approve or reject the earlier stage first.
@@ -342,7 +344,7 @@ Every file in a release, except the `.sigstore.json` bundles themselves, has:
 
 `SHA256SUMS` lists every one of those files except itself. Each archive also has a CycloneDX SBOM (`<archive>.cdx.json`) and an SBOM attestation. Download the file you want, plus `SHA256SUMS` and the matching `.sigstore.json` bundles, from the release page.
 
-**Who signs.** Every signature and attestation is made by `.github/workflows/sign.yml`, Grimoire's signing workflow, when `release.yml` on `main` calls it. Any repository can call a public reusable workflow and get a certificate with the same name, so the commands below also pin the caller: the repository `jabbott-iii/Grimoire` and the ref `refs/heads/main`. No release exists yet, so every release is signed this way. Don't accept `…/release.yml@refs/heads/main`: other release jobs can still get certificates with that name, and no release is signed with it.
+**Who signs.** Every signature and attestation of the release files is made by `.github/workflows/sign.yml`, Grimoire's signing workflow, when `release.yml` on `main` calls it. The container image is signed by `.github/workflows/sign-image.yml`, under its own identity (below). Any repository can call a public reusable workflow and get a certificate with the same name, so the commands below also pin the caller: the repository `jabbott-iii/Grimoire` and the ref `refs/heads/main`. No release exists yet, so every release is signed this way. Don't accept `…/release.yml@refs/heads/main`: other release jobs can still get certificates with that name, and no release is signed with it.
 
 **Checksums:**
 ```sh
@@ -402,17 +404,17 @@ gh release verify-asset vX.Y.Z agent-grimoire-X.Y.Z-x86_64-unknown-linux-musl.ta
 - It is GitHub's own attestation (signer `https://dotcom.releases.github.com`), not Grimoire's build provenance, so use both.
 - It can't check the source archives GitHub generates automatically.
 
-**The container image.** [`container.md`](container.md) has the details. Take the index digest from the release notes, then use the same identity and pins:
+**The container image.** [`container.md`](container.md) has the details. Take the index digest from the release notes, then use `sign-image.yml`'s identity and the same caller pins:
 ```sh
 cosign verify ghcr.io/jabbott-iii/grimoire@sha256:<index digest> \
-  --certificate-identity https://github.com/jabbott-iii/Grimoire/.github/workflows/sign.yml@refs/heads/main \
+  --certificate-identity https://github.com/jabbott-iii/Grimoire/.github/workflows/sign-image.yml@refs/heads/main \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   --certificate-github-workflow-repository jabbott-iii/Grimoire \
   --certificate-github-workflow-ref refs/heads/main
 gh attestation verify oci://ghcr.io/jabbott-iii/grimoire@sha256:<index digest> \
   --bundle-from-oci \
   --repo jabbott-iii/Grimoire \
-  --signer-workflow jabbott-iii/Grimoire/.github/workflows/sign.yml@refs/heads/main \
+  --signer-workflow jabbott-iii/Grimoire/.github/workflows/sign-image.yml@refs/heads/main \
   --source-ref refs/heads/main \
   --deny-self-hosted-runners
 ```
@@ -448,27 +450,29 @@ What each package manager checks on your machine, and what it doesn't, is in [`s
 
 | Pin | Where |
 |---|---|
-| `IMAGE` (`ghcr.io/jabbott-iii/grimoire`) | `release.yml` `env`, `sign.yml` `env`, `security.yml`'s `image-scan` job, and the `IMAGE` constant in `xtask/src/release/image.rs` |
+| `IMAGE` (`ghcr.io/jabbott-iii/grimoire`) | `release.yml` `env`, `sign-image.yml` `env`, `security.yml`'s `image-scan` job, and the `IMAGE` constant in `xtask/src/release/image.rs` |
 | `BUILDX_VERSION`, `BUILDX_SHA256` (the linux-amd64 binary) | `release.yml` `env` |
-| `CRANE_VERSION`, `CRANE_SHA256_X64` | `release.yml` `env`, `sign.yml` `env`, and `security.yml`'s `image-scan` job |
+| `CRANE_VERSION`, `CRANE_SHA256_X64` | `release.yml` `env`, `sign-image.yml` `env`, and `security.yml`'s `image-scan` job |
 | `CRANE_SHA256_ARM64` (`verify-image`'s arm64 runner) | `release.yml` `env` |
 | `GRYPE_VERSION`, `GRYPE_SHA256` (the linux_amd64 tarball) | `release.yml` `env`, and `security.yml`'s `image-scan` job |
 | `BUILDKIT_IMAGE`, `SBOM_SCANNER_IMAGE` (`name:tag@sha256:…`) | `release.yml` `env` |
 | `DISTROLESS_IDENTITY`, `DISTROLESS_ISSUER` (distroless's signer) | `release.yml` `env` |
-| `COSIGN_IDENTITY`, `COSIGN_REPOSITORY`, `COSIGN_REF` (the release signing identity and its caller pins) | `release.yml`'s `publish` job, `sign.yml` `env`, and `security.yml`'s `image-scan` job |
+| `COSIGN_IDENTITY`, `COSIGN_REPOSITORY`, `COSIGN_REF` (a signing identity and its caller pins) | For the release files, `sign.yml`: `release.yml`'s `publish` job and `sign.yml` `env`. For the image, `sign-image.yml`: `sign-image.yml` `env` and `security.yml`'s `image-scan` job |
 | `SHELLCHECK_VERSION`, `SHELLCHECK_SHA256` | `release.yml`'s `verify-linux` job, and `security.yml`'s `workflows` job |
 | cosign (`sigstore/cosign-installer`) and `actions/attest` | `uses:` lines, which Dependabot and `actions.lock` cover |
 
-- **The three workflows must agree.** The xtask test `the_image_pins_agree_across_workflows` (run by `cargo test --workspace`) fails:
-  - when `IMAGE`, `CRANE_VERSION`, `CRANE_SHA256_X64`, `COSIGN_IDENTITY`, `COSIGN_REPOSITORY` or `COSIGN_REF` differ between `release.yml` and `security.yml` or `sign.yml`;
+- **The four workflows must agree.** The xtask test `the_image_pins_agree_across_workflows` (run by `cargo test --workspace`) fails:
+  - when `IMAGE`, `CRANE_VERSION` or `CRANE_SHA256_X64` differ between `release.yml` and `security.yml` or `sign-image.yml`;
+  - when `COSIGN_ISSUER`, `COSIGN_REPOSITORY` or `COSIGN_REF` differ between `release.yml` and `security.yml`, `sign.yml` or `sign-image.yml`;
   - when `GRYPE_VERSION`, `GRYPE_SHA256`, `SHELLCHECK_VERSION` or `SHELLCHECK_SHA256` differ between `release.yml` and `security.yml`;
   - when a file sets one of these keys more than once, or not at all;
-  - when `sign.yml`'s identity isn't `…/sign.yml@refs/heads/main`, its repository `jabbott-iii/Grimoire` or its ref `refs/heads/main`;
+  - when `COSIGN_IDENTITY` isn't `…/sign.yml@refs/heads/main` in `sign.yml` and `release.yml`, or `…/sign-image.yml@refs/heads/main` in `sign-image.yml` and `security.yml`;
+  - when `sign-image.yml`'s repository isn't `jabbott-iii/Grimoire`, its ref `refs/heads/main`, or its `SIGNER_WORKFLOW` `jabbott-iii/Grimoire/.github/workflows/sign-image.yml@refs/heads/main`;
   - when `release.yml`'s `IMAGE` isn't the xtask constant, or `BUILDKIT_IMAGE` or `SBOM_SCANNER_IMAGE` isn't pinned by digest.
 
-  Change the files in one PR. The test passed locally on 2026-11-17.
-- **The identity is also written out in full** where the test doesn't look: `sign.yml`'s `SIGNER_WORKFLOW` and its job guards, the `publish` job's `gh attestation verify` flags and expected Build Config URI, and the tap and bucket sync templates. Change them with the pins.
-- **`.github/scripts/image-tags.sh`** is checked by ShellCheck (the pin above) in `security.yml`'s `workflows` job, and every PR dry-run runs its cases in `verify-image` against a local registry. The release runs the same script, in `publish-image` and `sign.yml`.
+  Change the files in one PR. The test passed locally on 2026-11-18.
+- **The identities are also written out in full** where the test doesn't look: the job guards in both signing workflows, the `publish` job's `gh attestation verify` flags and expected Build Config URI, and the tap and bucket sync templates. Change them with the pins.
+- **`.github/scripts/image-tags.sh`** is checked by ShellCheck (the pin above) in `security.yml`'s `workflows` job, and every PR dry-run runs its cases in `verify-image` against a local registry. The release runs the same script, in `publish-image` and `sign-image.yml`.
 - **Tools.** Date a tool by its GitHub release. Check each new SHA-256 against the release's own checksum file, as for the other CI pins.
 - **Images.** Date BuildKit and the SBOM scanner by their GitHub releases, and resolve the tag to its index digest, for example `crane digest moby/buildkit:v0.34.2` (it printed the pinned `sha256:c5f8862f…` on 2026-11-17). Keep `BUILDKIT_IMAGE` in the form `moby/buildkit:vX.Y.Z@sha256:…`: the builder step checks that the `BuildKit version:` line of `docker buildx inspect` reports the tag's version. The scanner's image tags have no `v`.
 - **Before a cosign upgrade**, check that it still verifies distroless's legacy `.sig` signatures. cosign's version comes with `sigstore/cosign-installer`, which Dependabot bumps. cosign says its new bundle format will become the only supported one, and distroless publishes only the legacy format.

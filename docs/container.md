@@ -29,7 +29,7 @@ Every command here names the image by its index digest, `ghcr.io/jabbott-iii/gri
 - **Defaults:** working directory `/repo`, where you mount a repository; user `65532:65532` (distroless's `nonroot`); no exposed ports and no volumes.
   - The binaries need no shell, git, `/tmp` or `HOME`. Under a uid with no `/etc/passwd` entry, `HOME` is `/`, and no binary reads it.
 - **Tags:** a release tags `X.Y.Z` and moves `latest`, only after the image is signed, attested and verified. Until then the image is in GHCR by digest only, untagged.
-  - The workflow never moves `X.Y.Z` to another digest. It moves `latest` to the new release unless `latest` already names a newer release that carries the release signature, so `latest` never goes back to an older one. An image without that signature never keeps `latest`: the next release moves it.
+  - The workflow never moves `X.Y.Z` to another digest. It moves `latest` to the new release unless `latest` already names a newer version. A newer release that carries the image's release signature (`sign-image.yml`'s) keeps `latest`, so `latest` never goes back to an older one. If the image `latest` names claims a newer version without that signature, the release stops instead, and `latest` stays until the maintainer has looked.
   - As far as GHCR's docs say, its tags are mutable: anyone with write access to the package can move one.
   - **Pin the digest.** The release notes name it. They stay editable after the release is published, so the signature check in §2, not the notes, is what ties a digest to the release.
 - **When it appears:** the image is pushed by digest after the GitHub Release is published, by a job the maintainer approves together with the registry jobs. The next job signs it, and only then tags it. A new GHCR package may stay private until the maintainer makes it public, so a pull can fail for a while after the first release appears.
@@ -40,17 +40,17 @@ Every command here names the image by its index digest, `ghcr.io/jabbott-iii/gri
 
 Verify the index digest before you use it, then use that digest everywhere. Only the index is signed. It names each platform manifest and each BuildKit attestation manifest by digest, so the signature covers them too.
 
-Every signature and attestation of a release is made by `sign.yml`, Grimoire's signing workflow, when `release.yml` on `main` calls it ([ADR-0011](adr/0011-container-image.md), SIGN-P6 in [`specs.md`](specs.md)). No release exists yet, so every release is signed this way.
+The image's signature and attestation are made by `sign-image.yml`, Grimoire's image-signing workflow, when `release.yml` on `main` calls it ([ADR-0011](adr/0011-container-image.md), SIGN-P6 in [`specs.md`](specs.md)). The release files are signed by another workflow, `sign.yml`, under its own identity ([`release.md`](release.md) §5), so don't use the image's commands for them. No release exists yet, so every release is signed this way.
 
 **cosign**, version 3.1.3 or later (the workflows use 3.1.4):
 ```sh
 cosign verify ghcr.io/jabbott-iii/grimoire@sha256:<digest> \
-  --certificate-identity https://github.com/jabbott-iii/Grimoire/.github/workflows/sign.yml@refs/heads/main \
+  --certificate-identity https://github.com/jabbott-iii/Grimoire/.github/workflows/sign-image.yml@refs/heads/main \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   --certificate-github-workflow-repository jabbott-iii/Grimoire \
   --certificate-github-workflow-ref refs/heads/main
 ```
-- **Keep all four flags.** The certificate names the workflow that signed, `sign.yml`. Any repository can call a public reusable workflow and get a certificate with that same name; the caller is recorded in other fields. The last two flags pin the caller: a run of `jabbott-iii/Grimoire` on `refs/heads/main`.
+- **Keep all four flags.** The certificate names the workflow that signed, `sign-image.yml`. Any repository can call a public reusable workflow and get a certificate with that same name; the caller is recorded in other fields. The last two flags pin the caller: a run of `jabbott-iii/Grimoire` on `refs/heads/main`.
 - The identity, the repository and the ref are compared exactly, case included: `Grimoire` there, `grimoire` in the image name.
 - A platform manifest's digest doesn't verify on its own, because only the index is signed. Verify the index and pull by it.
 - The signature names a digest, not a version. The index's `org.opencontainers.image.version` annotation, which the signature covers, says which version it is.
@@ -61,11 +61,11 @@ cosign verify ghcr.io/jabbott-iii/grimoire@sha256:<digest> \
 ```sh
 gh attestation verify oci://ghcr.io/jabbott-iii/grimoire@sha256:<digest> \
   --repo jabbott-iii/Grimoire \
-  --signer-workflow jabbott-iii/Grimoire/.github/workflows/sign.yml@refs/heads/main \
+  --signer-workflow jabbott-iii/Grimoire/.github/workflows/sign-image.yml@refs/heads/main \
   --source-ref refs/heads/main \
   --deny-self-hosted-runners
 ```
-- **Keep every flag.** `--repo` alone accepts an attestation from any workflow and ref of the repository. `--signer-workflow` requires `sign.yml` at `refs/heads/main` (without the ref, gh would also accept `sign.yml` at any tag or commit, which any repository can call), `--source-ref` a run on `refs/heads/main`, and `--deny-self-hosted-runners` a GitHub-hosted runner.
+- **Keep every flag.** `--repo` alone accepts an attestation from any workflow and ref of the repository. `--signer-workflow` requires `sign-image.yml` at `refs/heads/main` (without the ref, gh would also accept `sign-image.yml` at any tag or commit, which any repository can call), `--source-ref` a run on `refs/heads/main`, and `--deny-self-hosted-runners` a GitHub-hosted runner.
 - **Pin what no flag does**, especially with `--bundle-from-oci`, where gh compares names only: add `--format json` and check the caller's workflow file and the repository and owner IDs. The release workflow runs this same check.
   ```sh
   … --format json | jq -e 'length > 0 and all(.[]; .verificationResult.signature.certificate
@@ -75,8 +75,8 @@ gh attestation verify oci://ghcr.io/jabbott-iii/grimoire@sha256:<digest> \
 - `--signer-workflow` and `--source-ref` are case-sensitive, so type `Grimoire` with the capital.
 - gh must be signed in. Its help says the `oci://` form also needs a registry login.
 - Add `--bundle-from-oci` to read the copy in GHCR, next to the image, instead of the one stored on the repository. gh then checks only the names recorded in the certificate.
-- This attestation is SLSA v1 provenance made by `actions/attest` v4.2.2. It is stored on the repository and also pushed next to the image. Its `runDetails.builder.id` names `sign.yml`, and `externalParameters.workflow.path` names the caller, `.github/workflows/release.yml`.
-- `sign.yml` runs this command with `--bundle-from-oci`, and the cosign command above, before it tags the image. Neither has run on GitHub yet.
+- This attestation is SLSA v1 provenance made by `actions/attest` v4.2.2. It is stored on the repository and also pushed next to the image. Its `runDetails.builder.id` names `sign-image.yml`, and `externalParameters.workflow.path` names the caller, `.github/workflows/release.yml`.
+- `sign-image.yml` runs this command with `--bundle-from-oci`, and the cosign command above, before it tags the image. Neither has run on GitHub yet.
 
 **SBOM and provenance in the image.** BuildKit adds one attestation manifest per platform to the index, listed with platform `unknown/unknown`. Each holds:
 - an SPDX 2.3 SBOM, written by `docker/buildkit-syft-scanner` 1.12.1 (syft v1.51.0);
@@ -85,7 +85,7 @@ gh attestation verify oci://ghcr.io/jabbott-iii/grimoire@sha256:<digest> \
 To read them, for example: `docker buildx imagetools inspect ghcr.io/jabbott-iii/grimoire@sha256:<digest> --format '{{ json .SBOM }}'`, or `'{{ json .Provenance }}'`. Whether these fields work without a local builder is UNVERIFIED. The CycloneDX SBOM of each release archive ([`release.md`](release.md) §5) describes the same binaries.
 
 **`sha256-*` tags.** GHCR has no OCI referrers API. So the signature and the provenance attestation are listed in an index tagged `sha256-<index hex>`, and each BuildKit attestation manifest adds a `sha256-<platform hex>` tag. The package page shows them as ordinary tags.
-- Before it tags the version, `sign.yml` checks that `sha256-<index hex>` lists both a cosign signature bundle and a SLSA provenance bundle. `cosign verify` alone can't show that, because it falls back silently to legacy signatures.
+- Before it tags the version, `sign-image.yml` checks that `sha256-<index hex>` lists both a cosign signature bundle and a SLSA provenance bundle. `cosign verify` alone can't show that, because it falls back silently to legacy signatures.
 - Never delete these tags. Deleting one removes what it lists, and verification then fails.
 
 ## 3. Running the CLI on a repository
@@ -305,7 +305,7 @@ git diff --cached | docker run -i --rm --init --network none --read-only --cap-d
   - The arm64 image was built and scanned, but not run: there is no emulation here.
 - **In CI** (written, not yet run): every pull request and release run pulls the image on `ubuntu-24.04` (linux/amd64) and `ubuntu-24.04-arm` (linux/arm64), whose Docker 28.0.4 is rootful. It pulls from a local registry that, like GHCR, has no referrers API.
   - It runs every binary's `--version`; the CLI on a mounted repository with `--init` and `--user`, then checks who owns the files; and an MCP `initialize` over stdio.
-  - Pull requests also sign the image with a throwaway key and verify it, offline. Then they run the release's tag script against the local registry: a push and a tag, each twice; a version tag that names another digest, refused by push and by tag; a registry that can't be read, refused; `latest` moved off an unsigned image, and kept on a newer signed release.
+  - Pull requests also sign the image with a throwaway key and verify it, offline. Then they run the release's tag script against the local registry: a push and a tag, each twice; a version tag that names another digest, refused by push and by tag; a registry that can't be read, refused; `latest` moved off an unsigned image that claims no newer version, refused for an unsigned image that claims a newer one, and kept on a newer signed release.
   - Every Monday, `security.yml` verifies the latest release's image signature and scans every platform again with the same Grype gate.
 - **The gate:** any medium, high or critical match fails the build, fixed or not. A finding with no fix blocks until it has an ignore rule with a reason in [`.grype.yaml`](../.grype.yaml).
 - **What the scan can't see:** Grype finds Rust crates through the cargo-auditable data in each binary, and the workflow fails if a binary shows none. cargo-auditable doesn't record statically linked C code, which by inference includes musl's libc.
