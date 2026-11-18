@@ -56,7 +56,7 @@ grimoire init [--client <CLIENT>]...
 
 Creates `grimoire.toml` in the project root for the clients you give, or for the clients the project already uses. The new file holds two comment lines, `format = 1`, the `clients` list and an empty `[assets]` table. `init` never overwrites an existing `grimoire.toml`.
 
-Without `--client`, `init` detects each client from files or folders that are already there. A symbolic link counts. If it finds none, it stops with a usage error that lists the clients.
+Without `--client`, `init` detects each client from files or folders that are already there. It looks only through the project root and follows no symbolic link: a symbolic link at one of these names counts, even a broken one, but a name inside a linked folder doesn't, so with `.github` a symbolic link, `copilot` isn't detected. If it finds none, it stops with a usage error that lists the clients.
 
 | Client | Detected from |
 |---|---|
@@ -71,7 +71,7 @@ Without `--client`, `init` detects each client from files or folders that are al
 |---|---|
 | `--client <CLIENT>` | A client to render for. Repeat it for more than one. One of `claude-code`, `agents-md`, `codex`, `cursor`, `gemini-cli` or `copilot`. With it, nothing is detected. |
 
-- **Reads:** `grimoire.toml`, to check that it isn't there, and the files in the table above.
+- **Reads:** `grimoire.toml`, to check that it isn't there. Of the files in the table above it checks only whether each one exists, and reads none of them.
 - **Writes:** `grimoire.toml`.
 - **Exit codes:** 0 when written; 2 when no client is given or detected (`init/no-client`), or for an unknown client; 3 when `grimoire.toml` already exists (`init/exists`); 1, 4 or 6 for a filesystem problem ([Exit codes](#exit-codes)).
 - **JSON result:** `config` (`"grimoire.toml"`), `clients` (the client ids written, each once) and `detected` (`true` when the clients were detected).
@@ -82,7 +82,7 @@ Without `--client`, `init` detects each client from files or folders that are al
 grimoire list [QUERY] [--kind <KIND>] [--tag <TAG>] [--client <CLIENT>] [--maturity <MATURITY>]
 ```
 
-Lists this grimoire's catalog, one entry per line: id, kind, version, maturity and summary. Assets come first, then bundles, each in id order. A bundle shows `bundle` as its kind and no maturity. When nothing matches, `list` prints a note on stderr and exits 0.
+Lists this grimoire's catalog, one entry per line, in columns: id, kind, version, maturity and summary. Each column but the summary is as wide as its longest value among the entries shown, with two spaces between columns, so the layout changes with the filters; scripts should use `--json`. Assets come first, then bundles, each in id order. A bundle shows `bundle` as its kind and no maturity; when only bundles are listed, the maturity column is left out. When nothing matches, `list` prints a note on stderr and exits 0.
 
 | Argument or option | Meaning |
 |---|---|
@@ -209,7 +209,7 @@ A file Grimoire can't edit safely, such as one with broken block markers or inva
 
 | Argument or option | Meaning |
 |---|---|
-| `--check` | Exit 5 if applying would change any file or `grimoire.lock`. For CI. |
+| `--check` | Exit 5 if applying would change any file, or create or change `grimoire.lock`. A project without a lock gets one from its first `apply`, even when nothing is selected, so `--check` fails until then. For CI. |
 
 - **Reads:** `grimoire.toml`, `grimoire.lock`, the catalog, every file the plan involves, and `PATH` ([Environment](#environment)).
 - **Writes:** nothing.
@@ -217,7 +217,7 @@ A file Grimoire can't edit safely, such as one with broken block markers or inva
   - A grimoire whose catalog has another version of a locked asset, or a changed manifest, stops with exit 3 and names `grimoire update <id>` (`resolve/locked-version-unavailable`, `resolve/locked-manifest-changed`).
 - **JSON result:**
   - `summary`: counts of units, under `create`, `update`, `delete`, `conflict` (files Grimoire can't edit included), `unchanged` and `record-only` (`adopt` and `forget`);
-  - `lock-changes`: whether `grimoire.lock` would change;
+  - `lock-changes`: whether `apply` would write `grimoire.lock`, creating it or changing it;
   - `files`: one object per file, with `path`; `unreadable` (why Grimoire can't edit the file, or `null`); `changes` (whether the file on disk would change); `diff` (a unified diff, or `null`); and `units`.
   - Each unit has `owner` (the asset id, or `grimoire` for Grimoire's own blocks), `unit` (`file`, `block` or `entry`), `key` (the entry's key, or `null`), `clients`, `action` (from the table above) and `reason` (for `conflict`, `adopt` and `forget`; otherwise `null`).
 
@@ -232,8 +232,8 @@ Makes the managed content on disk match `grimoire.toml` and `grimoire.lock`, as 
 - It edits only the units it owns: whole files, blocks between `<!-- grimoire:begin <id> -->` and `<!-- grimoire:end <id> -->`, and single entries in JSON or TOML files. Text and keys outside them stay as they are.
 - It writes each file atomically: a temporary file in the same directory, synced, then renamed over the target. Just before writing a file, it reads it again; if the file changed since the plan, it stops (`apply/changed`, exit 4).
 - It deletes a file it owns whole when the file is no longer wanted. It deletes a shared file, one with blocks or entries, only if it created the file, or adopted it when it held nothing else, and nothing else is left in it. Content it adopted, or overwrote with `--force`, counts as its own ([`configuration.md`](configuration.md) §5). After deleting a file, it removes the directories above it that are now empty.
-- It writes `grimoire.lock` last, and only when the lock changes. A second `apply` writes nothing.
-- If an error stops it partway, `grimoire.lock` records the files already written, so running it again continues from there.
+- It writes `grimoire.lock` last, and only when the lock changes. The first `apply` creates it even when nothing is selected, so `verify` has a lock to check. A second `apply` writes nothing.
+- If an error stops it partway, `grimoire.lock` records the files already written, so running it again continues from there, unless writing `grimoire.lock` itself failed.
 
 | Argument or option | Meaning |
 |---|---|
@@ -243,7 +243,7 @@ Makes the managed content on disk match `grimoire.toml` and `grimoire.lock`, as 
 - **Reads:** what `plan` reads.
 - **Writes:** the managed files, `<path>.new` files with `--write-new`, and `grimoire.lock`.
 - **Exit codes:** 0; 2 for `--force` with `--write-new`, or another usage error; 3 as for `plan`; 4 for a conflict (`apply/conflict`), conflicts left by `--write-new` (`apply/conflict-remains`), an existing `<path>.new` (`apply/sidecar-exists`), a file changed while it ran (`apply/changed`), or something in the way (`fs/in-the-way`); 1 for an I/O error; 6 when refused for safety.
-- **JSON result:** `files`, one object per file written, deleted or left alone, with `path`, `outcome` (`wrote`, `deleted`, `wrote-new`, or `skipped` for a conflicting file with nothing to write beside it) and `new-file` (the `<path>.new` written, or `null`); and `lock-written` (whether `grimoire.lock` was written). The result is `null` when `apply` stops before writing anything.
+- **JSON result:** `files`, one object per file written, deleted or left alone, with `path`, `outcome` (`wrote`, `deleted`, `wrote-new`, or `skipped` for a conflicting file with nothing to write beside it) and `new-file` (the `<path>.new` written, or `null`); and `lock-written` (whether `grimoire.lock` was written). The result is `null` when `apply` stops before writing anything, and also when `grimoire.lock` can't be written after files were changed.
 
 ## grimoire update
 
@@ -288,17 +288,24 @@ Checks every output that `grimoire.lock` records against the file on disk, by ha
 grimoire uninstall [--purge] [--force]
 ```
 
-Removes every unit that `grimoire.lock` records, as `apply` would with nothing selected, then deletes `grimoire.lock`. Your own text and keys in shared files stay. Without a lock there is nothing to remove, and `uninstall` exits 0.
+Removes every unit that `grimoire.lock` records, as `apply` would with nothing selected, then deletes `grimoire.lock`. Your own text and keys in shared files stay. Without a lock there is no managed content to remove, and `uninstall` exits 0; `--purge` still deletes `grimoire.toml`.
 
 | Argument or option | Meaning |
 |---|---|
-| `--purge` | Also delete `grimoire.toml`. |
+| `--purge` | Also delete `grimoire.toml`, if there is one. It is checked before anything is removed, so a symbolic link, a special file or a directory in its place stops `uninstall` with nothing removed. |
 | `--force` | Remove managed content even where it was edited. Without it, edited content is a conflict and nothing is removed (exit 4). |
 
-- **Reads:** `grimoire.lock` and the files it records. It needs neither `grimoire.toml` nor the catalog.
-- **Writes:** removes Grimoire's units, deleting files as `apply` does, then deletes `grimoire.lock` and, with `--purge`, `grimoire.toml`.
-- **Exit codes:** 0; 2 for a usage error; 3 when `grimoire.lock` is invalid; 4 for a conflict; 1 or 6 for a filesystem problem.
-- **JSON result:** `purged` (whether `--purge` was given). It doesn't list the files.
+- **Reads:** `grimoire.lock` and the files it records, and with `--purge` whether `grimoire.toml` is there (not its content). It needs neither `grimoire.toml` nor the catalog.
+- **Writes:** removes Grimoire's units, deleting files as `apply` does, then deletes `grimoire.lock` and, with `--purge`, `grimoire.toml` if there is one.
+- **Exit codes:** 0; 2 for a usage error; 3 when `grimoire.lock` is invalid; 4 for a conflict, a file that changed while it ran (`apply/changed`), or something in the way (`fs/in-the-way`), such as a directory at `grimoire.lock` or, with `--purge`, at `grimoire.toml`; 6 when refused for safety (`fs/refused`), such as a symbolic link or special file at or above `grimoire.lock`, a recorded file or, with `--purge`, `grimoire.toml`; 1 for an I/O error. A conflict, or a problem found while planning or while checking `grimoire.toml`, stops it with nothing removed. A refusal or an error while removing, or a changed file, can stop it partway, as for `apply`: `grimoire.lock`, if it is still there, records what is left, and running `uninstall` again continues from there.
+- **JSON result:** `files` and `lock-written`, as for `apply`, and `lock-removed`, `config-removed` and `purged`:
+  - `files` lists each file `uninstall` changed, with `outcome` `deleted`, or `wrote` for a shared file that keeps your own content. It doesn't include `grimoire.lock` or `grimoire.toml`. Without a lock it is empty.
+  - `lock-written`: whether the emptied `grimoire.lock` was written before `uninstall` deleted it (`false` without a lock).
+  - `lock-removed`: whether a `grimoire.lock` was deleted.
+  - `config-removed`: whether a `grimoire.toml` was deleted, which is `false` without `--purge` or when there was none.
+  - `purged`: whether `--purge` was given.
+
+  The result is `null` when `uninstall` stops before removing anything, or when the emptied `grimoire.lock` can't be written. It has only `files` and `lock-written` when it stops partway after that.
 
 ## grimoire doctor
 
@@ -312,9 +319,9 @@ Reports on the project and the environment, one check per line, each marked `ok`
 |---|---|---|
 | `catalog` | The number of assets and bundles in this grimoire. | Never. |
 | `grimoire.toml` | Whether it is valid. | It is missing or invalid. |
-| `grimoire.lock` | Whether it is valid, or not created yet. | It is invalid. |
-| `client <id>` | For each client in `grimoire.toml`: the outputs installed for it, and what the client needs before it reads them, which Grimoire can't check, such as trusting the project (Codex, Gemini CLI, Copilot) or approving each project MCP server (Cursor). | Never. |
-| `plan` | The number of pending changes. | `grimoire.toml` doesn't resolve, the plan can't be made (something in the way or refused, or an I/O error), or a conflict would stop `apply`. Pending changes alone don't fail. |
+| `grimoire.lock` | Whether it is valid, or not created yet. | It can't be read or is invalid. |
+| `client <id>` | For each client in `grimoire.toml`: the outputs installed for it (unknown when `grimoire.lock` can't be read or is invalid), and what the client needs before it reads them, which Grimoire can't check, such as trusting the project (Codex, Gemini CLI, Copilot) or approving each project MCP server (Cursor). | Never. |
+| `plan` | The number of pending changes, and whether `grimoire.lock` would be created or updated. | `grimoire.lock` can't be read or is invalid (nothing is planned then, and its diagnostics are reported once), `grimoire.toml` doesn't resolve, the plan can't be made (something in the way or refused, or an I/O error), or a conflict would stop `apply`. Pending changes alone don't fail. |
 | `copilot cloud agent` | Shown when an MCP server is installed for `copilot`: the JSON to paste into the repository's Copilot MCP settings. | Never. |
 | `outputs` | How many locked outputs differ from disk, as `verify` checks. | Any differ. |
 | `binary <name>` | For each locked tool or MCP server, whether its binary is on `PATH`. A server configured over Streamable HTTP needs none. | The binary isn't found. |

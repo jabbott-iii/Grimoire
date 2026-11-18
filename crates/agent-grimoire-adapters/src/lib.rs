@@ -29,6 +29,15 @@ use agent_grimoire_model::{
 use agent_grimoire_resolve::{Resolution, Resolved};
 
 /// The clients this build can render for.
+///
+/// While this is every client, `init/client-unavailable` and
+/// `resolve/client-unavailable` are never raised; the resolve crate's tests raise
+/// the second with a narrower set. Narrowing this again, for a client the model
+/// knows before its adapter exists, means updating those two codes' rows in
+/// `docs/diagnostics.md`, `init`'s exit codes in `docs/cli.md` and
+/// `docs/architecture.md` §9.1, deciding whether `init`'s detection should look
+/// only at these clients, and testing both codes end to end in
+/// `crates/agent-grimoire/tests/cli.rs`.
 pub const AVAILABLE: [ClientId; 6] = ClientId::ALL;
 
 /// What adapters produce for a whole project.

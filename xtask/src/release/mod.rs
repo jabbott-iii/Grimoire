@@ -134,7 +134,7 @@ pub(crate) fn run(root: &Path, command: Command) -> Result<ExitCode, String> {
             let release = meta::load(root)?;
             plan::check_limits(&release)?;
             let tag = release.tag();
-            let mut mode = plan::mode(&event, &git_ref, releases_enabled.trim(), || {
+            let mode = plan::mode(&event, &git_ref, releases_enabled.trim(), || {
                 plan::remote_tag_exists(root, &tag)
             })?;
             // A release needs its CHANGELOG.md section, which the merged release PR adds.
@@ -150,12 +150,12 @@ pub(crate) fn run(root: &Path, command: Command) -> Result<ExitCode, String> {
                 }
             }
             plan::check_markers(mode, has_section, &marked)?;
-            if mode == plan::Mode::Release && !has_section {
+            let (mode, waits) = plan::settle(root, mode, has_section, &release.version)?;
+            if waits {
                 println!(
                     "::warning::CHANGELOG.md has no section for {}; release mode waits for the release PR, so this run is a dry-run",
                     release.version
                 );
-                mode = plan::Mode::DryRun;
             }
             let text = plan::outputs(&release, mode);
             print!("{text}");

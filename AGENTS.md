@@ -57,7 +57,7 @@ cargo xtask gen-marketplace --check
 cargo xtask new <kind> <id> --maintainer <login>   # scaffold an asset
 # Release pipeline (ADR-0009). These build and check locally; none of them publishes anything.
 # CI runs them as `cargo --locked xtask …`, so a stale Cargo.lock fails instead of being rewritten.
-cargo xtask release plan --event <event> --ref <ref>   # the mode (dry-run, release or skip), version, targets and archive names for a release.yml run; fails past GitHub's matrix and asset limits
+cargo xtask release plan --event <event> --ref <ref>   # the mode (dry-run, release or skip), version, targets and archive names for a release.yml run; fails past GitHub's matrix and asset limits, and in release mode on a stale catalog.pack or an asset that needs a newer grimoire
 cargo xtask release build --target <triple> --out dist # build (one cargo auditable build per package), smoke-test and archive the CLI and every asset binary for one target
 cargo xtask release sbom --dist dist                   # a CycloneDX 1.6 SBOM per archive
 cargo xtask release channels --dist dist --work work   # npm packages, wheels, Homebrew formula, Scoop and winget manifests, install scripts

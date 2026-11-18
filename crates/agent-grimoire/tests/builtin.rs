@@ -95,6 +95,28 @@ fn the_catalog_holds_one_exemplar_per_kind_and_two_bundles() {
     assert_eq!(bundles, ["rust-cli", "security-baseline"]);
 }
 
+/// An asset's `min-cli-version` is at most the workspace version, so the CLI that
+/// embeds the asset can install it (`docs/versioning.md` §4). Between releases
+/// that version is the last release's, and on the release PR it is the one being
+/// released. `cargo xtask release plan` checks the release itself.
+#[test]
+fn no_embedded_asset_needs_a_newer_grimoire() {
+    let source = Source::builtin().unwrap();
+    let cli = Version::parse(env!("CARGO_PKG_VERSION")).unwrap();
+    let newer: Vec<String> = source
+        .assets()
+        .values()
+        .map(|a| &a.manifest)
+        .filter(|m| cli < m.min_cli_version)
+        .map(|m| format!("{} (min-cli-version {})", m.id, m.min_cli_version))
+        .collect();
+    assert!(
+        newer.is_empty(),
+        "grimoire {cli} would refuse {} with resolve/cli-too-old; an asset that needs an unreleased CLI feature lands after the release that ships it",
+        newer.join(", ")
+    );
+}
+
 #[test]
 fn every_exemplar_installs_verifies_and_uninstalls() {
     let source = Source::builtin().unwrap();

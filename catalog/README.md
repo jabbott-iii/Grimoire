@@ -73,6 +73,7 @@ Start a new asset with `cargo xtask new <kind> <id> --maintainer <login>` (or `c
 - **Rules declare no permissions**, and must not duplicate another rule.
 - **Version bumps.** Any change to an installed or built file needs a version bump and a CHANGELOG entry. `README.md`, `CHANGELOG.md`, `evals/` and `tests/` are exempt.
 - **Removing an asset** is allowed only if it was already `maturity = "deprecated"` (with a named `replacement`) at the comparison base: on `main` for a pull request, or at the previous tip for a push. Deprecate it in an earlier change first. The policy in [`docs/versioning.md`](../docs/versioning.md) also keeps a deprecated asset, with its replacement, in at least one CLI release before removal. `cargo xtask validate` can't check that, so review does.
+- **`min-cli-version` is at most the workspace version.** It names the oldest grimoire that can install the asset. `cargo xtask validate` doesn't check it: `cargo test -p agent-grimoire --test builtin` does, and CI runs it. It installs every embedded asset with the workspace's own version and fails with `resolve/cli-too-old` when one needs a newer grimoire. An asset that needs a CLI feature that isn't released yet lands after the release that ships the feature, with that release's version ([`docs/versioning.md`](../docs/versioning.md) §4).
 - **Versions** are SemVer without build metadata (`1.2.3`, `1.2.3-rc.1`). The ids `synced` and `grimoire` are reserved, as are the prefixes above. MCP servers can't be named `workspace` or `computer-use`, which Claude Code reserves for built-in servers.
 - **An MCP server started with no arguments speaks stdio.** That is how clients are configured to start it.
 - **MCP servers serve through `agent-grimoire-mcp`**, which holds the transport, limit and authorization defaults ([ADR-0007](../docs/adr/0007-mcp-server-authorization.md)).
@@ -80,6 +81,6 @@ Start a new asset with `cargo xtask new <kind> <id> --maintainer <login>` (or `c
   - A test must call `agent_grimoire_mcp::testing::declared_tools_match`, so the declared tools stay true.
   - These source checks are plain text searches. Review still decides.
 - **Asset crates stand alone.** No dependency on Grimoire's core crates, no `path` or `git` dependency except on `agent-grimoire-mcp`, and no `Cargo.toml` below the asset's own.
-- **The catalog is embedded in the binary.** After changing anything here, run `cargo xtask pack-catalog`; CI fails if the pack is stale.
+- **The catalog is embedded in the binary.** After changing anything here, run `cargo xtask pack-catalog`; CI fails if the pack is stale, and so does a release.
 - **The Claude Code marketplace is generated from it.** Skills, agents and MCP servers that support `claude-code` become plugins under `plugins/claude-code/`, and bundles become plugins that depend on them. After changing anything here, run `cargo xtask gen-marketplace`; CI fails if it is stale and runs `claude plugin validate --strict` on every plugin.
 - **No symlinks**, and no files over 1 MiB. Every path must be portable across Linux, macOS and Windows: ASCII only, no Windows reserved names, and no two paths that differ only in letter case.

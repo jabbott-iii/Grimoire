@@ -91,7 +91,7 @@ pub(crate) fn prepare(
 /// Codex reads `AGENTS.override.md` instead of `AGENTS.md` in a directory that
 /// has both, even an empty one (`CODEX-P4`).
 fn codex_override(out: &mut Out<'_, '_>, project: &Project) {
-    if std::fs::symlink_metadata(project.dir.join(CODEX_OVERRIDE)).is_ok() {
+    if project.exists(CODEX_OVERRIDE) {
         out.diag(Diagnostic::warning(
             "plan/codex-override",
             format!("{CODEX_OVERRIDE} exists, so Codex reads it instead of AGENTS.md and none of the rules grimoire writes there"),
@@ -300,9 +300,7 @@ impl Summary {
 pub(crate) fn show(out: &mut Out<'_, '_>, planned: &Planned, diffs: bool) -> Result<bool, Exit> {
     let next = planned.next(&BTreeSet::new());
     let next_text = project::render_lock(out, &next)?;
-    let old_text = planned.old_text.as_ref().map(|t| t.replace("\r\n", "\n"));
-    let lock_changes = old_text.as_deref() != Some(next_text.as_str())
-        && !(planned.old_text.is_none() && next.assets.is_empty() && next.outputs.is_empty());
+    let lock_changes = project::lock_differs(planned.old_text.as_deref(), &next_text);
     let mut files = Vec::new();
     for file in &planned.plan.files {
         let mut units = Vec::new();
@@ -354,7 +352,11 @@ pub(crate) fn show(out: &mut Out<'_, '_>, planned: &Planned, diffs: bool) -> Res
     let summary = Summary::of(&planned.plan);
     out.line(format!("plan: {}", summary.text()));
     if lock_changes && !planned.plan.has_changes() {
-        out.line("plan: grimoire.lock would be updated");
+        out.line(if planned.old_text.is_none() {
+            "plan: grimoire.lock would be created"
+        } else {
+            "plan: grimoire.lock would be updated"
+        });
     }
     if diffs && !out.json {
         for file in &planned.plan.files {
@@ -472,14 +474,13 @@ pub(crate) fn run_apply(
         };
     }
     let changed = report.files.len();
-    out.line(format!(
-        "apply: {changed} files changed{}",
-        if wrote_lock {
-            ", grimoire.lock updated"
-        } else {
-            ""
-        }
-    ));
+    // `uninstall` reports the lock itself, once it has deleted it.
+    let lock_note = match (wrote_lock, caller, planned.old_text.is_some()) {
+        (false, _, _) | (true, Caller::Uninstall, _) => "",
+        (true, _, false) => ", grimoire.lock created",
+        (true, _, true) => ", grimoire.lock updated",
+    };
+    out.line(format!("apply: {changed} files changed{lock_note}"));
     if deferred.is_empty() {
         Exit::Ok
     } else {

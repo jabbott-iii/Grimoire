@@ -339,7 +339,7 @@ fn identical_existing_content_is_adopted_after_an_interrupted_apply() {
     assert!(
         apply
             .stdout
-            .contains("0 files changed, grimoire.lock updated"),
+            .contains("0 files changed, grimoire.lock created"),
         "{}",
         apply.stdout
     );
@@ -762,6 +762,135 @@ fn symlinks_are_refused() {
 }
 
 #[test]
+fn list_aligns_its_columns() {
+    let long = format!("long-{}", "x".repeat(59));
+    let c = catalog();
+    c.rule(&long, "1.0.0-alpha.12345", &[], "# Long\n\nA long id.\n");
+    let source = c.source();
+    let p = Project::new();
+    let text = |v: &serde_json::Value| v.as_str().unwrap().to_owned();
+    // Widths come from the entries shown, so a filter changes them.
+    for args in [&["list"][..], &["list", "--kind", "skill"][..]] {
+        let human = grimoire(&source, &p, args).ok().stdout;
+        let json = grimoire(&source, &p, &[&["--json"][..], args].concat())
+            .ok()
+            .json();
+        let mut rows: Vec<[String; 5]> = Vec::new();
+        for a in json["result"]["assets"].as_array().unwrap() {
+            rows.push(["id", "kind", "version", "maturity", "summary"].map(|k| text(&a[k])));
+        }
+        for b in json["result"]["bundles"].as_array().unwrap() {
+            rows.push([
+                text(&b["id"]),
+                "bundle".to_owned(),
+                text(&b["version"]),
+                String::new(),
+                text(&b["summary"]),
+            ]);
+        }
+        assert_eq!(
+            rows.iter().any(|r| r[0] == long),
+            args.len() == 1,
+            "{human}"
+        );
+        let width = |i: usize| rows.iter().map(|r| r[i].len()).max().unwrap();
+        let lines: Vec<&str> = human.lines().collect();
+        assert_eq!(lines.len(), rows.len(), "{human}");
+        for (line, row) in lines.iter().zip(&rows) {
+            let mut expected = String::new();
+            for (i, cell) in row.iter().take(4).enumerate() {
+                write!(expected, "{cell:<w$}  ", w = width(i)).unwrap();
+            }
+            expected.push_str(&row[4]);
+            assert_eq!(*line, expected.trim_end(), "{human}");
+        }
+    }
+}
+
+fn codes(json: &serde_json::Value) -> Vec<String> {
+    json["diagnostics"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|d| d["code"].as_str().unwrap().to_owned())
+        .collect()
+}
+
+#[cfg(unix)]
+#[test]
+fn client_detection_follows_no_symbolic_link() {
+    use std::os::unix::fs::symlink;
+    let source = catalog().source();
+
+    // Copilot's files inside a linked `.github`, outside the project or inside it.
+    for inside in [false, true] {
+        let outside = tempfile::tempdir().unwrap();
+        let p = Project::new();
+        let target = if inside {
+            p.path("docs/gh")
+        } else {
+            outside.path().join("gh")
+        };
+        std::fs::create_dir_all(target.join("agents")).unwrap();
+        std::fs::write(target.join("copilot-instructions.md"), "theirs\n").unwrap();
+        symlink(&target, p.path(".github")).unwrap();
+        let init = grimoire(&source, &p, &["--json", "init"]);
+        assert_eq!(init.exit, Exit::Usage, "{}", init.stdout);
+        assert_eq!(codes(&init.json()), ["init/no-client"]);
+
+        grimoire(&source, &p, &["init", "--client", "copilot"]).ok();
+        let doctor = grimoire(&source, &p, &["--json", "doctor"]).ok().json();
+        let client = doctor["result"]["checks"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|c| c["name"] == "client copilot")
+            .unwrap()
+            .clone();
+        assert!(
+            client["detail"]
+                .as_str()
+                .unwrap()
+                .starts_with("no files yet"),
+            "{client}"
+        );
+    }
+
+    // A link at a client's file itself counts, even a broken one, and so does a
+    // linked folder inside a real `.github`.
+    let p = Project::new();
+    symlink("/nonexistent-target", p.path("CLAUDE.md")).unwrap();
+    let init = grimoire(&source, &p, &["--json", "init"]).ok().json();
+    assert_eq!(
+        init["result"]["clients"],
+        serde_json::json!(["claude-code"])
+    );
+    let p = Project::new();
+    let outside = tempfile::tempdir().unwrap();
+    std::fs::create_dir(p.path(".github")).unwrap();
+    symlink(outside.path(), p.path(".github/agents")).unwrap();
+    let init = grimoire(&source, &p, &["--json", "init"]).ok().json();
+    assert_eq!(init["result"]["clients"], serde_json::json!(["copilot"]));
+
+    // A broken `AGENTS.override.md` link still warns, as Codex follows it.
+    let p = Project::new();
+    symlink("/nonexistent-target", p.path("AGENTS.override.md")).unwrap();
+    grimoire(&source, &p, &["init", "--client", "codex"]).ok();
+    let plan = grimoire(&source, &p, &["--json", "plan"]).ok().json();
+    assert_eq!(codes(&plan), ["plan/codex-override"]);
+}
+
+#[test]
+fn a_file_where_a_client_folder_would_be_is_no_client() {
+    let source = catalog().source();
+    let p = Project::new();
+    p.write(".github", "a file\n");
+    let init = grimoire(&source, &p, &["--json", "init"]);
+    assert_eq!(init.exit, Exit::Usage, "{}", init.stdout);
+    assert_eq!(codes(&init.json()), ["init/no-client"]);
+}
+
+#[test]
 fn broken_shared_files_are_refused_even_with_force() {
     let source = catalog().source();
     let p = Project::new();
@@ -1094,6 +1223,128 @@ fn doctor_fails_when_the_project_does_not_resolve() {
 }
 
 #[test]
+fn doctor_reports_a_broken_lock_once() {
+    let source = catalog().source();
+    let p = Project::new();
+    grimoire(&source, &p, &["init", "--client", "agents-md"]).ok();
+    grimoire(&source, &p, &["add", "commit-style", "--apply"]).ok();
+    let good = p.read("grimoire.lock");
+    let unmanaged = good.replacen("path = \"AGENTS.md\"", "path = \".git/HEAD\"", 1);
+    assert_ne!(unmanaged, good);
+    let broken: [(&[u8], &str); 5] = [
+        (b"format = [", "project/lock-parse"),
+        (b"format = 1\nsurprise = true\n", "project/lock-parse"),
+        (b"format = 99\n", "project/lock-parse"),
+        (unmanaged.as_bytes(), "project/lock-path"),
+        (&[0xff, 0xfe], "project/encoding"),
+    ];
+    for (lock, code) in broken {
+        p.write("grimoire.lock", lock);
+        let doctor = grimoire(&source, &p, &["--json", "doctor"]);
+        assert_eq!(doctor.exit, Exit::Check, "{code}");
+        let json = doctor.json();
+        assert_eq!(codes(&json), [code, "doctor/problems"]);
+        let failed: Vec<&str> = json["result"]["checks"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|c| c["ok"] == false)
+            .map(|c| c["name"].as_str().unwrap())
+            .collect();
+        assert_eq!(failed, ["grimoire.lock", "plan"], "{code}");
+        let client = json["result"]["checks"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|c| c["name"] == "client agents-md")
+            .map(|c| c["detail"].as_str().unwrap().to_owned())
+            .unwrap();
+        assert!(client.starts_with("outputs unknown"), "{client}");
+        let human = grimoire(&source, &p, &["doctor"]);
+        assert_eq!(human.stderr.matches(code).count(), 1, "{}", human.stderr);
+    }
+    p.write("grimoire.lock", &good);
+    p.write("grimoire.toml", "format = 99\n");
+    let json = grimoire(&source, &p, &["--json", "doctor"]).json();
+    assert_eq!(codes(&json), ["project/config-parse", "doctor/problems"]);
+}
+
+#[test]
+fn an_empty_project_gets_its_lock_from_the_first_apply() {
+    let source = catalog().source();
+    let p = Project::new();
+    grimoire(&source, &p, &["init", "--client", "agents-md"]).ok();
+    let check = grimoire(&source, &p, &["--json", "plan", "--check"]);
+    assert_eq!(check.exit, Exit::Check);
+    let json = check.json();
+    assert_eq!(json["result"]["lock-changes"], true);
+    assert_eq!(codes(&json), ["plan/changes"]);
+    let plan = grimoire(&source, &p, &["plan"]).ok();
+    assert!(
+        plan.stdout.contains("grimoire.lock would be created"),
+        "{}",
+        plan.stdout
+    );
+    let verify = grimoire(&source, &p, &["--json", "verify"]);
+    assert_eq!(verify.exit, Exit::Invalid);
+    assert_eq!(codes(&verify.json()), ["verify/no-lock"]);
+    let doctor = grimoire(&source, &p, &["--json", "doctor"]).ok().json();
+    let plan_check = doctor["result"]["checks"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|c| c["name"] == "plan")
+        .map(|c| c["detail"].as_str().unwrap().to_owned())
+        .unwrap();
+    assert_eq!(
+        plan_check,
+        "0 pending changes; grimoire.lock would be created"
+    );
+    let human = grimoire(&source, &p, &["apply"]).ok();
+    assert!(
+        human
+            .stdout
+            .contains("0 files changed, grimoire.lock created"),
+        "{}",
+        human.stdout
+    );
+    std::fs::remove_file(p.path("grimoire.lock")).unwrap();
+
+    let apply = grimoire(&source, &p, &["--json", "apply"]).ok().json();
+    assert_eq!(apply["result"]["lock-written"], true);
+    assert_eq!(
+        p.read("grimoire.lock"),
+        "# Generated by grimoire. Do not edit by hand.\nformat = 1\n"
+    );
+    grimoire(&source, &p, &["plan", "--check"]).ok();
+    let again = grimoire(&source, &p, &["--json", "apply"]).ok().json();
+    assert_eq!(again["result"]["lock-written"], false);
+    grimoire(&source, &p, &["verify"]).ok();
+
+    // A lock deleted by hand is a change again, and `update --no-apply` restores it.
+    std::fs::remove_file(p.path("grimoire.lock")).unwrap();
+    assert_eq!(
+        grimoire(&source, &p, &["plan", "--check"]).exit,
+        Exit::Check
+    );
+    let update = grimoire(&source, &p, &["--json", "update", "--no-apply"])
+        .ok()
+        .json();
+    assert_eq!(update["result"]["lock-written"], true);
+    grimoire(&source, &p, &["plan", "--check"]).ok();
+
+    // Removing the last asset leaves a lock that records nothing, and it verifies.
+    grimoire(&source, &p, &["add", "commit-style", "--apply"]).ok();
+    grimoire(&source, &p, &["remove", "commit-style", "--apply"]).ok();
+    assert_eq!(
+        p.read("grimoire.lock"),
+        "# Generated by grimoire. Do not edit by hand.\nformat = 1\n"
+    );
+    grimoire(&source, &p, &["plan", "--check"]).ok();
+    grimoire(&source, &p, &["verify"]).ok();
+}
+
+#[test]
 fn crlf_lockfiles_are_not_changes() {
     let source = catalog().source();
     let p = installed(&source);
@@ -1256,6 +1507,145 @@ fn hints_name_flags_that_work() {
         add.stderr.contains("grimoire.toml was updated"),
         "{}",
         add.stderr
+    );
+}
+
+#[test]
+fn uninstall_reports_what_it_removed() {
+    use std::collections::BTreeSet;
+    let source = catalog().source();
+
+    // With a lock: `files` lists every file it records, as `apply` reports them.
+    let p = installed(&source);
+    let lock = agent_grimoire_model::Lockfile::from_toml(&p.read("grimoire.lock")).unwrap();
+    let locked: BTreeSet<String> = lock
+        .outputs
+        .iter()
+        .chain(lock.assets.iter().flat_map(|a| &a.outputs))
+        .map(|o| o.path.as_str().to_owned())
+        .collect();
+    let result = grimoire(&source, &p, &["--json", "uninstall"]).ok().json()["result"].clone();
+    let files = result["files"].as_array().expect("result.files");
+    let listed: BTreeSet<String> = files
+        .iter()
+        .map(|f| f["path"].as_str().unwrap().to_owned())
+        .collect();
+    assert_eq!(listed, locked);
+    let outcome = |path: &str| {
+        files
+            .iter()
+            .find(|f| f["path"] == path)
+            .map(|f| f["outcome"].clone())
+    };
+    assert_eq!(outcome("CLAUDE.md"), Some("deleted".into()));
+    assert_eq!(
+        outcome("AGENTS.md"),
+        Some("wrote".into()),
+        "user text stays"
+    );
+    assert_eq!(result["lock-written"], true);
+    assert_eq!(result["lock-removed"], true);
+    assert_eq!(result["config-removed"], false);
+    assert_eq!(result["purged"], false);
+    assert!(!p.exists("grimoire.lock") && p.exists("grimoire.toml"));
+
+    // Without a lock: nothing to remove, and `--purge` removes grimoire.toml.
+    let result = grimoire(&source, &p, &["--json", "uninstall", "--purge"])
+        .ok()
+        .json()["result"]
+        .clone();
+    assert_eq!(
+        result,
+        serde_json::json!({
+            "files": [], "lock-written": false, "lock-removed": false,
+            "config-removed": true, "purged": true
+        })
+    );
+    assert!(!p.exists("grimoire.toml"));
+
+    // Neither file: `--purge` claims to remove neither.
+    let empty = Project::new();
+    let ran = grimoire(&source, &empty, &["uninstall", "--purge"]).ok();
+    assert_eq!(
+        ran.stdout.lines().last(),
+        Some(
+            "uninstall: no grimoire.lock, so no managed content to remove; there was no grimoire.toml"
+        )
+    );
+    let result = grimoire(&source, &empty, &["--json", "uninstall", "--purge"])
+        .ok()
+        .json()["result"]
+        .clone();
+    assert_eq!(result["lock-removed"], false);
+    assert_eq!(result["config-removed"], false);
+    assert_eq!(result["purged"], true);
+
+    // A lock but no grimoire.toml: only the lock is claimed.
+    let p = installed(&source);
+    std::fs::remove_file(p.path("grimoire.toml")).unwrap();
+    let ran = grimoire(&source, &p, &["uninstall", "--purge"]).ok();
+    assert_eq!(
+        ran.stdout.lines().last(),
+        Some("uninstall: removed grimoire.lock; there was no grimoire.toml")
+    );
+    assert!(
+        !ran.stdout.contains("grimoire.lock updated"),
+        "{}",
+        ran.stdout
+    );
+    assert!(!p.exists("grimoire.lock"));
+    let p = installed(&source);
+    std::fs::remove_file(p.path("grimoire.toml")).unwrap();
+    let result = grimoire(&source, &p, &["--json", "uninstall", "--purge"])
+        .ok()
+        .json()["result"]
+        .clone();
+    assert_eq!(result["lock-removed"], true);
+    assert_eq!(result["config-removed"], false);
+}
+
+#[test]
+fn purge_stops_before_removing_anything_when_grimoire_toml_is_not_a_file() {
+    let source = catalog().source();
+    let p = installed(&source);
+    let agents = p.read("AGENTS.md");
+    let lock = p.read("grimoire.lock");
+    std::fs::remove_file(p.path("grimoire.toml")).unwrap();
+    std::fs::create_dir(p.path("grimoire.toml")).unwrap();
+    let ran = grimoire(&source, &p, &["--json", "uninstall", "--purge"]);
+    assert_eq!(ran.exit, Exit::Conflict, "{}", ran.stdout);
+    assert_eq!(codes(&ran.json()), ["fs/in-the-way"]);
+    assert!(ran.json()["result"].is_null(), "{}", ran.stdout);
+    assert_eq!(p.read("AGENTS.md"), agents);
+    assert_eq!(p.read("grimoire.lock"), lock);
+    assert!(p.exists("CLAUDE.md"));
+}
+
+#[cfg(unix)]
+#[test]
+fn purge_stops_before_removing_anything_at_a_linked_grimoire_toml() {
+    use std::os::unix::fs::symlink;
+    let source = catalog().source();
+    let outside = tempfile::tempdir().unwrap();
+    let p = installed(&source);
+    let agents = p.read("AGENTS.md");
+    let lock = p.read("grimoire.lock");
+    let config = outside.path().join("grimoire.toml");
+    std::fs::rename(p.path("grimoire.toml"), &config).unwrap();
+    symlink(&config, p.path("grimoire.toml")).unwrap();
+    let ran = grimoire(&source, &p, &["--json", "uninstall", "--purge"]);
+    assert_eq!(ran.exit, Exit::Refused, "{}", ran.stdout);
+    assert_eq!(codes(&ran.json()), ["fs/refused"]);
+    assert!(ran.json()["result"].is_null(), "{}", ran.stdout);
+    assert_eq!(p.read("AGENTS.md"), agents);
+    assert_eq!(p.read("grimoire.lock"), lock);
+    assert!(p.exists("CLAUDE.md"));
+    assert!(config.exists());
+    assert!(
+        std::fs::symlink_metadata(p.path("grimoire.toml"))
+            .unwrap()
+            .file_type()
+            .is_symlink()
     );
 }
 

@@ -1,5 +1,7 @@
-//! `docs/diagnostics.md` lists every diagnostic code the CLI can print, and no
-//! other code.
+//! `docs/diagnostics.md` lists every code with a user-facing prefix
+//! ([`USER_FACING`]) that appears in the source of the crates whose diagnostics
+//! reach a CLI user, outside test code, and no other code. A code this build never reaches is still listed, as the doc says
+//! for `init/client-unavailable` and `resolve/client-unavailable`.
 //!
 //! The codes in the source are the string literals in the `src/` directories of
 //! the five crates whose diagnostics reach a CLI user ([`CRATES`]). The

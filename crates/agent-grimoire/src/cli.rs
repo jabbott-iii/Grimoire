@@ -111,7 +111,7 @@ pub(crate) enum Command {
     Verify,
     /// Remove all managed content and grimoire.lock.
     Uninstall {
-        /// Also remove grimoire.toml.
+        /// Also remove grimoire.toml, if there is one.
         #[arg(long)]
         purge: bool,
         /// Remove managed content even where it was edited.

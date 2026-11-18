@@ -239,6 +239,37 @@ impl Root {
         Ok(Some(bytes))
     }
 
+    /// Whether anything is at `path`: a file, a directory, a special file or a
+    /// symbolic link, even a broken one. Nothing at `path` is opened or followed.
+    /// Unlike cap-std's `Dir::exists`, which follows symbolic links inside the
+    /// root, this follows none.
+    ///
+    /// # Errors
+    ///
+    /// As for every other operation, refuses a symbolic link above `path` and
+    /// reports a file where a directory is needed as in the way; reports I/O errors.
+    pub fn exists(&self, path: &RelPath) -> Result<bool, FsError> {
+        let Some(dir) = self.parent(path, false)? else {
+            return Ok(false);
+        };
+        match dir.symlink_metadata(path.file_name()) {
+            Ok(_) => Ok(true),
+            Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(false),
+            Err(e) => Err(io_err(path.as_str(), e)),
+        }
+    }
+
+    /// Whether a regular file is at `path`. Makes the checks [`Root::read`] and
+    /// [`Root::remove`] make, without opening it, and changes nothing.
+    ///
+    /// # Errors
+    ///
+    /// Refuses a symbolic link at or above `path` and a special file at it,
+    /// reports a directory at it as in the way, and reports I/O errors.
+    pub fn has_file(&self, path: &RelPath) -> Result<bool, FsError> {
+        self.metadata(path).map(|m| m.is_some())
+    }
+
     /// Replaces `path` with `bytes` atomically, creating parent directories.
     ///
     /// # Errors
@@ -396,6 +427,67 @@ mod tests {
         assert!(matches!(
             root.read(&rel("dir.md")),
             Err(FsError::InTheWay { .. })
+        ));
+    }
+
+    #[test]
+    fn exists_and_has_file_change_nothing() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = Root::open(tmp.path()).unwrap();
+        assert!(!root.exists(&rel("a.md")).unwrap());
+        assert!(!root.exists(&rel("missing/a.md")).unwrap());
+        assert!(!root.has_file(&rel("a.md")).unwrap());
+        assert!(!root.has_file(&rel("missing/a.md")).unwrap());
+        root.write(&rel("dir/a.md"), b"x").unwrap();
+        assert!(root.exists(&rel("dir")).unwrap());
+        assert!(root.exists(&rel("dir/a.md")).unwrap());
+        assert!(root.has_file(&rel("dir/a.md")).unwrap());
+        assert!(matches!(
+            root.has_file(&rel("dir")),
+            Err(FsError::InTheWay { .. })
+        ));
+        // A file where a directory is needed is in the way, as for `read`.
+        assert!(matches!(
+            root.exists(&rel("dir/a.md/b")),
+            Err(FsError::InTheWay { .. })
+        ));
+        let mut entries: Vec<_> = std::fs::read_dir(tmp.path())
+            .unwrap()
+            .map(|e| e.unwrap().file_name())
+            .collect();
+        entries.sort();
+        assert_eq!(entries, ["dir"], "nothing was created");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn exists_follows_no_symbolic_link() {
+        use std::os::unix::fs::symlink;
+        let tmp = tempfile::tempdir().unwrap();
+        let outside = tempfile::tempdir().unwrap();
+        std::fs::write(outside.path().join("target.md"), "x").unwrap();
+        std::fs::create_dir(tmp.path().join("real")).unwrap();
+        std::fs::write(tmp.path().join("real/a.md"), "x").unwrap();
+        symlink(outside.path(), tmp.path().join("linked")).unwrap();
+        symlink("real", tmp.path().join("inside")).unwrap();
+        symlink("/nonexistent-target", tmp.path().join("broken.md")).unwrap();
+        let root = Root::open(tmp.path()).unwrap();
+        // A link at the path itself is there, even a broken one.
+        assert!(root.exists(&rel("broken.md")).unwrap());
+        assert!(root.exists(&rel("linked")).unwrap());
+        // A link above the path is refused, wherever it points.
+        assert!(matches!(
+            root.exists(&rel("linked/target.md")),
+            Err(FsError::Refused { .. })
+        ));
+        assert!(matches!(
+            root.exists(&rel("inside/a.md")),
+            Err(FsError::Refused { .. })
+        ));
+        // `has_file` refuses a link at the path too.
+        assert!(matches!(
+            root.has_file(&rel("broken.md")),
+            Err(FsError::Refused { .. })
         ));
     }
 

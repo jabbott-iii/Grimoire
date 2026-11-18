@@ -1,6 +1,7 @@
 //! One function per command.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::fmt::Write as _;
 use std::path::PathBuf;
 
 use agent_grimoire_adapters::AVAILABLE;
@@ -103,10 +104,6 @@ fn options(args: ApplyArgs) -> Options {
     }
 }
 
-fn exists(project: &Project, name: &str) -> bool {
-    std::fs::symlink_metadata(project.dir.join(name)).is_ok()
-}
-
 fn init(out: &mut Out<'_, '_>, dir: Option<&PathBuf>, mut clients: Vec<ClientId>) -> Exit {
     let project = match Project::open(out, dir) {
         Ok(p) => p,
@@ -128,7 +125,7 @@ fn init(out: &mut Out<'_, '_>, dir: Option<&PathBuf>, mut clients: Vec<ClientId>
         clients.extend(
             ClientId::ALL
                 .into_iter()
-                .filter(|c| client_markers(*c).iter().any(|m| exists(&project, m))),
+                .filter(|c| client_markers(*c).iter().any(|m| project.exists(m))),
         );
         if clients.is_empty() {
             return out.fail(
@@ -198,14 +195,13 @@ fn list(
             continue;
         }
         let clients: Vec<&str> = m.clients.keys().map(|c| c.as_str()).collect();
-        rows.push(format!(
-            "{:<28} {:<10} {:<10} {:<12} {}",
-            m.id,
-            m.kind,
-            m.version,
-            maturity_name(m.maturity),
-            m.summary
-        ));
+        rows.push([
+            m.id.to_string(),
+            m.kind.as_str().to_owned(),
+            m.version.to_string(),
+            maturity_name(m.maturity).to_owned(),
+            m.summary.to_string(),
+        ]);
         assets.push(json!({
             "id": m.id.as_str(),
             "kind": m.kind.as_str(),
@@ -227,10 +223,13 @@ fn list(
             if !hit {
                 continue;
             }
-            rows.push(format!(
-                "{:<28} {:<10} {:<10} {:<12} {}",
-                b.id, "bundle", b.version, "", b.summary
-            ));
+            rows.push([
+                b.id.to_string(),
+                "bundle".to_owned(),
+                b.version.to_string(),
+                String::new(),
+                b.summary.to_string(),
+            ]);
             bundles.push(json!({
                 "id": b.id.as_str(),
                 "version": b.version.to_string(),
@@ -242,11 +241,39 @@ fn list(
     if rows.is_empty() {
         out.note("list: nothing in this grimoire's catalog matches");
     }
-    for row in rows {
-        out.line(row);
+    for line in columns(&rows) {
+        out.line(line);
     }
     out.result(json!({ "assets": assets, "bundles": bundles }));
     Exit::Ok
+}
+
+/// Lays `rows` out in columns two spaces apart, each but the last as wide as
+/// its longest cell. A column empty in every row is left out. Width is counted
+/// in `char`s, which is the display width here: ids, kinds, versions and
+/// maturities are ASCII by construction, and only the last column (the
+/// summary) is free text, and it is never padded.
+fn columns<const N: usize>(rows: &[[String; N]]) -> Vec<String> {
+    let width = |i: usize| rows.iter().map(|r| r[i].chars().count()).max();
+    let shown: Vec<(usize, usize)> = (0..N)
+        .filter_map(|i| width(i).filter(|w| *w > 0).map(|w| (i, w)))
+        .collect();
+    rows.iter()
+        .map(|row| {
+            let mut line = String::new();
+            for (n, (i, w)) in shown.iter().enumerate() {
+                if n > 0 {
+                    line.push_str("  ");
+                }
+                if n + 1 == shown.len() {
+                    line.push_str(&row[*i]);
+                } else {
+                    let _ = write!(line, "{:<w$}", row[*i]);
+                }
+            }
+            line.trim_end().to_owned()
+        })
+        .collect()
 }
 
 fn maturity_name(m: Maturity) -> &'static str {
@@ -1049,7 +1076,15 @@ fn uninstall(out: &mut Out<'_, '_>, dir: Option<&PathBuf>, purge: bool, force: b
         Ok(p) => p,
         Err(e) => return e,
     };
-    if planned.old_text.is_some() {
+    // Checked before anything is removed, so a symbolic link or a directory where
+    // grimoire.toml should be stops `uninstall --purge` with nothing removed.
+    let had_config = purge
+        && match project.has_file(out, CONFIG) {
+            Ok(there) => there,
+            Err(e) => return e,
+        };
+    let had_lock = planned.old_text.is_some();
+    if had_lock {
         let exit = run_apply(
             out,
             &project,
@@ -1066,15 +1101,29 @@ fn uninstall(out: &mut Out<'_, '_>, dir: Option<&PathBuf>, purge: bool, force: b
         if let Err(e) = project.remove(out, LOCK) {
             return e;
         }
+    } else {
+        // Nothing to remove: the same keys `apply` reports.
+        out.result(json!({ "files": [], "lock-written": false }));
     }
-    if purge && let Err(e) = project.remove(out, CONFIG) {
+    if had_config && let Err(e) = project.remove(out, CONFIG) {
         return e;
     }
-    out.line(format!(
-        "uninstall: removed managed content{}",
-        if purge { " and grimoire.toml" } else { "" }
-    ));
-    out.result(json!({ "purged": purge }));
+    // `run_apply` has already listed each file it changed.
+    let config = if had_config {
+        format!("; removed {CONFIG}")
+    } else if purge {
+        format!("; there was no {CONFIG}")
+    } else {
+        String::new()
+    };
+    out.line(if had_lock {
+        format!("uninstall: removed {LOCK}{config}")
+    } else {
+        format!("uninstall: no {LOCK}, so no managed content to remove{config}")
+    });
+    out.extend_result("lock-removed", json!(had_lock));
+    out.extend_result("config-removed", json!(had_config));
+    out.extend_result("purged", json!(purge));
     Exit::Ok
 }
 
@@ -1112,7 +1161,7 @@ fn doctor(out: &mut Out<'_, '_>, dir: Option<&PathBuf>) -> Exit {
         match &lock {
             Some((_, Some(_))) => "valid".into(),
             Some((_, None)) => "not created yet".into(),
-            None => "invalid (see above)".into(),
+            None => "cannot be read or is invalid (see above)".into(),
         },
     ));
     if let Some((config, _)) = &config {
@@ -1146,6 +1195,9 @@ fn doctor(out: &mut Out<'_, '_>, dir: Option<&PathBuf>) -> Exit {
 /// One `doctor` check: name, whether it passed, and what was found.
 type Check = (String, bool, String);
 
+/// The checks that need a valid `grimoire.toml`. `lock` is `None` when
+/// `grimoire.lock` can't be read or is invalid; a missing lock arrives as an
+/// empty one.
 fn config_checks(
     out: &mut Out<'_, '_>,
     project: &Project,
@@ -1156,7 +1208,7 @@ fn config_checks(
     for client in &config.clients {
         // What grimoire installed comes from the lock; the markers show only that
         // the project already used the client.
-        let installed = lock.map_or(0, |l| {
+        let installed = lock.map(|l| {
             l.assets
                 .iter()
                 .flat_map(|a| &a.outputs)
@@ -1164,21 +1216,33 @@ fn config_checks(
                 .filter(|o| o.clients.contains(client))
                 .count()
         });
-        let mut detail = if installed > 0 {
-            format!("{installed} outputs installed")
-        } else if client_markers(*client).iter().any(|m| exists(project, m)) {
-            "client files present, nothing installed by grimoire yet".to_owned()
-        } else {
-            "no files yet".to_owned()
+        let mut detail = match installed {
+            None => {
+                "outputs unknown, because grimoire.lock cannot be read or is invalid".to_owned()
+            }
+            Some(n) if n > 0 => format!("{n} outputs installed"),
+            Some(_) if client_markers(*client).iter().any(|m| project.exists(m)) => {
+                "client files present, nothing installed by grimoire yet".to_owned()
+            }
+            Some(_) => "no files yet".to_owned(),
         };
         if let Some(note) = client_note(*client) {
             detail.push_str("; ");
             detail.push_str(note);
         }
-        if *client == ClientId::Codex && exists(project, crate::pipeline::CODEX_OVERRIDE) {
+        if *client == ClientId::Codex && project.exists(crate::pipeline::CODEX_OVERRIDE) {
             detail.push_str("; AGENTS.override.md exists, so Codex reads it instead of AGENTS.md");
         }
         checks.push((format!("client {client}"), true, detail));
+    }
+    // `prepare` would read the lock again and repeat its diagnostics.
+    if lock.is_none() {
+        checks.push((
+            "plan".into(),
+            false,
+            "not planned, because grimoire.lock cannot be read or is invalid (see above)".into(),
+        ));
+        return;
     }
     let Ok(planned) = prepare(out, project, config, &Update::None) else {
         checks.push((
@@ -1196,11 +1260,19 @@ fn config_checks(
             .flat_map(|f| &f.units)
             .filter(|u| u.action != Action::Unchanged)
             .count();
+        // As `plan --check` counts it, though a lock change alone doesn't fail.
+        let lock = crate::project::render_lock(out, &planned.next(&BTreeSet::new()))
+            .is_ok_and(|text| crate::project::lock_differs(planned.old_text.as_deref(), &text));
+        let lock_note = match (lock, planned.old_text.is_some()) {
+            (false, _) => "",
+            (true, false) => "; grimoire.lock would be created",
+            (true, true) => "; grimoire.lock would be updated",
+        };
         checks.push((
             "plan".into(),
             !planned.plan.has_conflicts(),
             format!(
-                "{pending} pending changes{}",
+                "{pending} pending changes{}{lock_note}",
                 if planned.plan.has_conflicts() {
                     ", with conflicts"
                 } else {
@@ -1393,5 +1465,26 @@ mod tests {
             Some("## 1.0.0\n- a")
         );
         assert_eq!(changelog_head("nothing"), None);
+    }
+
+    #[test]
+    fn columns_pad_every_column_but_the_last() {
+        let row = |cells: [&str; 4]| cells.map(str::to_owned);
+        assert_eq!(
+            columns(&[
+                row(["a-long-id", "rule", "1.0.0", "Short."]),
+                row(["b", "skill", "10.0.0-rc.1", "Ünïcode summary. "]),
+            ]),
+            [
+                "a-long-id  rule   1.0.0        Short.",
+                "b          skill  10.0.0-rc.1  Ünïcode summary.",
+            ]
+        );
+        // A column empty in every row is left out; one empty cell is padded.
+        assert_eq!(
+            columns(&[row(["x", "", "1.0.0", "S."]), row(["yy", "", "", "T."])]),
+            ["x   1.0.0  S.", "yy         T."]
+        );
+        assert_eq!(columns::<2>(&[]), Vec::<String>::new());
     }
 }

@@ -2,7 +2,7 @@
 
 Every error or warning the `grimoire` CLI reports is a diagnostic with a stable code, such as `plan/hook-binary-missing`. This file lists every code the CLI can print, grouped by prefix: its severity and exit status, the commands that can raise it, what it means and what to do. [`cli.md`](cli.md) describes the commands, their options and the exit codes.
 
-- The test `crates/agent-grimoire/tests/diagnostics_doc.rs` compares this list with the code literals in the source. It fails when a code the CLI can raise is missing here, or when a code listed here is no longer raised. It finds codes by reading the source as text, and its module documentation says what that can miss.
+- The test `crates/agent-grimoire/tests/diagnostics_doc.rs` compares this list with the code literals in the source. It fails when a code the CLI can raise is missing here, or when a code listed here no longer appears in the source. It finds codes by reading the source as text, and its module documentation says what that can miss.
 - Where a row says **report it**, the condition points to a bug in Grimoire or its catalog. Please [open an issue](https://github.com/jabbott-iii/Grimoire/issues) with the command, its output and, if you can, your `grimoire.toml`.
 
 ## Reading a diagnostic
@@ -80,7 +80,7 @@ Problems with `grimoire.toml` and `grimoire.lock` as files. [`configuration.md`]
 
 ### The filesystem (`fs/`)
 
-Grimoire reads and writes only inside the project directory. It refuses a symbolic link at or above any path it touches, and a special file, such as a FIFO, at the path itself ([`architecture.md`](architecture.md) §7.4, [ADR-0006](adr/0006-filesystem-confinement.md)). If one of these stops an applying command partway, the files already written are recorded in `grimoire.lock`, and running the command again continues from there. After `add --apply` or `remove --apply`, `grimoire.toml` has already been changed.
+Grimoire reads and writes only inside the project directory. It refuses a symbolic link at or above any path it touches, and a special file, such as a FIFO, at the path itself ([`architecture.md`](architecture.md) §7.4, [ADR-0006](adr/0006-filesystem-confinement.md)). If one of these refusals stops an applying command partway, the files already written are recorded in `grimoire.lock`, and running the command again continues from there. After `add --apply` or `remove --apply`, `grimoire.toml` has already been changed. The checks that only ask whether a client's files or `AGENTS.override.md` exist walk the same way, but count a linked folder on the way as absent rather than failing.
 
 | Code | Severity | Commands | Meaning | What to do |
 |---|---|---|---|---|
