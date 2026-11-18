@@ -175,7 +175,7 @@ That led to decisions 6 and 7, and to the changes marked "after the review" belo
 - **Environment `ghcr`** is named only in release mode, like the other four. The maintainer approves it in the second round, together with `crates-io`, `npm` and `pypi`.
 - **Re-runs:** every step of `publish-image` and of `sign-image.yml`'s `image` job skips what is already done, so re-running the failed jobs finishes a partial push, signature or tag.
 - **New pins** in `release.yml`'s `env`: `IMAGE`, `BUILDX_VERSION` and its SHA-256, `CRANE_VERSION` and its two SHA-256s, `GRYPE_VERSION` and its SHA-256, `BUILDKIT_IMAGE`, `SBOM_SCANNER_IMAGE`, and distroless's identity and issuer. `sign-image.yml` repeats the image name and the crane pin, and each signing workflow names its own identity.
-- **`actions.lock`** was regenerated with gh-actions-lock v0.4.1 `--no-narrow`: `sign.yml` gets its own entry, `security.yml` gains `sigstore/cosign-installer`, and `release.yml` loses `actions/attest`. With the 2026-11-18 amendment, `sign-image.yml` needs its own entry too, and `sign.yml` no longer runs `actions/checkout`. The maintainer regenerates it the same way.
+- **`actions.lock`** was regenerated with gh-actions-lock v0.4.1 `--no-narrow`: `sign.yml` gets its own entry, `security.yml` gains `sigstore/cosign-installer`, and `release.yml` loses `actions/attest`. With the 2026-11-18 amendment, `sign-image.yml` has its own entry too, and `sign.yml`'s no longer lists `actions/checkout`. The maintainer regenerated it the same way (`f69c0d0`), and `--verify` passes.
 
 ### What ran locally, and what didn't
 
