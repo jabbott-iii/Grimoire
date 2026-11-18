@@ -11,16 +11,16 @@ This file lists every external format, protocol, registry or tool that Grimoire 
 
 ## Register
 
-Rows were checked 2026-11-16 unless they say otherwise; the client rows were re-checked 2026-11-17 for Phase 4, and the registry, release-tooling and supply-chain rows on 2026-11-17 for Phase 5. Section IDs below link each row to its notes.
+Rows were checked 2026-11-16 unless they say otherwise; the client rows were re-checked 2026-11-17 for Phase 4, the registry, release-tooling and supply-chain rows on 2026-11-17 for Phase 5, and the container rows on 2026-11-17 for Phase 6. Section IDs below link each row to its notes.
 
 | ID | Spec / source | Version or revision checked | Primary URL | Status |
 |---|---|---|---|---|
-| CC-* | Claude Code: memory, skills, subagents, settings/hooks, `.mcp.json`, plugins, marketplaces | CLI 2.1.326 (npm `latest`); live docs | https://code.claude.com/docs/en/ | Verified; plugins and marketplaces re-checked 2026-11-17 in CC-PLUGIN-P4 and CC-MKT-P4 |
+| CC-* | Claude Code: memory, skills, subagents, settings/hooks, `.mcp.json`, plugins, marketplaces | CLI 2.1.326 (npm `latest`); live docs | https://code.claude.com/docs/en/ | Verified; plugins and marketplaces re-checked 2026-11-17 in CC-PLUGIN-P4 and CC-MKT-P4, `.mcp.json` variables in RUN-P6 (CLI 2.1.327) |
 | SKILLS | Agent Skills specification | unversioned; spec file @ `217be54873` (2026-08-04) | https://agentskills.io/specification | Verified |
 | AGENTSMD | AGENTS.md | unversioned; repo @ `d001185d79` (2026-09-10) | https://agents.md | Verified (convention, not normative) |
-| CODEX-* | OpenAI Codex CLI: AGENTS.md, config/MCP, skills, agents, hooks, rules, plugins | `rust-v0.169.0` (2026-11-13); prerelease `rust-v0.171.0-alpha.11` | https://learn.chatgpt.com/docs/ ; https://github.com/openai/codex | Verified; re-checked 2026-11-17 in CODEX-*-P4 (some facts from source only) |
+| CODEX-* | OpenAI Codex CLI: AGENTS.md, config/MCP, skills, agents, hooks, rules, plugins | `rust-v0.169.0` (2026-11-13); prerelease `rust-v0.171.0-alpha.11` | https://learn.chatgpt.com/docs/ ; https://github.com/openai/codex | Verified; re-checked 2026-11-17 in CODEX-*-P4 (some facts from source only), and the MCP stdio launch at `rust-v0.169.1` in RUN-P6 |
 | CURSOR-* | Cursor: rules, MCP, skills, subagents, hooks | release notes IDE 3.27 / CLI v2026.10.22; shipped IDE 3.30.14 / CLI 2026.11.13 | https://cursor.com/docs/ | Partial; re-checked 2026-11-17 in CURSOR-P4 |
-| GEMINI-* | Gemini CLI: context, settings/MCP, skills, subagents, hooks | v0.68.0 (2026-11-10), source and docs @ tag; preview v0.69.0-preview.0 | https://github.com/google-gemini/gemini-cli | Verified from source; re-checked 2026-11-17 in GEMINI-P4 |
+| GEMINI-* | Gemini CLI: context, settings/MCP, skills, subagents, hooks | v0.68.0 (2026-11-10), source and docs @ tag; preview v0.69.0-preview.0 | https://github.com/google-gemini/gemini-cli | Verified from source; re-checked 2026-11-17 in GEMINI-P4; settings expansion corrected in RUN-P6 |
 | COPILOT-* | GitHub Copilot: instructions, agents, skills, MCP, hooks | CLI v1.0.112; VS Code 1.146.0; docs fetched 2026-11-17 | https://docs.github.com/en/copilot ; https://code.visualstudio.com/docs | Partial; re-checked 2026-11-17 in COPILOT-P4 |
 | MCP-SPEC | Model Context Protocol | **2026-07-28** (current final) | https://modelcontextprotocol.io/specification/2026-07-28 | Verified |
 | RMCP | rmcp (official Rust SDK) | 3.10.0 (2026-11-12); supports 2026-07-28 | https://github.com/modelcontextprotocol/rust-sdk | Verified |
@@ -36,17 +36,17 @@ Rows were checked 2026-11-16 unless they say otherwise; the client rows were re-
 | SCOOP | Scoop manifests and buckets | Scoop 0.6.0; wiki unversioned | https://github.com/ScoopInstaller/Scoop/wiki | Verified; re-checked 2026-11-17 in BREW-SCOOP-P5 (the wiki lags the source), gaps listed |
 | DIST | dist (cargo-dist) | 0.34.0 (2026-11-02) | https://github.com/axodotdev/cargo-dist | Verified; re-checked 2026-11-17 in INSTALLERS-P5 (not adopted) |
 | RELEASE-PLZ | release-plz | 0.4.3 (2026-11-02) | https://release-plz.dev | Verified; re-checked 2026-11-17 in RUST-REGISTRY-P5 |
-| RUNNERS | GitHub-hosted runners | docs fetched 2026-11-16 | https://docs.github.com/en/actions/reference/runners/github-hosted-runners | Partial; re-checked 2026-11-17 in ACTIONS-P5 |
+| RUNNERS | GitHub-hosted runners | docs fetched 2026-11-16 | https://docs.github.com/en/actions/reference/runners/github-hosted-runners | Partial; re-checked 2026-11-17 in ACTIONS-P5, and their Docker in BUILD-P6 and RUN-P6 |
 | GHA-SEC | Actions hardening, lockfiles, SHA-pin policy, environments, OIDC | docs fetched 2026-11-16 | https://docs.github.com/en/actions/reference/security/secure-use | Verified; re-checked 2026-11-17 in ACTIONS-P5 |
-| ATTEST | Artifact attestations, immutable releases | `actions/attest` v4.2.2 | https://github.com/actions/attest | Verified; re-checked 2026-11-17 in SUPPLY-CHAIN-P5 |
-| COSIGN | Sigstore cosign | v3.1.4; installer v4.1.3 | https://github.com/sigstore/cosign | Partial (only GHCR referrers left; the Fulcio SAN was verified 2026-11-17 in SUPPLY-CHAIN-P5) |
-| SBOM | cargo-cyclonedx, cargo-auditable, buildx attestations | 0.5.10 / 0.7.7 / docs fetched 2026-11-16 | https://github.com/CycloneDX/cyclonedx-rust-cargo | Verified; re-checked 2026-11-17 in SUPPLY-CHAIN-P5 |
-| BASE-IMAGE | distroless static, Chainguard static, OCI annotations | `static-debian13`; image-spec v1.1.1 | https://github.com/GoogleContainerTools/distroless | Verified |
-| SCAN | Trivy incident; Grype / scan-action | trivy v0.76.2; grype v0.122.0; scan-action v7.4.2 | https://github.com/anchore/scan-action | Verified |
+| ATTEST | Artifact attestations, immutable releases | `actions/attest` v4.2.2 | https://github.com/actions/attest | Verified; re-checked 2026-11-17 in SUPPLY-CHAIN-P5, and for images in REGISTRY-P6 |
+| COSIGN | Sigstore cosign | v3.1.4; installer v4.1.3 | https://github.com/sigstore/cosign | Verified: the Fulcio SAN was verified 2026-11-17 in SUPPLY-CHAIN-P5, and GHCR referrers settled 2026-11-17 in REGISTRY-P6 (no referrers API; the `sha256-<hex>` fallback tag) |
+| SBOM | cargo-cyclonedx, cargo-auditable, buildx attestations | 0.5.10 / 0.7.7 / docs fetched 2026-11-16 | https://github.com/CycloneDX/cyclonedx-rust-cargo | Verified; re-checked 2026-11-17 in SUPPLY-CHAIN-P5, and BuildKit's SBOM scanner in BUILD-P6 |
+| BASE-IMAGE | distroless static, Chainguard static, OCI annotations | `static-debian13`; image-spec v1.1.1 | https://github.com/GoogleContainerTools/distroless | Verified; re-checked 2026-11-17 in BASE-IMAGE-P6 (the pinned digest changed) |
+| SCAN | Trivy incident; Grype / scan-action | trivy v0.76.2; grype v0.122.0; scan-action v7.4.2 | https://github.com/anchore/scan-action | Verified; re-checked 2026-11-17 in SCAN-P6 (pin Grype v0.121.3; scan-action not used) |
 | DENY | cargo-deny | 0.21.0; action v2.1.2 | https://github.com/EmbarkStudios/cargo-deny | Verified |
 | UNUSED-DEPS | Cargo unused-dep lints, cargo-machete, cargo-shear, cargo-udeps | Rust 1.100.0; 0.10.1 / 1.14.1 / 0.1.61 | https://doc.rust-lang.org/stable/cargo/reference/lints.html | Verified |
 | SECRETS | GitHub secret scanning, gitleaks, private vulnerability reporting | gitleaks v8.30.1 | https://docs.github.com/en/code-security | Verified |
-| DEPENDABOT | Dependabot options | docs fetched 2026-11-16 | https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference | Verified |
+| DEPENDABOT | Dependabot options | docs fetched 2026-11-16 | https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference | Verified; Docker re-checked 2026-11-17 in BASE-IMAGE-P6 (cooldown fails open outside Docker Hub) |
 | LYCHEE | lychee link checker | 0.24.2; action v2.9.0 | https://github.com/lycheeverse/lychee-action | Verified |
 | RUST | Rust stable toolchain | 1.100.0 (channel 2026-11-12) | https://static.rust-lang.org/dist/channel-rust-stable.toml | Verified; re-checked 2026-11-17 in ACTIONS-P5 |
 | CRATES | Candidate crate versions | see table | https://crates.io | Verified |
@@ -77,16 +77,22 @@ Rows were checked 2026-11-16 unless they say otherwise; the client rows were re-
 | PYPI-P5 | Binary-only wheels, PyPI upload checks, pending publishers, `gh-action-pypi-publish` | wheel and core-metadata specs; warehouse @ `c2f79b4a6fb0`; gh-action-pypi-publish v1.14.3; twine 7.0.0 | https://packaging.python.org/en/latest/specifications/binary-distribution-format/ | Verified (Phase 5), gaps listed |
 | BREW-SCOOP-P5 | Prebuilt formula in a tap, local-tap audits, tap trust, Scoop manifest, schema and licence syntax | Homebrew 7.0.14; Homebrew/actions 2026.11.09.1; Scoop v0.6.0 | https://docs.brew.sh/How-to-Create-and-Maintain-a-Tap | Verified from source (Phase 5), gaps listed; nothing run |
 | WINGET-P5 | winget manifests 1.28.0, validation, submission, portable aliases | winget-cli v1.29.380 (schema 1.28.0); winget-pkgs @ `b192fe0471e6` | https://github.com/microsoft/winget-pkgs | Verified (Phase 5); winget on `windows-2025` UNVERIFIED |
-| SUPPLY-CHAIN-P5 | Attestations, gh verification, cosign, the Fulcio SAN, immutable releases, SBOMs, checksums | attest v4.2.2; gh 2.103.3; cosign v3.1.4 / installer v4.1.3; Fulcio v1.10.0; cargo-cyclonedx 0.5.10; cargo-auditable 0.7.7 | https://github.com/actions/attest | Verified (Phase 5), gaps listed |
-| ACTIONS-P5 | Runner images, Rust targets and build flags, `cargo metadata`, artifacts, environments, OIDC, `GITHUB_TOKEN` events | runner-images @ `5d331217d4`; Rust 1.100.0; upload-artifact v7.0.2 / download-artifact v8.0.2 | https://docs.github.com/en/actions/reference/runners/github-hosted-runners | Verified (Phase 5), gaps listed |
+| SUPPLY-CHAIN-P5 | Attestations, gh verification, cosign, the Fulcio SAN, immutable releases, SBOMs, checksums | attest v4.2.2; gh 2.103.3; cosign v3.1.4 / installer v4.1.3; Fulcio v1.10.0; cargo-cyclonedx 0.5.10; cargo-auditable 0.7.7 | https://github.com/actions/attest | Verified (Phase 5), gaps listed; the GHCR referrers gap settled in REGISTRY-P6 |
+| ACTIONS-P5 | Runner images, Rust targets and build flags, `cargo metadata`, artifacts, environments, OIDC, `GITHUB_TOKEN` events | runner-images @ `5d331217d4`; Rust 1.100.0; upload-artifact v7.0.2 / download-artifact v8.0.2 | https://docs.github.com/en/actions/reference/runners/github-hosted-runners | Verified (Phase 5), gaps listed; Linux images re-checked 2026-11-17 in RUN-P6 |
 | INSTALLERS-P5 | The dist installer spike; ShellCheck and PSScriptAnalyzer for Grimoire's scripts; the platform and tool behaviours the scripts rely on | dist v0.34.0; ShellCheck v0.11.0; PSScriptAnalyzer 1.25.0; curl 8.23.1 manual; Microsoft Learn and Apple pages fetched 2026-11-17 | https://github.com/axodotdev/cargo-dist | Verified (Phase 5), gaps listed |
+| BASE-IMAGE-P6 | Distroless base: pins, tags, contents, signatures; OCI annotations; GHCR metadata; Dependabot for a Dockerfile | distroless @ `0af09fb8f491`; `static-debian13:nonroot` indexes `25ac8f0c` (pinned, 2026-10-31) and `aafe9936` (2026-11-12); image-spec v1.1.1; dependabot-core v0.405.0 | https://github.com/GoogleContainerTools/distroless | Verified (Phase 6), gaps listed; base signatures checked locally |
+| BUILD-P6 | BuildKit and buildx: drivers, builder image, provenance, SBOM, attestation storage, OCI export, reproducibility, build checks | BuildKit v0.34.2; buildx v0.38.2; buildkit-syft-scanner 1.12.1 (syft v1.51.0); runner-images @ `fb099341ddaf` | https://github.com/moby/buildkit | Verified (Phase 6), gaps listed; build and reproducibility checked locally |
+| REGISTRY-P6 | GHCR, cosign image signatures, `actions/attest` for images, OCI push tools, local registries | distribution-spec v1.1.1; cosign v3.1.4; attest v4.2.2; crane v0.22.1; GitHub docs @ `49a012fa50b4` | https://github.com/github/docs (`content/packages/`) ; https://github.com/sigstore/cosign | Verified (Phase 6), gaps listed; crane push and offline signing checked locally, GHCR not used |
+| SCAN-P6 | Grype as the image gate: pins, release signing, DB, scan sources, ignore rules, VEX, exit codes | Grype v0.121.3 (syft v1.57.1); DB schema v6.1.10 built 2026-11-17; scan-action v7.4.2 (not used) | https://github.com/anchore/grype | Verified (Phase 6), gaps listed; the gate checked locally |
+| RUN-P6 | Running the image: `docker run` stdio and signals, hardening flags, ports, bind mounts, ownership, MCP clients that start containers | docker/cli v29.10.0; moby docker-v29.10.0; runc v1.5.3; Podman v6.2.0; Claude Code 2.1.327; Codex `rust-v0.169.1`; Gemini CLI v0.68.0; VS Code 1.146.0 | https://github.com/docker/cli | Verified from docs and source (Phase 6), gaps listed; partly run locally on rootless Docker 29.9.3 |
+| SIGN-P6 | Signing from a reusable workflow: OIDC claims, the Fulcio certificate, who else can call it, cosign and gh pins, `actions/attest`, workflow_call mechanics, zizmor and gh-actions-lock | Fulcio v1.10.1; cosign v3.1.4; gh v2.103.3; sigstore-go v1.3.0; attest v4.2.2; zizmor 1.32.0; gh-actions-lock v0.4.1; GitHub docs @ `49a012fa50b4` | https://github.com/sigstore/fulcio (`config/identity/config.yaml`) | Verified (Phase 6, after the review): 42 facts, 40 confirmed, 1 corrected, 1 left UNVERIFIED; gaps listed |
 
 **Not yet researched, to verify in the phase that needs them:**
 
 | Topic | Phase |
 |---|---|
-| ~~The exact Fulcio identity string for keyless verification docs~~ Answered in SUPPLY-CHAIN-P5: `https://github.com/jabbott-iii/Grimoire/.github/workflows/release.yml@refs/heads/main` | 5 |
-| GHCR OCI 1.1 referrers support for cosign v3 | 6 |
+| ~~The exact Fulcio identity string for keyless verification docs~~ Answered in SUPPLY-CHAIN-P5: `https://github.com/jabbott-iii/Grimoire/.github/workflows/release.yml@refs/heads/main`; superseded in Phase 6 by `…/sign.yml@refs/heads/main` with caller pins (SIGN-P6) | 5 |
+| ~~GHCR OCI 1.1 referrers support for cosign v3~~ Answered in REGISTRY-P6: GHCR has no referrers API (it returns 404), so cosign lists signatures in the `sha256-<hex>` fallback tag | 6 |
 | ~~`winget validate` availability on GitHub Windows runners~~ Answered in WINGET-P5: not on `windows-11-arm`; undocumented and conflicting on `windows-2025`, so the CI step is best effort | 5 |
 | ~~Whether npm staged publishing can create a brand-new package~~ Answered in NPM-P5: yes, with a session or a granular token (not OIDC), leaving a public `0.0.0-stage` placeholder | 5 |
 
@@ -171,6 +177,10 @@ URL: https://code.claude.com/docs/en/mcp.md. Checked 2026-11-16. Status: Verifie
 - **Env expansion:** `${VAR}` and `${VAR:-default}` in `command`, `args`, `env`, `url`, `headers`. An unset variable with no default is left literal, with a warning.
 - **Approval:** interactive sessions prompt before using `.mcp.json` servers. `-p`, SDK and cloud sessions load them without asking.
 - **Scope precedence:** local > project > user > plugin. The whole entry wins, with no field merge.
+- **Re-checked 2026-11-17 (RUN-P6; CLI 2.1.327 `latest`, 2.1.311 `stable`):**
+  - Claude Code sets `CLAUDE_PROJECT_DIR` in a stdio server's environment, not in its own. So in the `command` or `args` of a project `.mcp.json` entry, and now also of a local- or user-scope entry in `~/.claude.json`, it needs a default such as `${CLAUDE_PROJECT_DIR:-.}`. Plugin MCP configs substitute it directly.
+  - An empty value counts as set. `MCP_TIMEOUT` (startup) defaults to 30000 ms.
+  - A stdio server's working directory is still undocumented (UNVERIFIED). A `docker run` entry here therefore names the project by its absolute path.
 
 ### CC-PLUGIN: plugins
 URLs: https://code.claude.com/docs/en/plugins/manifest-reference.md, …/plugins/components.md, …/plugins/security.md. Checked 2026-11-16. Status: Verified.
@@ -255,6 +265,7 @@ Checked 2026-11-16. Status: Verified.
 - **`[mcp_servers.<id>]`, stdio:** `command` (required), `args`, `env`, `env_vars`, `cwd`.
 - **`[mcp_servers.<id>]`, Streamable HTTP:** `url` (required), `bearer_token_env_var`, `http_headers`, `env_http_headers`, `http_headers_helper`, `auth`, `oauth.*`, `scopes`, `oauth_resource`.
 - **Common keys:** `startup_timeout_sec` (10), `tool_timeout_sec` (60), `enabled`, `required`, `enabled_tools`/`disabled_tools`, `default_tools_approval_mode`, `tools.<tool>.approval_mode`.
+- **Re-checked 2026-11-17 (RUN-P6, `rust-v0.169.1`):** unchanged. The compare from `rust-v0.169.0` touches only model-provider, `core/src/client.rs`, model and TUI files. The stdio fallback working directory and the servers' process group are in CODEX-MCP-P4.
 
 ### CODEX-SKILLS: skills
 Checked 2026-11-16. Status: Verified (paths that appear only in source are noted).
@@ -442,6 +453,10 @@ URLs: https://cursor.com/docs/skills.md, …/subagents.md, …/hooks.md, …/ref
 - **`mcpServers.<name>` fields:** `command`, `args`, `env`, `cwd`, `url` (SSE), **`httpUrl` (Streamable HTTP)**, `headers`, `timeout` (ms), `trust` (bypasses confirmation; default false), `includeTools`, `excludeTools`, `oauth`, `authProviderType`. The schema also has `type` (`stdio`|`sse`|`http`).
 - **Naming:** avoid `_` in server names, because tools are named `mcp_<alias>_<tool>`.
 - **Redaction:** env vars matching `*TOKEN*`, `*SECRET*`, `*KEY*` are redacted unless explicitly listed in `env`.
+- **Re-checked 2026-11-17 (RUN-P6, v0.68.0 source), corrected:**
+  - Unset variables are not blanked everywhere. At load, `resolveEnvVarsInObject` leaves an unset `$VAR` or `${VAR}` with no default as literal text. Only `env` and `headers` get the second, connect-time pass, which blanks unset variables (GEMINI-P4).
+  - `cwd` is passed only when configured; otherwise a stdio server inherits the CLI's cwd. In an untrusted folder, a stdio server fails to start.
+  - The inherited environment drops names containing `CERT`, so `DOCKER_CERT_PATH` is dropped. `DOCKER_HOST`, `DOCKER_CONTEXT` and `DOCKER_CONFIG` match none of the name rules. Under strict sanitization, which v0.68.0 turns on when `GITHUB_SHA` is set or `SURFACE=Github` (so in GitHub Actions), a stdio server inherits only the always-allowed names (`PATH`, `HOME`, `LANG`, `SHELL`, `TMPDIR`, `USER`, `LOGNAME`, `TERM`, `COLORTERM` and a few platform names), `GEMINI_CLI_*`, `GIT_CONFIG_*` and the names in `security.environmentVariableRedaction.allowed`; so `DOCKER_HOST`, `DOCKER_CONTEXT` and `DOCKER_CONFIG` are dropped too, unless they are set in the entry's `env` or allow-listed (packages/core/src/services/environmentSanitization.ts and src/tools/mcp-client.ts at v0.68.0, checked in the Phase 6 review).
 
 ### GEMINI-SKILLS, GEMINI-AGENTS, GEMINI-HOOKS, GEMINI-EXT
 `docs/cli/skills.md`, `docs/core/subagents.md`, `docs/hooks/*.md`, `docs/extensions/reference.md`. Checked 2026-11-16. Status: Verified.
@@ -686,6 +701,10 @@ Checked 2026-11-16. Status: Verified.
   - `macos-15-intel`'s latest image is from 2026-08-24 (Rust 1.98.0, Homebrew 6.0.18). `macos-26-intel` is a standard public label, and the "Fall 2027" end of Intel macOS is stale; no current end date was found.
   - From 2026-11-30, the Windows 11 Arm64 workspace moves to `D:`, and `D:` becomes ReFS on the x64 and Arm64 Windows images.
   - `winget` isn't on `windows-11-arm`; on `windows-2025` it is undocumented.
+- **Re-checked 2026-11-17 (BUILD-P6, RUN-P6), Docker on the Linux runners:**
+  - The 20261116 images, `ubuntu-24.04` 20261116.376.1 and `ubuntu-24.04-arm` 20261116.188.1, ship Docker client and server 28.0.4, Buildx 0.39.0, Compose 2.38.2, Podman 4.9.3, Buildah 1.33.7 and Skopeo 1.13.3. They were published as pre-releases at 22:21Z on 2026-11-17, which starts their deployment; deployment usually takes 2 to 3 days, and until then a job may still get the 20261111 images, which have Buildx 0.38.2 (the runner-images README; the `main` READMEs still showed 20261111).
+  - Docker 28.0.4 embeds BuildKit v0.20.2. Its image store is the classic one: the containerd store is the default only from Engine 29.0, on fresh installs, and nothing found enables it (`docker info` wasn't run on a runner). So the runner's own `docker` driver can't produce attestations or multi-platform OCI output.
+  - The buildx plugin is installed at `latest` into `/usr/libexec/docker/cli-plugins`, with no checksum check.
 
 ---
 
@@ -717,6 +736,7 @@ Checked 2026-11-16. Status: Verified.
   - **`GITHUB_TOKEN`:** PRs it creates or updates get approval-required runs (since 2026-05-22). `workflow_dispatch` checks don't satisfy required status checks.
 
 ### ATTEST: artifact attestations and immutable releases
+- **Re-checked 2026-11-17 (SIGN-P6):** from Phase 6 every attestation is made in the reusable workflow `sign.yml`. In a called workflow, `actions/attest` needs `id-token: write` and `attestations: write` (and `packages: write` for an image) granted by the calling job too; the provenance's `runDetails.builder.id` names `sign.yml`, while `externalParameters.workflow.path` stays the caller, `release.yml`. Verify with `--signer-workflow jabbott-iii/Grimoire/.github/workflows/sign.yml@refs/heads/main` plus `--repo` and `--source-ref`.
 - **Source:** https://github.com/actions/attest; https://cli.github.com/manual/gh_attestation_verify; changelog 2025-10-28 (immutable releases GA). Checked 2026-11-16. Status: Verified.
 - **`actions/attest`:** **v4.2.2**, commit `1e69f48acb82d1966a394da916b4c1698aa569d6`. It is canonical and covers provenance, SBOM and custom modes.
   - `attest-build-provenance` v4 is "simply a wrapper". `attest-sbom` is "being deprecated".
@@ -729,16 +749,27 @@ Checked 2026-11-16. Status: Verified.
   - **Dry-runs and fork PRs:** there is no dry-run input, and the action fails at once without `id-token`, so it can't run on fork or Dependabot PRs. Public repositories always log to public-good Rekor.
   - **Verify:** use gh 2.102.0 or later (GHSA-wjmr-j3rp-mh2g, GHSA-4mq3-hpgx-9cx8); the runners ship 2.103.3. `--repo` is case-insensitive, while `--signer-workflow` and `--cert-identity` are case-sensitive. Fully offline verification needs `--bundle` plus `--custom-trusted-root`.
   - **Immutable releases:** the release attestation is signed by GitHub's Sigstore (SAN `https://dotcom.releases.github.com`, predicate `https://in-toto.io/attestation/release/v0.2`). Verify it with `gh release verify` and `gh release verify-asset` (gh 2.81.0 or later). REST: `GET`, `PUT` and `DELETE /repos/{owner}/{repo}/immutable-releases`. The title and notes stay editable. `GITHUB_TOKEN` can't create or edit a release whose target changes workflow files.
+- **Re-checked 2026-11-17 (REGISTRY-P6), for images:**
+  - With `push-to-registry: true` the job also needs **`packages: write`**.
+  - The action reads registry credentials only from `$HOME/.docker/config.json`; `DOCKER_CONFIG` and credential helpers are ignored. It takes exactly one subject (`subject-name` and a SHA-256 `subject-digest`), lowercases the name and strips a tag.
+  - With `create-storage-record` at its default, it calls `GET /repos/{owner}/{repo}` and creates no record for a user-owned repository, so Grimoire sets it to `false`.
+  - On GHCR the attestation is listed in the `sha256-<subject hex>` fallback tag, next to the cosign signature.
 
 ### COSIGN
+- **Re-checked 2026-11-17 (SIGN-P6):** from Phase 6 the release's signatures come from the reusable workflow `sign.yml`, so the SAN is `https://github.com/jabbott-iii/Grimoire/.github/workflows/sign.yml@refs/heads/main`. Any repository can call a public reusable workflow and get that same SAN, so verifiers also pass `--certificate-github-workflow-repository jabbott-iii/Grimoire --certificate-github-workflow-ref refs/heads/main` (deprecated OIDs 1.5 and 1.6, still issued, compared exactly).
 - **Version:** cosign **v3.1.4** (2026-10-20); 2.x is still maintained (v2.6.5). `sigstore/cosign-installer` **v4.1.3**, commit `756fe2d284c7292c4e9b62c8a28f1e5629c59532`, defaults to v3.1.4.
-- **Source:** https://github.com/sigstore/cosign; https://docs.sigstore.dev/cosign/. Checked 2026-11-16. Status: Partial (the exact Fulcio SAN for a GitHub workflow identity, and GHCR support for OCI 1.1 referrers, are **UNVERIFIED**).
+- **Source:** https://github.com/sigstore/cosign; https://docs.sigstore.dev/cosign/. Checked 2026-11-16. Status: Verified: the Fulcio SAN in SUPPLY-CHAIN-P5 (2026-11-17), and GHCR's lack of OCI 1.1 referrers support in REGISTRY-P6 (2026-11-17).
 - **Bundles:** v3 defaults to protobuf bundles, and "`--bundle` has moved from optional to required". Image signatures are stored as OCI 1.1 referring artifacts.
 - **Blob signing:** `cosign sign-blob f --bundle f.sigstore.json`. Verify with `cosign verify-blob f --bundle … --certificate-identity … --certificate-oidc-issuer https://token.actions.githubusercontent.com`.
 - **Re-checked 2026-11-17 (SUPPLY-CHAIN-P5):**
-  - **The Fulcio SAN is now verified:** `https://github.com/jabbott-iii/Grimoire/.github/workflows/<FILE>@<REF>`, built from `job_workflow_ref`. Case is preserved, and the immutable `sub` doesn't affect it; the `sub` appears only in OID 1.3.6.1.4.1.57264.1.24. Only GHCR's OCI 1.1 referrers support stays UNVERIFIED (Phase 6).
+  - **The Fulcio SAN is now verified:** `https://github.com/jabbott-iii/Grimoire/.github/workflows/<FILE>@<REF>`, built from `job_workflow_ref`. Case is preserved, and the immutable `sub` doesn't affect it; the `sub` appears only in OID 1.3.6.1.4.1.57264.1.24. GHCR's OCI 1.1 referrers support was left for Phase 6, and is settled below (REGISTRY-P6).
   - **Version floor:** keep v3.1.4, and require at least 3.1.3 (GHSA-fx35-mq7g-6g98, a verification bypass). `--use-signing-config` is deprecated in 3.1.4.
   - **The installer** checks a hard-coded SHA-256 of its bootstrap binary, and supports Windows X64 only. There is no windows-arm64 cosign binary.
+- **Re-checked 2026-11-17 (REGISTRY-P6, BUILD-P6, BASE-IMAGE-P6):**
+  - **GHCR has no referrers API.** It returns 404 `MANIFEST_UNKNOWN` for `/v2/<name>/referrers/<digest>` (probed in four repositories), so clients fall back to the referrers tag schema. cosign v3.1.4 pushes an image signature as an OCI 1.1 referrer manifest (artifactType `application/vnd.dev.sigstore.bundle.v0.3+json`), and on GHCR it is listed in the `sha256-<subject hex>` fallback tag. This settles the last UNVERIFIED item above.
+  - **`cosign verify` falls back silently** to legacy `.sig` lookup when it finds no new-format bundle. Distroless's signatures on gcr.io take that path.
+  - Without `--recursive`, `cosign sign <ref>@sha256:<index>` signs only the index.
+  - **Checked locally (2026-11-17, cosign 3.1.4, crane v0.22.1):** an offline signature of a pushed index landed in its `sha256-<index hex>` fallback tag, on a local registry without a referrers API. Distroless's index and platform manifests verified with its keyless identity.
 
 ### SBOM
 - **Source:** https://github.com/CycloneDX/cyclonedx-rust-cargo; https://github.com/rust-secure-code/cargo-auditable; https://docs.docker.com/build/metadata/attestations/. Checked 2026-11-16. Status: Verified.
@@ -750,6 +781,10 @@ Checked 2026-11-16. Status: Verified.
   - **syft:** v1.57.2 was released on 2026-11-16, too young to pin. The newest release at least 7 days old is v1.57.1 (2026-11-09).
   - **cargo-auditable readers:** cargo audit 0.17.3+, trivy 0.31.0+, grype 0.83.0+, syft 1.15.0+, osv-scanner 2.0.1+ (container images), blint 2.1.3+, wasm-tools 1.227.0+, rust-audit-info and auditable2cdx.
   - **cargo-cyclonedx:** also, there is no `-p`/`--package`; it writes `<package>.cdx.json` next to every workspace member's `Cargo.toml`; and `SOURCE_DATE_EPOCH` drops `serialNumber`, which `actions/attest`'s `sbom-path` requires.
+- **Re-checked 2026-11-17 (BUILD-P6), buildx attestations:**
+  - BuildKit's SBOM generator, `docker/buildkit-syft-scanner` 1.12.1, bundles **syft v1.51.0**, not the standalone syft above, and writes **SPDX 2.3** JSON.
+  - Without `generator=`, BuildKit pulls it by its **`stable-1` tag** on every build, so Grimoire pins it by digest.
+  - BuildKit's provenance default is SLSA v1 (since v0.28.0), and attestations are OCI artifacts (since v0.32.0). The docker-container driver adds the GitHub Actions event payload to provenance, in min mode too, unless the builder is created with `provenance-add-gha=false`.
 
 ### BASE-IMAGE
 - **Source:** https://github.com/GoogleContainerTools/distroless (README 2026-09-24); https://images.chainguard.dev/directory/image/static/overview; https://github.com/opencontainers/image-spec/blob/main/annotations.md (image-spec v1.1.1). Checked 2026-11-16. Status: Verified.
@@ -760,6 +795,12 @@ Checked 2026-11-16. Status: Verified.
   - Point-in-time index digest of `static-debian13:nonroot`: `sha256:aafe993665bf6200db38a02c11a9351e782a84b6a45e7f33b6695638c88e3931`. Re-resolve at implementation time.
 - **Chainguard:** the free `cgr.dev/chainguard/static` has only the `latest`/`latest-dev` tags. Version tags are paid.
 - **OCI annotations:** `org.opencontainers.image.{created,source,revision,version,licenses,title,description,url,documentation,vendor,base.digest,base.name}`.
+- **Re-checked 2026-11-17 (BASE-IMAGE-P6, RUN-P6, SCAN-P6):**
+  - **The pin changed.** The `nonroot` digest above re-resolved unchanged, but it was first uploaded 2026-11-12T21:16:35Z and fails the 7-day rule until 2026-11-19T21:16:35Z. Grimoire pins the previous index, `sha256:25ac8f0c3b2334a9eb05452266bd4697864a8c8ef0ef71e5e6480d7f92868329`, uploaded 2026-10-31T22:37:00Z (linux/amd64 `sha256:336e53e9941facdb69b755e6fd2c63f5400abd3b1ba47bb17ebafc2b1547cebd`, linux/arm64/v8 `sha256:bf6233b64054d17b31c3b555b1bbcee58958896830a305ef4d51faa257990d87`).
+  - The two indexes differ only in the mode of `/usr/lib/os-release`, to which `/etc/os-release` links: 0555 in the pin, 0644 in the newer one. Upload times are GCR's undocumented `timeUploadedMs`, cross-checked against Rekor.
+  - **Chainguard (corrected):** the free `cgr.dev/chainguard/static` has the plain tags `latest`, `latest-glibc`, `latest-glibc-tzdata` and `latest-tzdata`, not `latest`/`latest-dev`.
+  - **Signatures:** the verify command above is unchanged. Distroless signs each index and each platform manifest, in the legacy `.sig` format. Checked locally with cosign 3.1.4 for the pin and both its platform manifests.
+  - **OCI annotations:** image-spec v1.1.1 is still the latest release. The keys also include `authors` and `ref.name`.
 
 ### SCAN: container vulnerability scanning
 - **Source:**
@@ -775,6 +816,9 @@ Checked 2026-11-16. Status: Verified.
 - **Grype:**
   - grype v0.122.0 (2026-11-16); `anchore/scan-action` v7.4.2, commit `27805bf3b4e84b4a5c980df22ed233c00390a439`.
   - Defaults: `fail-build: true`, `severity-cutoff: medium`. No compromise found.
+- **Re-checked 2026-11-17 (SCAN-P6):**
+  - Grype v0.122.0 (2026-11-16) is too young to pin, so the pin is **v0.121.3** (2026-11-09).
+  - `anchore/scan-action` v7.4.2 is unchanged and is **not used**. It runs a downloaded `install.sh` with no pinned hash and no signature check, and defaults to Grype v0.118.0, whose syft is below the fix for GHSA-mw2c-m758-9v5q. Grimoire installs the Grype tarball itself, checked against its SHA-256.
 
 ### DENY and UNUSED-DEPS
 - **Source:** https://github.com/EmbarkStudios/cargo-deny (CHANGELOG, docs); https://github.com/bnjbvr/cargo-machete; https://github.com/Boshen/cargo-shear; https://github.com/est31/cargo-udeps; https://doc.rust-lang.org/stable/cargo/reference/lints.html. Checked 2026-11-16. Status: Verified.
@@ -800,6 +844,11 @@ Checked 2026-11-16. Status: Verified.
 - **github-actions:** updates the SHA *and* a same-line `# vX.Y.Z` comment. "Dependabot … will not create alerts for actions pinned to SHA values."
 - **`cooldown`:** default 3 days. Per-semver-level days apply to Cargo, `rust-toolchain` and others, but not to GitHub Actions or Docker, which take `default-days` only. (This corrects the Phase 0 entry, which said Cargo only.)
 - **`rust-toolchain` ecosystem:** Dependabot bumps `rust-toolchain.toml`, but it never changes `rust-version`.
+- **Re-checked 2026-11-17 (BASE-IMAGE-P6; dependabot-core v0.405.0), the `docker` ecosystem:**
+  - `directory: "/"` finds a root `Dockerfile`. The `FROM` line must be literal (`[registry/]image[:tag][@sha256:<digest>]`, no `${ARG}`). A digest pinned on a non-comparable tag such as `nonroot` gets digest-only PRs.
+  - **Cooldown fails open outside Docker Hub.** Since dependabot-core `3bfea916` (2026-09-18), the only accepted publication date is Docker Hub's `tag_last_pushed`. For gcr.io the update is allowed at once, with a `cooldown_date_unavailable` warning. The check above missed this. So the maintainer checks a new digest's age by hand before merging, for example with `curl -s https://gcr.io/v2/distroless/static-debian13/tags/list | jq '.manifest["sha256:<digest>"].timeUploadedMs'` (an undocumented field; BASE-IMAGE-P6).
+  - **Docker gets no security updates.** Images in workflow `container:`, `services:` or `uses: docker://` are never updated.
+  - Distroless bump PRs carry no release notes: Dependabot reads them only from config `Labels`, and distroless sets none.
 
 ### LYCHEE
 - **Version:** lychee v0.24.2; `lycheeverse/lychee-action` v2.9.0, commit `e7477775783ea5526144ba13e8db5eec57747ce8`.
@@ -958,8 +1007,10 @@ The actionlint, gitleaks and lychee hashes were checked against each release's o
 - **gh-actions-lock:** every write-mode run needs `--no-narrow`, or it rewrites SHA pins to tags. CI runs `--verify`, which reports the expected, non-blocking "pinned to a bare SHA" note.
 - Status: Verified.
 - **Re-checked 2026-11-17 (RUST-REGISTRY-P5, ACTIONS-P5):** every pin above is still the newest release at least 7 days old, and the actionlint, gitleaks and lychee checksums still match their checksum files. Newer, but too young: install-action v2.90.4 (2026-11-14) and v2.90.5 (2026-11-15), cargo-deny 0.21.0 (2026-11-16) and cargo-shear 1.14.1 (2026-11-13). actionlint, zizmor and gh-actions-lock also publish SLSA provenance attestations, which `gh attestation verify` can check and which are stronger than an API digest. Phase 5's new pins are listed in each `*-P5` entry.
+- **Phase 6 (2026-11-17):** the container image's pins are listed in BUILD-P6 (buildx, the BuildKit and SBOM-scanner images), REGISTRY-P6 (crane, cosign), SCAN-P6 (Grype) and BASE-IMAGE-P6 (the distroless base). Each was at least 7 days old when adopted. Dependabot updates the base image and the cosign-installer action, but not the `env:` pins (buildx, crane, Grype and the two BuildKit images), which are bumped by hand.
 
 ### ZIZMOR: workflow audit rules
+- **Re-checked 2026-11-17 (SIGN-P6):** the `self-repository` audit (since v1.30.0, regular persona, Low) flags `uses: ./…` on reusable workflow calls too; Grimoire's two `sign.yml` calls carry `# zizmor: ignore[self-repository]`, because actionlint 1.7.12 rejects the `$/` form (issue #711). `template-injection` rates a `workflow_call` string input High in a run step, so `sign.yml` passes inputs through `env:`. `concurrency-limits` skips reusable-only workflows.
 - **Persona:** zizmor 1.32.0 runs at the **pedantic** persona with online audits, and `advanced-security: false` keeps failing exit codes.
 - **Rules every workflow follows:**
   - named workflows and jobs;
@@ -1133,6 +1184,7 @@ Sources: https://code.claude.com/docs/en/hooks.md, …/hooks-guide.md, …/mcp.m
   - **Claude Code sets `CLAUDE_PROJECT_DIR` in the server's environment, not in its own**, so `${CLAUDE_PROJECT_DIR:-.}` in a project `.mcp.json` normally expands to `.`. Read the variable inside the server instead.
   - Claude Code answers `roots/list` with the launch directory plus any added directories.
   - Stopping: on macOS and Linux, SIGINT, then SIGTERM 100 ms later, then SIGKILL after a further 400 ms. On Windows, it closes stdin, then kills the process tree after 300 ms.
+  - Re-checked 2026-11-17 (RUN-P6, CLI 2.1.327): the `:-` default rule also applies to local- and user-scope entries in `~/.claude.json`, and stdio servers have received `CLAUDE_PROJECT_DIR` since 2.1.139. The stdio working directory is still UNVERIFIED.
 - **MCP limits and annotations:**
   - Output: a warning above 10,000 tokens, and `MAX_MCP_OUTPUT_TOKENS` defaults to 25,000. Text over 50,000 chars is saved to a file unless `_meta["anthropic/maxResultSizeChars"]` raises the threshold (500,000 max). HTTP or SSE responses over 16 MiB fail. Error text over about 11,000 chars keeps only the first and last 5,000.
   - Timers: at least 60 s to the first response byte; an idle timeout of 5 min for HTTP and 30 min for stdio; `MCP_TOOL_TIMEOUT` defaults to about 28 h.
@@ -1864,6 +1916,7 @@ Status: Verified, except the gaps listed.
 - **Working directory and program lookup:**
   - Without `cwd`, a stdio server starts in the launcher's fallback directory. A doc comment describes it as the caller's runtime working directory.
   - (Corrected) On Windows the program is resolved with `which` against the server's own `PATH`/`PATHEXT` and that cwd. On Unix it is passed to spawn unchanged.
+  - Re-checked 2026-11-17 (RUN-P6, `rust-v0.169.1` source): without `cwd`, a local stdio server starts in the local environment's cwd, falling back to the session configuration's cwd. Servers are spawned in a new process group. The compare from `rust-v0.169.0` touches only model-provider, `core/src/client.rs`, model and TUI files, so the rest of this entry holds.
 - **HTTP credentials:**
   - If the variable named by `bearer_token_env_var` is unset, empty or not Unicode, that server fails to start.
   - An `env_http_headers` entry whose variable is unset or blank is dropped silently. So are invalid header names and values.
@@ -1878,8 +1931,8 @@ Status: Verified, except the gaps listed.
 - **Managed allowlist:** a `requirements.toml` `mcp_servers` table is matched on server name and identity (command or url). Any configured server not on it is disabled.
 - **UNVERIFIED:**
   - whether unknown keys inside `[mcp_servers.<id>]` trigger the ignored-key startup warning;
-  - whether every frontend (TUI, `exec`, app server) refuses to start on an invalid entry, as the source suggests;
-  - the exact fallback directory for a stdio server.
+  - whether every frontend (TUI, `exec`, app server) refuses to start on an invalid entry, as the source suggests.
+  - Settled since: the exact fallback directory for a stdio server, from source in RUN-P6 (above).
 
 ### CODEX-SKILLS-P4: skills
 Sources: `ext/skills/src/host_roots.rs`, `ext/skills/src/loader/host.rs`, `ext/skills/src/loader/host_merge.rs`, `skills/src/parser.rs`, `skills/src/lib.rs` and `tui/src/onboarding/trust_directory.rs` at `rust-v0.169.0`; https://learn.chatgpt.com/docs/build-skills.md (fetched 2026-11-17).
@@ -3110,6 +3163,8 @@ Sources: https://github.com/microsoft/winget-pkgs at `b192fe0471e6` (`doc/{Autho
 - **UNVERIFIED:** a fully offline end-to-end `winget validate` run; winget on `windows-2025`; whether validation step 08 install-tests arm64 installers; whether a `+crt-static` build passes the VC++ runtime check.
 
 ### SUPPLY-CHAIN-P5: attestations, cosign, immutable releases, SBOMs and checksums
+*Phase 6 note (SIGN-P6, 2026-11-17): the SAN this section derives, `…/release.yml@refs/heads/main`, was the release identity until Phase 6 moved all signing into `sign.yml`. No release was made under it.*
+
 Sources: https://github.com/actions/attest at v4.2.2; https://github.com/cli/cli at v2.103.3 (`pkg/cmd/attestation/`, `pkg/cmd/release/`) and releases v2.49.0, v2.81.0 and v2.102.0; https://github.com/sigstore/cosign at v3.1.4 (`cmd/cosign/cli/`, `pkg/cosign/`, `doc/cosign_verify-blob.md`, `.goreleaser.yml`) and v3.1.3; https://github.com/sigstore/cosign-installer/blob/v4.1.3/action.yml; https://github.com/sigstore/sigstore-go at v1.3.0; https://github.com/sigstore/fulcio/blob/v1.10.0/config/identity/config.yaml; https://raw.githubusercontent.com/sigstore/root-signing/refs/heads/main/targets/signing_config.v0.2.json; real certificates from the GitHub attestations API (`lifthrasiir/aqueous`, `Homebrew/brew`); https://docs.github.com/en/actions/reference/security/oidc; https://github.com/github/docs (`content/code-security/concepts/supply-chain-security/immutable-releases.md`, `content/actions/how-tos/secure-your-work/use-artifact-attestations/use-artifact-attestations.md`); https://github.com/github/rest-api-description; https://github.com/CycloneDX/cyclonedx-rust-cargo at `769fa7dc5d23`; https://github.com/rust-secure-code/cargo-auditable at v0.7.7; https://github.com/coreutils/coreutils/blob/v9.12/doc/coreutils.texi. Status: Verified, except the gaps listed. No cosign, gh or SBOM tool was run; real certificates were decoded with `openssl x509`.
 
 - **Pins:**
@@ -3172,7 +3227,8 @@ Sources: https://github.com/actions/attest at v4.2.2; https://github.com/cli/cli
 - **Checksums:**
   - A GNU untagged line is `<hex><space><' ' or '*'><name>`. A name containing `\`, a newline or CR is escaped, and the line starts with `\`. `sha256sum -c` also reads tagged lines, and `--ignore-missing` checks only the files present.
   - Consumers: winget needs `InstallerSha256` in the manifest; Scoop reads `$url.sha256` or an aggregate list; cargo-binstall reads none.
-- **UNVERIFIED:** when a draft release's tag is created (no primary source says); whether `--filter-platform` gives correct SBOMs for targets other than the host; GHCR support for OCI 1.1 referrers (Phase 6).
+- **UNVERIFIED:** when a draft release's tag is created (no primary source says); whether `--filter-platform` gives correct SBOMs for targets other than the host.
+- **Settled in Phase 6:** GHCR support for OCI 1.1 referrers (REGISTRY-P6). GHCR returns 404 for the referrers API, so cosign lists an image signature in the `sha256-<hex>` fallback tag.
 
 ### ACTIONS-P5: runners, targets, build flags, artifacts, environments and OIDC
 Sources: https://docs.github.com/en/actions/reference/runners/github-hosted-runners; https://github.com/actions/runner-images at main `5d331217d4` (`images/{ubuntu,macos,windows}/*-Readme.md`; issues 14017, 14083, 14602, 14748, 15314 and 15315); Rust at tag 1.100.0 (`src/doc/rustc/src/{platform-support.md,platform-support/apple-darwin.md,remap-source-paths.md,codegen-options/index.md}`, `compiler/rustc_target/src/spec/`); Cargo at `3acc79c0c841` (`doc/book/src/reference/{config,profiles,unstable}.md`, `doc/book/src/commands/cargo-metadata.md`); https://github.com/actions/upload-artifact/blob/v7.0.2/README.md, https://github.com/actions/download-artifact/blob/v8.0.2/README.md; https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments, https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/review-deployments, …/manage-environments; https://docs.github.com/en/actions/concepts/security/github_token; https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks; https://docs.github.com/en/rest/actions/oidc; https://github.com/zizmorcore/zizmor at v1.32.0; https://github.com/rhysd/actionlint at v1.7.12. Status: Verified, except the gaps listed. Only `cargo metadata` and `cargo tree` were run, locally.
@@ -3193,6 +3249,7 @@ Sources: https://docs.github.com/en/actions/reference/runners/github-hosted-runn
   - `ubuntu-latest` moves to 26.04 in a rollout from 2026-10-19 to 2026-11-19. On 2026-11-17 the README still mapped it to 24.04.
   - From 2026-11-30, in rollouts of 2 to 3 days: the Windows 11 Arm64 workspace moves to `D:` (#15314), and `D:` becomes ReFS on the Server 2022, Server 2025 VS2026 and Windows 11 Arm64 VS2026 images (#15315).
   - `macos-26-intel` is a standard public label. The 2025 statement that Intel macOS ends with macOS 15 in Fall 2027 is stale, and no current end date was found.
+  - **Re-checked 2026-11-17 (RUN-P6):** the 20261116 images (`ubuntu-24.04` 20261116.376.1, `ubuntu-24.04-arm` 20261116.188.1, Buildx 0.39.0) were published as pre-releases at 22:21Z on 2026-11-17, which marks the start of their deployment. Deployment usually takes 2 to 3 days, so until it ends a job may get 20261111 (Buildx 0.38.2) or 20261116; its "Set up job" log names the image. Both ship Docker 28.0.4; that it uses the classic image store is inferred (UNVERIFIED: `docker info` wasn't run on a runner). See RUNNERS.
 - **Targets (Rust 1.100.0):**
   - `x86_64-unknown-linux-musl` and `aarch64-unknown-linux-musl`: Tier 2 with host tools (musl 1.2.5). Both set `crt_static_default = true` and link self-contained CRT objects whenever crt-static is on. No crate built for any target compiles C (`cc` appears only behind `cfg(target_os = "haiku")`), so no `musl-tools` is needed.
   - `x86_64-pc-windows-msvc` and `aarch64-pc-windows-msvc`: Tier 1 with host tools. The CRT is dynamic by default and static with `-C target-feature=+crt-static`.
@@ -3273,3 +3330,980 @@ Sources: https://github.com/axodotdev/cargo-dist at v0.34.0 (`cargo-dist/templat
     - So with a backup name the old binary always survives, under its own name or the backup name, and `install.ps1` moves it back.
   - **`RuntimeInformation.OSArchitecture`** (dotnet-api-docs `xml/System.Runtime.InteropServices/RuntimeInformation.xml`): "intended to represent the actual architecture of the underlying operating system", taking Windows and macOS emulation into account. The review found it available in .NET Framework only from 4.7.1, so `install.ps1` falls back to environment variables. dist's note that it reports X64 on Arm64 before PowerShell 7.3 or Windows 11 22H2 is UNVERIFIED.
   - **WOW64** (Microsoft's "WOW64 Implementation Details", checked in the review): a 32-bit process sees `PROCESSOR_ARCHITECTURE=x86`, and `PROCESSOR_ARCHITEW6432` holds the real architecture (`AMD64` or `ARM64`).
+
+---
+
+## Phase 6 additions (checked 2026-11-17)
+
+*After the review, a sixth topic, SIGN-P6 (signing from a reusable workflow), was researched and re-checked the same way: 42 facts, 40 confirmed, 1 corrected and 1 left UNVERIFIED. It is the last section below.*
+
+These facts came from a five-topic research workflow for the container image: the distroless base image, BuildKit and buildx, GHCR and image signing, Grype, and running the image. An independent skeptic re-checked each topic against its primary sources. Of 333 facts, 308 were confirmed, 25 corrected and none refuted: base image 52 of 59 (7 corrected), build 59 of 62 (3 corrected), registry 64 of 68 (4 corrected), scan 63 of 68 (5 corrected), run 70 of 76 (6 corrected).
+
+Corrected facts appear below in corrected form, and facts the skeptics added are included where an implementer needs them. The research itself built, pushed, scanned and ran no image: it read docs, source and registry APIs, and RUN-P6 ran only `cargo tree` and `grep` locally. Afterwards the maintainer approved local tooling for Phase 6: rootless Docker 29.9.3 from the installed `dockerd-rootless.sh`, run as the maintainer's user and stopped at the end; Grype 0.121.3, cosign 3.1.4 and crane v0.22.1 in the scratchpad, each checked against its published SHA-256 (both recorded in PLAN.md); and later the `aarch64-unknown-linux-musl` Rust target, to build real arm64 binaries. Facts confirmed that way are marked "Checked locally", and each UNVERIFIED item they settle is removed, with a note on how. The local machine is x86_64 with no emulation, so no arm64 image was run. Rootful Docker, Docker Desktop, Podman, GHCR itself and GitHub Actions weren't used: nothing here has run on GitHub. The raw results are not committed. Where an entry below differs from an earlier entry, this one wins, and the older entry carries a "Re-checked 2026-11-17" note. The decisions these facts led to are in ADR-0011.
+
+### BASE-IMAGE-P6: distroless base, OCI annotations, GHCR metadata and Dependabot for Dockerfiles
+Sources: the anonymous registry API at https://gcr.io/v2/distroless/static-debian13/ (`tags/list`, `manifests/nonroot`, and the manifests, configs, layers, `.sig`, `.att` and `referrers/` of the digests below) and https://gcr.io/v2/distroless/static-debian12/tags/list; https://github.com/GoogleContainerTools/distroless at `0af09fb8f491` (`README.md`, `SUPPORT_POLICY.md`, `RELEASES.md`, `.cloudbuild/`, `private/oci/sign_and_push.go`, `private/tools/lifecycle/tag.sh`, `.github/workflows/update-deb-package-snapshots.yml`) and PR #2248; https://cloud.google.com/artifact-registry/docs/transition/gcr-repositories (updated 2026-11-10); https://github.com/opencontainers/image-spec at v1.1.1 (`annotations.md`, `image-index.md`, `manifest.md`, `config.md`) and `main` at `4feed4a6674e`; https://github.com/opencontainers/distribution-spec/blob/v1.1.1/spec.md; https://github.com/moby/buildkit at v0.35.0 (`docs/annotations.md` and the Go source); https://github.com/docker/buildx at v0.38.2 (Go source); https://github.com/docker/docs at `947343021a3e` (`content/manuals/build/metadata/annotations.md`); https://github.com/github/docs at `49a012fa50b4` (`content/packages/`, `content/code-security/reference/supply-chain-security/`, `data/reusables/package_registry/`, `data/reusables/dependabot/supported-package-managers.md`); https://github.com/dependabot/dependabot-core at v0.405.0 (`docker/`, `github_actions/`) and commit `3bfea916472b`; https://github.com/sigstore/cosign at v3.1.4 (`cmd/cosign/cli/verify/`, `cmd/cosign/cli/options/`, `pkg/cosign/verify.go`, `pkg/cosign/tuf.go`); https://github.com/anchore/syft/blob/v1.57.1/syft/pkg/cataloger/debian/cataloger.go; https://github.com/anchore/grype/blob/v0.121.3/go.mod; https://ghcr.io/v2/sigstore/cosign/cosign/ (one public image); https://cgr.dev/v2/chainguard/static/tags/list; https://edu.chainguard.dev/chainguard/chainguard-images/how-to-use/verifying-chainguard-images-and-metadata-signatures-with-cosign/ (updated 2026-11-03). Status: Verified, except the gaps listed. The research pulled and built no image, and ran no cosign, Grype or Syft binary. Layer blobs were downloaded, checked against their digests and listed with `tar`; certificates were decoded with `openssl x509`.
+
+- **Pins** (each body's SHA-256 matched its digest; ages come from GCR's `timeUploadedMs` and match the Rekor times):
+  - **Current `static-debian13:nonroot`:** index `sha256:aafe993665bf6200db38a02c11a9351e782a84b6a45e7f33b6695638c88e3931`, unchanged since BASE-IMAGE.
+    - Built from distroless `0af09fb8f491449b27f27f87c4dd10a56b401be1` and first uploaded 2026-11-12T21:16:35Z.
+    - **It fails the 7-day rule until 2026-11-19T21:16:35Z.**
+    - Children: linux/amd64 `sha256:816dc4d589459a7fe33b8a2e69edb70da56ffad7161f4b415937fa2bfe7e92e8` and linux/arm64/v8 `sha256:50e178649a8d77a5d8414f205471c829f06b876cbdb2455dace0b5de549fd1e5`.
+  - **Newest eligible index:** the previous one, `sha256:25ac8f0c3b2334a9eb05452266bd4697864a8c8ef0ef71e5e6480d7f92868329`.
+    - First uploaded 2026-10-31T22:37:00Z and signed 2026-10-31T22:37:04Z (Rekor logIndex 3615240227). Six distroless commits tag it.
+    - Children: linux/amd64 `sha256:336e53e9941facdb69b755e6fd2c63f5400abd3b1ba47bb17ebafc2b1547cebd` and linux/arm64/v8 `sha256:bf6233b64054d17b31c3b555b1bbcee58958896830a305ef4d51faa257990d87`.
+    - **Grimoire's `Dockerfile` pins this index**, on its one `FROM` line. Moving to `aafe9936…` waits until that index is 7 days old.
+  - **The two differ only in layer 12.** PR #2248 (merged 2026-11-12T21:12:38Z as `0af09fb8`) changed `/usr/lib/os-release` from mode 0555 to 0644. The file's content (SHA-256 `b4d56a90bdd5`) and every other layer are identical, and the configs differ only in that layer's diff_id.
+  - **Reference versions** (not build inputs):
+
+    | Project | Version | Released | Commit | 7-day rule |
+    |---|---|---|---|---|
+    | cosign | v3.1.4 | 2026-10-20 | `0e48502cf5ef34e2e60bbd3617aa19945712f705` | eligible |
+    | image-spec | v1.1.1 (still the latest) | 2025-03-03 | `147f9c13cedb47a0c4d9a11a222961073d585877` | eligible |
+    | dependabot-core | v0.405.0 | 2026-11-16 | `da6dfa3b074a41c03dc4458a84df3973a04e63b7` | reference only |
+    | BuildKit | v0.35.0 | 2026-11-11 | `f55949dea4f03bb9d85b73e9afc9a609291289db` | too young; v0.34.2 (2026-11-03) is the newest eligible |
+    | buildx | v0.39.0 | 2026-11-11 | | too young; v0.38.2 (2026-11-03, `3c4cbd35852fc1a476923627a780a7836c28b654`) is the newest eligible |
+    | syft | v1.57.1 | 2026-11-09 | `a0c0d3890a9d79421c403e8fcadec50a2e55bf21` | eligible |
+    | grype | v0.121.3 | 2026-11-09 | `cd1f23eb50dfb52647090158f453c7359172591f` | eligible; requires syft v1.57.1 |
+- **Tags** (`tags/list`, 7,161 tags in all):
+  - **Plain tags:** `latest`, `nonroot`, `debug` and `debug-nonroot`, each also with `-amd64`, `-arm`, `-arm64`, `-ppc64le`, `-riscv64` and `-s390x`.
+    - The README (last changed in `a3d1f4e2`, 2026-09-24) documents the four tags and the arch suffixes: "Any other tags are considered deprecated and are no longer updated".
+  - **Commit tags:** `<tag>-<40-hex commit>` and bare `<40-hex commit>` tags cover 169 commits (116 for riscv64).
+    - Most commits re-tag an existing digest. `:nonroot` had 18 distinct indexes between 2025-10-08 and 2026-11-12, most recently on 09-13, 10-20, 10-21, 10-23, 10-31 and 11-12.
+  - **cosign tags:** `sha256-<hex>.sig` and `.att`, 472 of each.
+  - **Lifecycle tags:** 1,669 `update-available-<digest>` tags.
+    - `private/tools/lifecycle/tag.sh` adds one to each digest older than 24 hours whose only tags are commit tags. Its README says 48 hours.
+    - `25ac8f0c`, `336e53e9` and `bf6233b6` already carry one.
+    - The script's `deprecate` mode adds `deprecated-public-image-<digest>`; `static-debian12` has 1,670 of those.
+- **Lifecycle:**
+  - Debian 13 `static` is supported until "debian 14 release day + 1yr" (`SUPPORT_POLICY.md`).
+  - Debian 12 builds were removed on 2026-09-10 (`3833bee1`). `static-debian12:nonroot` (`sha256:afa5c872`, last uploaded 2026-08-21) is tagged `deprecated-public-image-`.
+  - Images are "automatically built and pushed every commit" (`RELEASES.md`). A daily workflow (cron `35 20 * * *`) opens Debian snapshot PRs, after a 1-day buffer by default.
+- **Registry:** gcr.io answers anonymous requests and is served by Artifact Registry (header `x-gcr-using-artifact-registry: true`). Google says "gcr.io URLs hosted on Artifact Registry, including Google-owned images with gcr.io URLs, are not affected by the Container Registry shutdown".
+- **Image contents** (checked on amd64 `816dc4d5`):
+  - **Manifests:**
+    - The index lists 6 platforms (amd64, arm64/v8, arm/v7, s390x, ppc64le, riscv64) and has no annotations.
+    - Each platform manifest (2864 bytes) has an OCI config and 13 `tar+gzip` layers of about 860 KB in total.
+    - Its one annotation is `org.opencontainers.image.source: https://github.com/GoogleContainerTools/distroless`.
+  - **Config:**
+    - `Env` holds only `PATH` and `SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt`. `User` is `"65532"` and `WorkingDir` is `/home/nonroot`.
+    - There is no `Entrypoint`, `Cmd`, `Labels` or `ExposedPorts` (the README's "empty vector entrypoint"), and `created` is the epoch.
+  - **Users:**
+    - `/etc/passwd` (layer 7) lists root (0), nobody (65534) and nonroot (65532, home `/home/nonroot`). All three have the shell `/sbin/nologin`, which doesn't exist: `/bin` and `/sbin` link to the empty `/usr/bin` and `/usr/sbin`.
+    - `/etc/group` lists root, nobody, tty (5), staff (50) and nonroot (65532).
+  - **Modes:** `/home/nonroot` is 0700 and owned by 65532:65532, `/root` is 0700, and `/tmp` is 1777. Only `ca-certificates.crt`, its copyright file and `etc/update-motd.d/10-uname` have an executable bit.
+  - **Packages:** one `var/lib/dpkg/status.d/<pkg>` file (plus `.md5sums`) each, and no `var/lib/dpkg/status`. Syft v1.57.1 reads them through the glob `**/lib/dpkg/status.d/*`.
+
+    | Package | Version |
+    |---|---|
+    | base-files | 13.8+deb13u7 |
+    | netbase | 6.5 |
+    | tzdata | 2026f-0+deb13u1 |
+    | tzdata-legacy | 2026f-0+deb13u1 |
+    | media-types | 13.0.0 |
+    | ca-certificates | 20250419+deb13u1 (148 certificates) |
+
+    - **Checked locally (2026-11-17, Grype 0.121.3):** on Grimoire's image, built on the pinned `25ac8f0c…`, Grype lists these six packages, at these versions, on both platforms, and reports the distro as Debian 13.7.
+  - **System files:** `/usr/lib/os-release`, to which `/etc/os-release` links, has `ID="debian"`, `VERSION_ID="13"` and `PRETTY_NAME="Distroless"`. `nsswitch.conf` has `hosts: files dns` and `passwd: compat`.
+- **Distroless signatures and SBOMs:**
+  - **Verify command:** the README's is unchanged: `cosign verify $IMAGE_NAME --certificate-oidc-issuer https://accounts.google.com --certificate-identity keyless@distroless.iam.gserviceaccount.com`.
+    - **Checked locally (2026-11-17, cosign 3.1.4):** the pinned index `25ac8f0c…` and its linux/amd64 and linux/arm64/v8 manifests each verify with that identity and issuer. Grimoire's image job verifies all three before every build.
+  - **What is signed:** both indexes and all four platform manifests above have their own `.sig` and `.att`. Across the repository, `.sig` subjects are 398 manifests and 74 indexes.
+  - **Format:** the legacy cosign tag scheme.
+    - The `.sig` manifest holds one `application/vnd.dev.cosign.simplesigning.v1+json` layer with the annotations `dev.cosignproject.cosign/signature` and `dev.sigstore.cosign/{bundle,certificate,chain}`.
+    - The payload's `docker-reference` is `gcr.io/distroless/static-debian13`, and the bundle holds a Rekor SET for a `hashedrekord` entry.
+  - **Certificate on `aafe9936`:** SAN `email:keyless@distroless.iam.gserviceaccount.com`, and OID 1.3.6.1.4.1.57264.1.1 is `https://accounts.google.com`. It is valid from 2026-11-12T21:23:06Z, when it was logged as Rekor logIndex 3839886732.
+  - **SBOM:**
+    - `.att` is a DSSE envelope (`application/vnd.in-toto+json`) holding an in-toto Statement v0.1. Its predicate type is `https://spdx.dev/Document`, and its subject is the index digest.
+    - **The predicate is an SPDX 2.3 document encoded as a JSON string, not an object.** It lists 79 packages, Bazel targets included.
+    - The amd64 and arm64 `.att` are SPDX too. No SLSA provenance was found.
+  - **Signing code:** `sign_and_push.go` runs `cosign verify --offline --trusted-root … --certificate-oidc-issuer https://accounts.google.com --certificate-identity <keyless>` on every pushed digest. Only on exit code 10 or 12 does it run `cosign attest --type spdx`, then `cosign sign`, so an unchanged digest is never signed again.
+  - **Referrers:** `GET /v2/distroless/static-debian13/referrers/<index>` returns 200 with `"manifests": null`. distribution-spec v1.1.1 says "If a query results in no matching referrers, an empty manifest list MUST be returned".
+- **cosign v3.1.4 against distroless** (read from the source; only the verification above was run):
+  - **Bundle fallback:**
+    - `verify` defaults to `--new-bundle-format=true`, which is deprecated: "this will be the only supported format in future versions".
+    - If `GetBundles` finds no bundle or fails, verify falls back to legacy `.sig` verification. `GetBundles` handles a nil `manifests` list and returns `ErrNoMatchingAttestations`, so gcr.io's `null` takes the fallback.
+  - **Trust root:**
+    - With `--trusted-root <file>`, cosign loads that file. Otherwise it fetches a live trusted root over TUF.
+    - If that fetch fails, legacy verification only warns ("Continuing with individual targets"); new-bundle verification fails.
+    - `--offline` and `--experimental-oci11` are deprecated.
+  - **Attestations:** `verify-attestation --type spdx` maps to in-toto's SPDX predicate.
+- **GHCR signatures** (one public image, `ghcr.io/sigstore/cosign/cosign@sha256:0f06154836d2`; this answers the COSIGN gap):
+  - **No referrers API:** it answers 404 `MANIFEST_UNKNOWN`. distribution-spec v1.1.1 says "If the registry supports the referrers API, the registry MUST NOT return a `404 Not Found`".
+  - **Tag schema instead:** cosign v3 bundles are stored under the referrers tag schema. Tag `sha256-<hex>` is an index of `application/vnd.dev.sigstore.bundle.v0.3+json` artifacts: DSSE envelopes with predicate type `https://sigstore.dev/cosign/sign/v1`.
+  - That image has no `.sig` or `.att` tags.
+- **OCI annotations** (image-spec v1.1.1; `annotations.md` on `main` at `4feed4a6674e`, 2026-10-22, is identical):
+  - **Keys:** `org.opencontainers.image.{created, authors, url, documentation, source, version, revision, vendor, licenses, ref.name, title, description, base.digest, base.name}`.
+    - They are "intended for but not limited to" index, manifest and descriptor authors.
+    - `created` is RFC 3339, and `licenses` is an SPDX License Expression.
+  - **Base keys:**
+    - `base.name` "SHOULD be a fully qualified reference name, without any assumed default registry".
+    - Both "SHOULD be the immediate image sharing zero-indexed layers with the image, such as from a Dockerfile `FROM` statement", and "SHOULD NOT reference any other images used to generate the contents of the image (e.g., multi-stage Dockerfile builds)".
+  - **Rules:** index `annotations`, manifest `annotations` and config `Labels` "MUST use the annotation rules".
+  - **Repository names:** they must match `[a-z0-9]+((\.|_|__|-+)[a-z0-9]+)*(\/[a-z0-9]+((\.|_|__|-+)[a-z0-9]+)*)*` (distribution-spec v1.1.1). `jabbott-iii/Grimoire`, the value of `github.repository`, doesn't match.
+- **BuildKit and buildx:**
+  - **Annotation levels:**
+    - `manifest` is the default, and each platform manifest gets a copy. The others are `index`, `manifest-descriptor` and `index-descriptor`.
+    - An optional `[os/arch]` qualifier narrows a level, as in `--annotation "manifest[linux/amd64]:k=v"`. The output-option form is `annotation-index.k=v`.
+    - Asking for a level the exporter doesn't produce fails the build.
+  - **Loading:** Docker's docs say "The Docker Engine image store doesn't support loading images with annotations". Buildx falls back to the `docker` exporter "under some circumstances, such as when provenance attestations are explicitly disabled", and `index:` annotations then fail.
+  - **Labels:** they live only in the image config, and images built on top inherit them unless overridden. Distroless sets none.
+  - **Attestations:** "An attestation is attached as a separate manifest on the image index."
+  - **Base annotations:** BuildKit v0.35.0 and buildx v0.38.2 never set `org.opencontainers.image.base.name` or `base.digest`. Outside `vendor/`, their Go source never mentions them. So `cargo xtask release image context` computes both: `base.name` everywhere, and `base.digest` as the base index digest on the index and as each platform's base manifest digest on that platform's manifest.
+  - **Platforms:** BuildKit's vendored `containerd/platforms` normalizes the arm64 variant `v8` to empty, so `linux/arm64` matches the base's `arm64/v8` descriptor.
+    - **Checked locally (2026-11-17, rootless Docker 29.9.3):** `cargo xtask release image check` found the linux/arm64 image's lower layers equal to the layers of the base's `arm64/v8` manifest.
+- **GHCR metadata** (GitHub docs):
+  - **Supported keys:**
+    - `org.opencontainers.image.source`.
+    - `description`, "A text-only description limited to 512 characters".
+    - `licenses`, "An SPDX license identifier such as "MIT," limited to 256 characters".
+  - **Where they are read:**
+    - For single-arch images, from Dockerfile `LABEL`s.
+    - For multi-arch images, the description comes from "the `annotations` field in the image's manifest", though the docs' example sets `annotation-index.org.opencontainers.image.description`.
+  - **Linking:**
+    - Publishing from a workflow with `GITHUB_TOKEN` links the package to that repository.
+    - But "the `GITHUB_TOKEN` will not have permission to push the package if you have previously pushed a package to the same namespace, but have not connected the package to the repository."
+    - Access permissions are inherited automatically only if the package is linked before its first publish, "such as by adding the `org.opencontainers.image.source` Docker label".
+  - **Visibility (the docs conflict):**
+    - The access-control page says a first publish is private, and a linked package inherits access permissions "but not the visibility".
+    - The Actions publishing page says a package that a workflow creates with `GITHUB_TOKEN` "inherits the visibility and permissions model of the repository".
+    - "Once you make a package public, you cannot make it private again." Public GHCR packages "allow anonymous access".
+  - **GitHub's example workflow:**
+    - It grants `contents: read`, `packages: write`, `attestations: write` and `id-token: write`.
+    - It pins the docker actions by SHA but uses `actions/checkout@v6` and `actions/attest@v4` by tag.
+    - It sets `IMAGE_NAME: ${{ github.repository }}`.
+- **Dependabot for a Dockerfile** (GitHub docs; dependabot-core v0.405.0):
+  - **Support:**
+    - `docker` gets version updates, and supports private repositories and private registries, but **gets no security updates**.
+    - Public registries need no credentials. With none configured, `credentials_for_registry` returns nil.
+  - **Discovery:**
+    - `directory: "/"` finds a root `Dockerfile`. The fetcher lists only that directory and keeps names matching `/dockerfile|containerfile/i`.
+    - YAML files there are read only if they look like Kubernetes resources (top-level `apiVersion` and `kind`) or a Helm chart.
+  - **Parsing:**
+    - The FROM regex accepts `FROM [--platform=X] [registry/]image[:tag][@sha256:<64 hex>] [AS name]`.
+    - The registry must be a dotted domain, and the image name lowercase, so `${ARG}` references don't match.
+  - **Digest updates:**
+    - A digest pinned on a non-comparable tag such as `nonroot` gets digest-only PRs.
+    - Without `--platform`, a new index counts as a no-op only if no platform digest changed.
+    - The updater rewrites `@sha256:<old>` in place, and keeps the digest it checked even if the tag moves meanwhile.
+  - **Cooldown doesn't delay gcr.io or GHCR bumps.**
+    - The docs list Docker as supporting `default-days` only.
+    - But since `3bfea916` (2026-09-18), the only accepted publication date is Docker Hub's `tag_last_pushed`. For other registries, the update is allowed with a `cooldown_date_unavailable` warning.
+    - Before that commit, a manifest `Last-Modified` header was used. This predates the DEPENDABOT check of 2026-11-16, which missed it.
+    - So the maintainer checks a new digest's age before merging. GCR's `tags/list` carries the upload time, for example `curl -s https://gcr.io/v2/distroless/static-debian13/tags/list | jq '.manifest["sha256:<digest>"].timeUploadedMs'`. The field is undocumented (see UNVERIFIED).
+  - **Workflow files:**
+    - The `github-actions` parser reads only `uses:` and skips `docker://`: "Docker Hub and GitHub Container Registry URLs are currently not supported".
+    - Job `container:` and `services:` images are never updated.
+  - **PR metadata:**
+    - It comes only from config `Labels` (`org.opencontainers.image.source`, `version` and `revision`), and GitHub also requires the source repository to carry the same tags as the image.
+    - Distroless sets no Labels, so its bump PRs carry no release notes.
+- **Chainguard (comparison only):**
+  - **Tags:** all 17,500 tags of the free `cgr.dev/chainguard/static` were listed. The only plain tags are `latest`, `latest-glibc`, `latest-glibc-tzdata` and `latest-tzdata`, which corrects BASE-IMAGE's "`latest`/`latest-dev`".
+  - **Current `latest`:** `sha256:fc42af33e643f20d08baf03cddcc1c02ba57052dfb02edb0d79f3fc47bcea8d9` on 2026-11-17.
+  - **Signing:** public images are signed by `https://github.com/chainguard-images/images/.github/workflows/release.yaml@refs/heads/main`, with issuer `https://token.actions.githubusercontent.com`.
+- **UNVERIFIED:**
+  - What GCR's `timeUploadedMs` means. It is undocumented, and `timeCreatedMs` is 0. The ages above were cross-checked against Rekor times.
+  - Which dependabot-core version GitHub's hosted service runs.
+  - Whether GHCR shows `source` and `licenses` from index annotations, and whether it accepts an SPDX expression for `licenses`.
+  - The first-publish visibility of a package a workflow creates (GitHub's docs conflict).
+  - Whether distroless publishes SLSA provenance anywhere else.
+  - Whether GHCR plans referrers API support (REGISTRY-P6 found none in four repositories), and how its UI shows `sha256-*` tags.
+  - How quickly distroless ships Debian security fixes.
+  - Whether `cosign verify` prints the Rekor integratedTime of a legacy signature in a machine-readable form.
+  - Whether the `update-available` tagging runs on a schedule. The script is manual and defaults to a dry run.
+  - Whether distroless builds are reproducible. No document read says so; only re-tagging was observed.
+- **Settled after the research:** `HOME` and user lookup for a `--user` uid that isn't in `/etc/passwd`, from Docker's docs and runc v1.5.3 source in RUN-P6 (a numeric uid needs no entry, and `HOME` becomes `/`); not run.
+
+### BUILD-P6: BuildKit and buildx for the Phase 6 image
+Sources: https://github.com/moby/buildkit at v0.34.2 (`docs/{multi-platform,build-repro,annotations,buildkitd.toml}.md`, `docs/dev/dockerfile-llb.md`, `docs/attestations/{sbom,sbom-protocol,slsa-provenance,slsa-definitions,attestation-storage}.md`, `frontend/attestations/{parse.go,sbom/sbom.go}`, `frontend/dockerui/config.go`, `frontend/dockerfile/{builder/build.go,docs/reference.md,linter/ruleset.go}`, `solver/llbsolver/{provenance.go,solver.go,compat/compat.go}`, `client/solve.go`, `exporter/oci/export.go`, `exporter/containerimage/{export.go,writer.go,opts.go,exptypes/keys.go}`), its releases v0.28.0, v0.31.0, v0.32.0, v0.33.1, v0.34.1 and v0.34.2, and its security advisories; https://github.com/docker/buildx at v0.38.2 (`build/{opt,git}.go`, `build/resolver/driver.go`, `driver/{docker,docker-container,bkimage}/`, `util/ghutil/ghutil.go`, `util/imagetools/{location,create}.go`, `util/ocilayout/parse.go`, `commands/history/inspect.go`, `policy/{default.go,default.rego,builtins.rego,validate.go,signatures.go,types.go}`, `docs/reference/buildx_{build,create,imagetools_create,history_export}.md`), `releases/download/v0.38.2/checksums.txt`, and releases v0.33.0, v0.36.1 and v0.38.2; https://github.com/docker/buildkit-syft-scanner at v1.12.1 (`go.mod`, `internal/{target,scanner}.go`); https://github.com/anchore/syft at v1.51.0 (`internal/task/package_tasks.go`, `syft/pkg/cataloger/{rust,debian,sbom}/cataloger.go`, `syft/format/common/spdxhelpers/to_format_model.go`, `syft/format/internal/spdxutil/{versions.go,helpers/document_namespace.go}`); https://github.com/docker/docs at `947343021a3e` (`content/manuals/build/{checks.md,exporters/oci-docker.md,exporters/image-registry.md,metadata/attestations/{_index,sbom,slsa-provenance}.md,builders/drivers/{docker,docker-container}.md,ci/github-actions/github-builder-architecture/index.md}`, `content/manuals/engine/storage/containerd.md`, `content/manuals/docker-hub/usage/{_index,pulls}.md`); https://github.com/docker/cli at v28.0.4 (`cli-plugins/manager/manager{,_unix}.go`, `docs/reference/commandline/login.md`); https://github.com/moby/moby/blob/v28.0.4/vendor.mod; https://github.com/actions/runner-images at `fb099341ddaf` (`images/ubuntu/Ubuntu2404-Readme.md`, `toolsets/toolset-2404.json`, `scripts/build/install-docker.sh`) and `6573a3f3872c` (`Ubuntu2404-Arm64-Readme.md`), release `ubuntu24/20261116.376`, and issues 14105 and 14554; docker/setup-buildx-action at `f87e5991a6d7`, docker/build-push-action at `c3c9e263c25d`, docker/metadata-action at `dc8028041006`, docker/login-action at `8aa5831fb8d4` and docker/setup-qemu-action at `990126619549`, each with `action.yml` and `src/`; https://github.com/docker/actions-toolkit at v0.100.0 (`src/buildx/{install,history,build}.ts`, `src/github/summary.ts`); https://github.com/docker/github-builder/blob/58cb9f5b71b1/README.md; https://github.com/zizmorcore/zizmor at v1.32.0 (`crates/zizmor/src/audit/{cache_poisoning,superfluous_actions}.rs`); https://github.com/opencontainers/distribution-spec/blob/v1.1.1/spec.md; the anonymous OCI distribution API on `registry-1.docker.io` (`moby/buildkit`, `docker/buildkit-syft-scanner`, `docker/dockerfile`, `tonistiigi/binfmt`, `ratelimitpreview/test`) and `ghcr.io` (`github/github-mcp-server`); `gh api` release, tag, commit, advisory and licence metadata. Status: Verified, except the gaps listed. The research ran no build, and downloaded or ran no binary. The Sigstore bundles were decoded with `openssl x509`, not verified with cosign.
+
+- **Pins** (all released on or before 2026-11-10; tags resolved with `gh api`, digests with anonymous registry requests on 2026-11-17):
+  - **BuildKit image** `moby/buildkit:v0.34.2` (2026-11-03; commit `8c579433824224dc64a158cf8734495b6e2b186a`, tag object `a1b68ebae87cfab67871e25c490042b1b0722672`):
+    - index `sha256:c5f8862f52499773af85bc07695b2379ef08e8002352b0df2c4864c91d78dabe`;
+    - linux/amd64 `sha256:97719ccb2ac86fb44fd36f330a6d302f63dddd5326f3ada24f9c05ccac0d9098`;
+    - linux/arm64 `sha256:92f93f25966c544549b88144406ce8cd9dcdf5df128250711031a4acd9149a8e`.
+    - The index also has arm/v7, ppc64le, riscv64 and s390x, each with an attestation manifest, and is annotated `Apache-2.0` with that revision. `buildx-stable-1` points to the same index today; `latest` points to v0.35.0. The rootless variant `v0.34.2-rootless` has index `sha256:c8252268760e1baba80780d63d738ef9f260fb7c7c0973c78494cb9ddd99eda1`.
+  - **SBOM generator** `docker/buildkit-syft-scanner:1.12.1` (2026-10-26, immutable release, commit `422dfad83311be8c7e03e219ab6e8f70f4619575`):
+    - index `sha256:873a7458c3c8ac8e32c7b796c10e1600b07b963d2aa000a72a2d97aaaa2d6315`;
+    - linux/amd64 `sha256:10a413da6b52acacf4af4262eafeae6ca05076fbd65850ad7f233163c6d6a81c`;
+    - linux/arm64 `sha256:eecdb89c2cd84b80868ea748063edb7225576994dbeac439c6b831092eeb4bff`.
+    - `stable-1` and `latest` point to it. Image tags have no `v`: `v1.12.1` returns 404.
+  - **buildx** v0.38.2 (2026-11-03; commit `3c4cbd35852fc1a476923627a780a7836c28b654`, tag object `8a2644f276c5dce115c4724bc23ad665416acb9f`):
+    - `buildx-v0.38.2.linux-amd64` `7992ec09413b80ff57ba4e081f56fc833d7bac1d5e71143c6c809e7e6065f6d6`;
+    - `buildx-v0.38.2.linux-arm64` `46c0f334772de3cb0b341cc415caf7339fb5cfc8b8438ebcb5a10e7f23800d36`.
+    - Both come from `checksums.txt` and match the API asset digests. Each binary also has `.sigstore.json`, `.provenance.json` and `.sbom.json` assets. The release isn't immutable.
+  - **Dockerfile frontend** `docker/dockerfile:1.28.0` (2026-10-07, commit `f5b59a1f2fb25a0cb7072c398cab9aed7835da4e`): index `sha256:bb22d9815c728170f72750f4e5b0d672e06176142e1d602c7e66c050100b7e5b`. It is used only with a `# syntax=` line, which Grimoire's `Dockerfile` doesn't have.
+  - **Docker's actions:** all are node24, immutable releases, lightweight tags on verified commits, and Apache-2.0. Grimoire uses none of them.
+
+    | Action | Version | Commit | Released |
+    |---|---|---|---|
+    | docker/setup-buildx-action | v4.4.1 | `f87e5991a6d7451dcb8d9637bfbc97413f497069` | 2026-09-16 |
+    | docker/build-push-action | v7.4.0 | `c3c9e263c25d99ce0380d002d59b67737d91b0dc` | 2026-09-15 |
+    | docker/metadata-action | v6.2.0 | `dc802804100637a589fabce1cb79ff13a1411302` | 2026-07-02 |
+    | docker/login-action | v4.8.0 | `8aa5831fb8d48d8f76594c7ddde61ae58019f550` | 2026-11-05 |
+    | docker/setup-qemu-action | v4.4.0 | `99012661954931238ded8c8b007157a8430204e1` | 2026-09-15 |
+
+    setup-buildx-action, build-push-action and setup-qemu-action bundle `@docker/actions-toolkit` 0.100.0 (commit `e0f279f2d19f`).
+  - **Too young**, all published 2026-11-11 and eligible from 2026-11-18: BuildKit v0.35.0 (commit `f55949dea4f03bb9d85b73e9afc9a609291289db`, index `sha256:aa632b921ef07411d2cb77292cd34213d4f7b384001d6fceef1e1f25bf9752bb`), buildx v0.39.0, and dockerfile 1.29.0 (index `sha256:572cebbc2b15e6f84c077742952674889cb63cd5e9b80abdffcbe587b6f19183`).
+- **Runners** (changed since RUNNERS):
+  - `ubuntu-24.04` (20261111.370.1) and `ubuntu-24.04-arm` (20261111.182.1) ship Docker Client and Server 28.0.4, Docker-Buildx 0.38.2 and Compose 2.38.2.
+  - The toolset pins `docker-ce` 28.0.4, but installs `containerd.io` and the buildx plugin at `latest`. `install-docker.sh` downloads buildx into `/usr/libexec/docker/cli-plugins/docker-buildx` with no checksum check, and writes no `daemon.json`.
+  - Docker Engine enables the containerd image store by default only from 29.0, and only on fresh installs. Moby v28.0.4 (2025-03-25) vendors BuildKit v0.20.2.
+  - The pre-release image `ubuntu24/20261116.376` (published 2026-11-17) moves Docker-Buildx to 0.39.0. Its deployment started at 22:21Z on 2026-11-17 and usually takes 2 to 3 days, so jobs may get either image meanwhile (RUNNERS).
+  - Issue #14105 ("Docker on Ubuntu 24.04 requires update to v29") is open. #14554 says every image's Docker is below 29.7.2, which fixes "CopyEscape" (CVE-2026-17106).
+- **Drivers:**
+  - `docker`: BuildKit is the Engine's own, and its version "can't be configured". The driver reports multi-platform, OCI export, direct push and attestations only when a worker carries the containerd snapshotter label (`driver/docker/driver.go`). Otherwise buildx stops with "Attestation is not supported for the docker driver".
+  - `docker-container`: BuildKit runs in its own container, so attestations work with any image store. `--load` back into the daemon has the image store's limits.
+  - Attestations need a driver with the MultiPlatform feature (`build/opt.go`).
+- **Multi-platform without QEMU:**
+  - BuildKit uses QEMU only "when your build needs to run a binary" of a foreign architecture. COPY is an LLB file operation, not an exec.
+  - The SBOM scanner runs on the build platform, `workers[0].Platforms[0]` (`frontend/dockerui/config.go`, `frontend/dockerfile/builder/build.go`), not on each target platform.
+  - buildx sends any platform that no node matches to node 0 (`build/resolver/driver.go`), so a single-node builder gets every platform.
+  - **Checked locally (2026-11-17, rootless Docker 29.9.3, on x86_64 with no emulation):** one docker-container builder built and exported linux/amd64 and linux/arm64 for Grimoire's COPY-only `Dockerfile`, and `cargo xtask release image check` passed on the layout. The arm64 image wasn't run.
+- **The builder image:**
+  - The default is `moby/buildkit:buildx-stable-1` (`driver/bkimage/bkimage.go`). `--driver-opt image=<ref>` replaces it and is passed straight to `ImagePull`.
+  - The builder container is always `Privileged: true`.
+  - `provenance-add-gha` defaults to `true` (see Provenance). `allow-untrusted-image=true` turns off builder-image verification.
+- **Signatures on Docker's images:**
+  - moby/buildkit (from v0.27.0, per `policy/default.rego`), docker/dockerfile and docker/buildkit-syft-scanner are keyless-signed by docker/github-builder's reusable `bake.yml`.
+  - The signature is a Sigstore bundle v0.3 holding a DSSE envelope (predicate `https://sigstore.dev/cosign/sign/v1`), a Rekor entry and an RFC 3161 timestamp.
+  - The bundle is an OCI referrer of each platform's attestation manifest; the DSSE subject is that manifest's digest. The index has no referrers.
+  - BuildKit v0.34.2 amd64 (attestation manifest `sha256:f21a1372a4239ed443f1e76279ab3e6bd3a95920732bec7a47a2300aa0aacee0`):
+    - SAN `https://github.com/docker/github-builder/.github/workflows/bake.yml@58cb9f5b71b1836d6f690c1e95effdeb9b98cb8a`;
+    - issuer `https://token.actions.githubusercontent.com`;
+    - OID 1.12 `https://github.com/moby/buildkit`, OID 1.14 `refs/tags/v0.34.2`, OID 1.18 `https://github.com/moby/buildkit/.github/workflows/buildkit.yml@refs/tags/v0.34.2`.
+  - Scanner 1.12.1 amd64 (attestation manifest `sha256:8633b39ac9e4ef577ef4f500ad424d7119885dbdff802427e118e29edafff1e0`):
+    - SAN `…/docker/github-builder/.github/workflows/bake.yml@a492c6d04fd3315f67230809b44d60cc0acd50b3`;
+    - OID 1.12 `https://github.com/docker/buildkit-syft-scanner`, OID 1.14 `refs/tags/v1.12.1`.
+- **buildx's default policy:**
+  - It is opt-in through `BUILDX_DEFAULT_POLICY` ("a future release may flip the default"). It covers both build sources and the docker-container builder image.
+  - The builder-image check is skipped on the classic image store: "Classic-store images are allowed without it" (`driver/docker-container/driver.go`).
+  - **moby/buildkit:** a signature is required for its floating tags (`latest`, `buildx-stable-N`, …) and for release tags of v0.27.0 and later.
+  - **docker/dockerfile:** a signature is required for `latest`, `labs` and `master`, and for version tags of 1.21 and later.
+  - **docker/buildkit-syft-scanner:** a signature is required only for `latest` and for version tags of 1.10 and later. `stable-1`, the default generator tag, isn't covered. The policy strips only `refs/tags/` from the signature's source ref before comparing it with the image tag.
+  - The rules match on `input.image.tag`. `policy/validate.go` sets it for any tagged reference, `name:tag@digest` included. The policy comment says "Access by digest is always allowed".
+  - The Rego helper checks the signature kind and type, the Sigstore intermediate CA, the issuer, the source repository URI, `github-hosted` runners and at least one timestamp. It doesn't compare the SAN.
+- **Security floors:**
+  - BuildKit v0.34.2 fixes GHSA-2fqp-xg6f-v7gj (a Git resolver panic), and v0.34.1 fixes GHSA-w26x-xg27-7qjc (xattrs set outside the state directory).
+  - v0.33.1 (2026-09-30) fixed 10 advisories. Two are high: GHSA-f2v9-hprr-32q3 (cache poisoning via unvalidated layer DiffIDs) and GHSA-r456-g3gm-cvxf (a `--cdi-disabled` panic).
+  - buildx v0.38.2 fixes two Bake-only entitlement bypasses (GHSA-xg6v-cv2h-2w5h, GHSA-rghq-x9hf-hc3r) and vendors BuildKit v0.34.2.
+- **Provenance:**
+  - **Format:** the default is SLSA v1 since BuildKit v0.28.0 (`defaultSLSAVersion`). Real v0.34.2 output uses predicate `https://slsa.dev/provenance/v1` in an in-toto v1 Statement. Docker's docs at `947343021a3e` still call `version=v0.2` the default, which is stale.
+  - **Default mode:** without `--provenance`, buildx adds `mode=min,inline-only=true` (opt out with `BUILDX_NO_DEFAULT_ATTESTATIONS`). BuildKit's own default mode is max.
+  - **max mode** adds:
+    - the Dockerfile source with sourcemaps;
+    - `buildConfig.llbDefinition`;
+    - every `build-arg:*` value;
+    - secret and SSH IDs. Secret values are never included.
+  - **min mode** strips the `build-arg:*` and `label:*` values, plus the secret and SSH IDs, and marks the request incomplete.
+  - **In both modes:**
+    - `startedOn`, `finishedOn` and a unique `invocationId`;
+    - `builder.id` from the `builder-id` attribute;
+    - `request.compatibilityVersion`;
+    - `dockerfileVersion` when the frontend is `dockerfile.v0`.
+  - **Completeness:** a local context leaves `resolvedDependencies` incomplete. The undocumented attribute `complete-materials=true` then fails the build (`provenance.go`). A Dockerfile without `RUN` counts as hermetic.
+  - **vcs hints:** buildx sends `vcs:source` (the git remote URL) and `vcs:revision` when the context is inside a git work tree. `BUILDX_GIT_INFO=false` turns this off, and `BUILDX_GIT_CHECK_DIRTY=1` adds `-dirty`. It also sends `vcs:localdir:<name>` relative to the repository root. BuildKit doesn't verify any of these.
+- **The GitHub Actions context in provenance:**
+  - With `provenance-add-gha=true` (the docker-container default), buildx writes `provenance.d/github_actions_context.json` into the builder when it is created.
+  - That file holds the whole `GITHUB_EVENT_PATH` payload; the actor, actor ID and triggering actor; the ref, ref type and `ref_protected`; the repository and owner names and IDs; the run ID, number and attempt; the job; and the workflow ref and SHA. It also holds the runner's name, tracking ID, OS, architecture and environment. It holds no tokens.
+  - BuildKit copies it into `buildDefinition.internalParameters` outside the mode switch, so min and max mode both carry it.
+  - moby/buildkit's own v0.34.2 amd64 provenance (blob `sha256:058c481ab730eafaa2c53ff712e716904525cc7d5251ea80185e2b760c57cf7a`) has a `github_event_payload` with `after`, `before`, `commits`, `head_commit`, `pusher`, `sender`, `repository` and more.
+  - BuildKit's `slsa-provenance.md` still says min mode "does not leak information from any part of the build environment".
+  - **Checked locally (2026-11-17, rootless Docker 29.9.3, with the Actions environment simulated):** the provenance held the event payload with the default, and didn't with `--driver-opt provenance-add-gha=false`. `cargo xtask release image check` refuses a provenance that holds `github_event_payload`.
+- **SBOM:**
+  - **Generator:** `--sbom=true` or `--attest type=sbom` uses `docker/buildkit-syft-scanner:stable-1`, resolved by tag at build time. `generator=<ref>` replaces it.
+  - **Scanner environment:** the scanner gets its image's env, `BUILDKIT_SCAN_DESTINATION`, `BUILDKIT_SCAN_SOURCE[_EXTRAS]`, and `BUILDKIT_SCAN_<K>=<V>` for every other attest parameter. Scanner 1.12.1 reads `BUILDKIT_SCAN_SELECT_CATALOGERS`.
+  - **syft version:** scanner 1.12.1 bundles syft v1.51.0 (2026-08-10), not the standalone syft pins in SBOM. Its release only bumps brotli (CVE-2026-111497). Real moby/buildkit SBOMs list `Tool: syft-v1.51.0`.
+  - **Catalogers:** syft's `image` and `file` tags, plus `sbom-cataloger`.
+    - `cargo-auditable-binary-cataloger` parses executables by MIME type.
+    - The dpkg cataloger globs include `**/lib/dpkg/status.d/*`.
+    - `sbom-cataloger` reads `*.syft.json`, `*.cdx[.*]` and `*.spdx[.*]` files found in the image.
+  - **Output:** SPDX 2.3 JSON in an in-toto v1 Statement with predicate `https://spdx.dev/Document`. `created` is `time.Now()` and `documentNamespace` uses a random UUID.
+  - **Scope:** only the final stage is scanned. `BUILDKIT_SBOM_SCAN_CONTEXT` and `BUILDKIT_SBOM_SCAN_STAGE` act only when the Dockerfile declares them with `ARG`.
+  - **Size:** each attestation file is capped at 80 MiB (BuildKit `sbom.md`, `attestation-storage.md`).
+- **Attestation storage** (changed since SBOM):
+  - Since BuildKit v0.32.0, attestations are OCI artifacts by default when the compatibility version is 30 or more and OCI media types are on (`DefaultOCIArtifact`).
+  - The exporter key is `oci-artifact`; the release note's `oci-artifacts` is a typo. `oci-artifact=false` restores the legacy form, and buildx v0.36.1 added `BUILDX_NO_DEFAULT_OCI_ARTIFACT` for the same thing.
+  - An attestation manifest has artifactType `application/vnd.docker.attestation.manifest.v1+json`, config `application/vnd.oci.empty.v1+json`, and `application/vnd.in-toto+json` layers, each annotated with `in-toto.io/predicate-type`. Its `subject` is its platform manifest.
+  - In the index, its descriptor has platform `unknown/unknown` and the annotations `vnd.docker.reference.type=attestation-manifest` and `vnd.docker.reference.digest`.
+  - Docker's image-registry exporter page still lists `false` as the default, which is stale.
+  - **Checked locally (2026-11-17, rootless Docker 29.9.3):** in Grimoire's layout each platform has one attestation manifest, whose `subject` is that platform's manifest, holding an SPDX document and SLSA v1 provenance (`cargo xtask release image check`).
+- **GHCR** (answers COSIGN's open item):
+  - GHCR stores BuildKit's attestation manifests with their `subject`, as `ghcr.io/github/github-mcp-server:latest` (index `sha256:040c4e99810076035eb1d9beb4b4a96fcf589c43cefed6ff51a46a553eb4e174`) shows.
+  - Its referrers endpoint returned 404 `MANIFEST_UNKNOWN` for that index, a platform manifest and an attestation manifest. Under distribution-spec v1.1.1 a registry that supports the referrers API "MUST NOT return a 404", and the client "MUST fallback" to the referrers tag schema. So GHCR has no referrers API as of 2026-11-17.
+- **OCI exporter and annotations:**
+  - `type=oci` uses the same `ImageWriter.Commit` as the image exporter, with every platform.
+  - `tar` defaults to `true`; `tar=false` writes the content into a layout directory. `oci-mediatypes` defaults to `true`, and `annotation.*` and `rewrite-timestamp` are accepted.
+  - When the outer descriptor in the layout's `index.json` lacks `org.opencontainers.image.created`, the exporter sets it to the epoch, or to the current time if there is none.
+  - `--annotation "[type[,type][<os/arch>]:]key=value"` targets `manifest` (the default), `manifest-descriptor`, `index` or `index-descriptor`. Platform wildcards aren't supported.
+  - `index-descriptor` writes only "the OCI layout's descriptor for the index".
+- **Pushing a layout** (corrected):
+  - buildx v0.33.0 added `oci-layout://<path>` as a source and destination for `imagetools create` and `inspect`, mixed with registry references (`util/imagetools/location.go` at v0.38.2).
+  - The reference page's line that sources "must already exist in the registry" is stale.
+  - A single index source is carbon-copied. `imagetools create` can annotate only `index:` and `manifest-descriptor:`, not manifests or OCI layouts.
+  - Grimoire pushes the layout with crane instead, which keeps the index digest (checked locally; REGISTRY-P6).
+- **Reproducibility:**
+  - buildx (0.10 and later) passes the client's `SOURCE_DATE_EPOCH` as a build argument. It sets the config `created`, the history `created`, the index `org.opencontainers.image.created`, and `local`/`tar` file times.
+  - `SOURCE_DATE_EPOCH=context` is ignored for local contexts.
+  - `rewrite-timestamp=true` (BuildKit 0.13 and later) rewrites file times in layers. It leaves layers whose DiffID matches the base image untouched.
+  - A missing epoch, or a layer that fails to rewrite, only logs a buildkitd warning (`writer.go`), and the build still succeeds.
+  - **compatibility-version:**
+    - Values are `10`, `20` and `30` (current). It "pins digest-affecting image assembly behavior" for the `image` and `oci` exporters.
+    - The v0.31.0 release note raised it to 30, with OCI media types for every image export. `build-repro.md` says 20 covers "v0.15.0 through v0.31.x", which conflicts.
+    - It is a client `SolveOpt.CompatibilityVersion`, where 0 means current. No buildx v0.38.2 option or doc sets it.
+  - **Checked locally (2026-11-17, rootless Docker 29.9.3; three builds, one on a fresh builder):** the platform manifest digests were identical in every build. The index digest differed, because the SBOM and provenance attestations hold build times and IDs.
+- **Build checks and the frontend:**
+  - Checks need Dockerfile 1.8 or later and buildx 0.15.0 or later, and run in the builder. `--check` is `--call=check` and exits non-zero on any violation.
+  - A normal build only warns, unless `# check=error=true` or `--build-arg BUILDKIT_DOCKERFILE_CHECK=error=true` is set. The reference recommends pinning the syntax with `error=true`.
+  - BuildKit v0.34.2 has 22 rules. Only `InvalidDefinitionDescription` is experimental:
+    - StageNameCasing, FromAsCasing, NoEmptyContinuation, ConsistentInstructionCasing, DuplicateStageName and ReservedStageName;
+    - JSONArgsRecommended, MaintainerDeprecated, UndefinedArgInFrom, WorkdirRelativePath and UndefinedVar;
+    - MultipleInstructionsDisallowed, LegacyKeyValueFormat, InvalidBaseImagePlatform, RedundantTargetPlatform and SecretsUsedInArgOrEnv;
+    - InvalidDefaultArgInFrom, FromPlatformFlagConstDisallowed, CopyIgnoredFile, InvalidDefinitionDescription, ExposeProtoCasing and ExposeInvalidFormat.
+  - Without `# syntax=`, BuildKit uses its bundled frontend. With one, the frontend image is pulled by its tag at build time. `BUILDKIT_SYNTAX=dockerfile.v0` ignores the directive.
+  - BuildKit v0.34.x bundles Dockerfile frontend v1.28.0: the v0.34.0 release notes say "Built-in Dockerfile frontend has been updated to v1.28.0", and the v0.34.1 and v0.34.2 notes don't change it (https://github.com/moby/buildkit/releases/tag/v0.34.0, checked in the Phase 6 review).
+  - **Checked locally (2026-11-17, BuildKit v0.34.2 at the pinned digest, no `# syntax=` line):** with `# check=error=true`, a `FromAsCasing` violation fails the build (exit 1); without the directive the build only warns (exit 0); `--check` fails (exit 1) either way.
+  - On 2026-11-17 `docker/dockerfile:1` resolves to **1.27.1** (index `sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e`, created 2026-09-30), not to 1.28.0 or 1.29.0.
+- **Metadata file:** `--metadata-file` writes `containerimage.digest` and `containerimage.descriptor`. Its `buildx.build.provenance` is min unless `BUILDX_METADATA_PROVENANCE` is `max` or `disabled`.
+- **CLI plugins:** Docker CLI 28.0.4 searches `CLIPluginsExtraDirs`, then `$DOCKER_CONFIG/cli-plugins`, then `/usr/local/lib`, `/usr/local/libexec`, `/usr/lib` and `/usr/libexec` (each `…/docker/cli-plugins`). The first match wins.
+- **Docker's actions:**
+  - **setup-buildx-action:**
+    - The default driver is `docker-container`. It uses the runner's buildx unless `version` is set or buildx is missing.
+    - It downloads buildx without `verifySignature` and caches it in the Actions cache (`cache-binary: true` by default).
+    - It pulls `moby/buildkit:buildx-stable-1` unless `driver-opts` has `image=`.
+    - It adds `--allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host` unless `buildkitd-flags` is set.
+  - **build-push-action:**
+    - It runs only `docker buildx build`.
+    - With no `provenance` input, it adds `mode=max` provenance on public repositories (`mode=min,inline-only=true` on private ones), with `builder-id=<run URL>`. `provenance: true` also becomes `builder-id=<run URL>`.
+    - It passes `github.token` as a `GIT_AUTH_TOKEN` secret only when the context starts with the default git context.
+    - By default it writes a job summary of every input except `github-token` (build args included, secrets as keys only). It also uploads a `.dockerbuild` record (`buildx history export`, buildx 0.23 or later) as an artifact; that record holds the logs and every `build-arg:*` value. `DOCKER_BUILD_SUMMARY` and `DOCKER_BUILD_RECORD_UPLOAD` turn these off.
+  - **metadata-action:** it reads repository data from the GitHub API and stamps `org.opencontainers.image.created` with `new Date()`. It has no SOURCE_DATE_EPOCH support.
+  - **login-action:** it runs `docker login --password-stdin` and logs out in a post step (`logout: true` by default). Without a credential store, Docker keeps credentials base64-encoded in `config.json`.
+  - **setup-qemu-action:** it runs `docker.io/tonistiigi/binfmt:latest` with `--privileged` and caches the image by default. buildx's own `QemuImage` is the same tag, marked "TODO: make this verified".
+- **zizmor 1.32.0:**
+  - `cache-poisoning` treats setup-buildx-action as cache-aware when `cache-binary` is on and `version` is set, and build-push-action with `push: true` as a publisher.
+  - No `docker/*` action is in `superfluous-actions`.
+- **Docker Hub limits:**
+  - The docs give 100 anonymous pulls per IPv4 address or IPv6 /64 per 6 hours, and say a missing `ratelimit` header means the image or IP is unlimited.
+  - On 2026-11-17, from this machine, moby/buildkit, docker/buildkit-syft-scanner and docker/dockerfile returned no ratelimit headers. tonistiigi/binfmt and ratelimitpreview/test returned `ratelimit-limit: 100;w=3600`, a 1-hour window.
+- **Docker GitHub Builder** (`docker/github-builder` at `58cb9f5b71b1`): reusable `build.yml` and `bake.yml` workflows that build linux/amd64 on `ubuntu-24.04` and linux/arm64 on `ubuntu-24.04-arm`, sign keylessly, and use signed GitHub Actions cache entries. Reusable workflows aren't covered by `actions.lock` (GHA-SEC).
+- **Licences:** moby/buildkit, docker/buildx, docker/buildkit-syft-scanner, anchore/syft and the five Docker actions are all Apache-2.0.
+- **Changes to other entries:**
+  - **SBOM:** the BuildKit scanner's syft is v1.51.0, the output is SPDX 2.3, and the generator is pulled by the `stable-1` tag. The provenance default is SLSA v1, attestations are OCI artifacts, and the docker-container driver adds the GHA context.
+  - **RUNNERS:** Docker 28.0.4 on the classic store, and buildx 0.38.2 moving to 0.39.0.
+  - **COSIGN:** GHCR has no referrers API.
+- **UNVERIFIED:**
+  - the containerd version on the Ubuntu 24.04 runners, and that nothing else on them enables the containerd image store (`docker info` wasn't run on a runner);
+  - whether `imagetools create` from `oci-layout://`, regctl or oras copy a layout with the index and attestation-manifest bytes unchanged, and whether any tool does so against GHCR itself;
+  - whether the default policy actually rejects `docker/buildkit-syft-scanner:1.12.1` over the `v` prefix, and how the `docker-github-builder` signature kind is assigned (not run, module not read);
+  - the exact `cosign verify` command and identity flags for the BuildKit and scanner signatures, which sit on attestation manifests (cosign wasn't run against them);
+  - CVE-2026-17106 ("CopyEscape") itself: it is cited only by runner-images #14554 and isn't in moby/moby's or docker/cli's advisories;
+  - whether the `.dockerbuild` record also carries the GHA event payload, and whether max-mode `llbDefinition` reveals host paths of the local context;
+  - Docker Hub rate limits as seen from runner IPs, where the 1-hour window conflicts with the docs' 6 hours;
+  - whether the rootless BuildKit image works with the docker-container driver on the runners;
+  - that Docker Engine 28.0.4 pulls `name:tag@sha256:…` strictly by digest.
+- **Settled after the research:** that one amd64 BuildKit node exports linux/arm64 for a COPY-only Dockerfile (checked locally, under Multi-platform without QEMU); that crane copies a layout with the index digest unchanged, to a local registry (checked locally, REGISTRY-P6).
+
+### REGISTRY-P6: GHCR, cosign image signatures, image attestations and OCI push tools
+Sources: https://github.com/github/docs at `49a012fa50b4` (`content/packages/**`, `data/reusables/package_registry/**`, `data/variables/package_registry.yml`, `src/rest/data/fpt-2026-03-10/packages.json`, `content/actions/reference/workflows-and-actions/workflow-syntax.md`, `data/reusables/actions/jobs/dockerhub-ratelimit-ghr.md`); https://github.com/opencontainers/distribution-spec/blob/v1.1.1/spec.md; https://github.com/sigstore/cosign at v3.1.4 (`cmd/cosign/cli/{sign.go,sign/sign.go,signcommon/common.go,verify/verify.go,verify/common.go,load.go,options/}`, `pkg/oci/{remote,mutate,layout}/`, `pkg/cosign/{verify.go,bundle/sign.go}`, `doc/`); https://github.com/google/go-containerregistry at v0.22.1 (`pkg/v1/remote/`, `pkg/v1/remote/transport/ping.go`, `pkg/name/`, `pkg/registry/`, `cmd/crane/cmd/{push,serve,auth}.go`) and its release assets; https://github.com/actions/attest at v4.2.2 (`action.yml`, `README.md`, `src/`, `package-lock.json`); https://github.com/sigstore/sigstore-js at `@sigstore/oci@0.7.2` (`packages/oci/src/`); https://github.com/cli/cli at v2.103.3 (`pkg/cmd/attestation/`); https://github.com/regclient/regclient at v0.11.7; https://github.com/oras-project/oras at v1.3.6; https://github.com/containers/skopeo at v1.25.1 (`install.md`, `docs/skopeo-copy.1.md`); https://github.com/distribution/distribution at v3.1.2 (`Dockerfile`, `cmd/registry/config-dev.yml`, `registry/api/v2/routes.go`) and its release assets; https://github.com/project-zot/zot/blob/v2.1.23/pkg/api/routes.go; https://github.com/moby/buildkit at v0.34.2 (`exporter/oci/export.go`, `go.mod`); https://github.com/containerd/containerd/blob/v2.4.2/core/images/archive/exporter.go; https://github.com/actions/runner/blob/v2.338.2/src/Runner.Worker/Container/ContainerInfo.cs; https://github.com/zizmorcore/zizmor/blob/v1.32.0/crates/zizmor/src/audit/unpinned_images.rs; https://github.com/actions/runner-images/blob/d9c48363ed37/images/ubuntu/Ubuntu2404-Readme.md; https://github.com/docker/login-action/blob/8aa5831fb8d4/action.yml; GitHub REST release, tag and attestation metadata; anonymous registry API reads of ghcr.io (`sigstore/cosign/cosign`, `actions/actions-runner`, `github/github-mcp-server`, `distribution/distribution`, `jabbott-iii/grimoire`), registry-1.docker.io and hub.docker.com on 2026-11-17 at about 23:45 UTC. Status: Verified, except the gaps listed. The research pushed, installed and ran nothing. Certificates and bundles were only decoded.
+
+- **Pins** (each released on or before 2026-11-10 unless marked):
+  - `sigstore/cosign` v3.1.4 (2026-10-20), commit `0e48502cf5ef34e2e60bbd3617aa19945712f705`. `cosign_checksums.txt`: `cosign-linux-amd64` `424e2c97d0b45fd7a6b608a87f090f35633f4c23ece5f092d48bba11aaf4bbfa`, `cosign-linux-arm64` `ade83b7aac62e131cacfe96d958948b2150cc9efec46a570a2649b8e27dedad2`. `sigstore/cosign-installer` v4.1.3 (2026-11-04), `756fe2d284c7292c4e9b62c8a28f1e5629c59532`.
+  - `actions/attest` v4.2.2 (2026-08-04), `1e69f48acb82d1966a394da916b4c1698aa569d6`. It bundles `@sigstore/oci` 0.7.2.
+  - `docker/login-action` v4.8.0 (2026-11-05), `8aa5831fb8d48d8f76594c7ddde61ae58019f550`, the newest release. It runs on node24, and its post step logs out (`logout` defaults to `true`). Grimoire doesn't use it.
+  - crane (go-containerregistry) v0.22.1 (2026-09-04), commit `8a72a424fdecb4caa14f2d525e5d2503331442b5`, Apache-2.0. `checksums.txt`: `go-containerregistry_Linux_x86_64.tar.gz` `0ab7a1d6932a213aed964ce97666c3077fe691c8606413674a8b3e0b9ec4cda0`, `go-containerregistry_Linux_arm64.tar.gz` `898c0cff975f898a33e8c4580bdafb0e7c02c7faa33374e946762f97c4ab7110`.
+  - regctl v0.11.7 (2026-10-21), commit `36abda84830dae07db00bf9e5cec95d97b78222a`, Apache-2.0. It has no checksums file. GitHub asset digests: `regctl-linux-amd64` `3737fbbdd791e04e7a831640b681f3397a376498e80e2ad9b1b2d27296f239bc`, `regctl-linux-arm64` `9f349bab5c407ac04f3dabf99c7c7a6b0f9e9723c23f2775380e804d02c6dbb9`.
+  - oras v1.3.6 (2026-10-24), commit `9b1fc815f6b7fba743f08b9b5c5846639cc11d3c`, Apache-2.0. `oras_1.3.6_checksums.txt`: linux_amd64 `66fb0ad7206f3f6fa77ed5b552049d364ccf4b50b1684554f731f76302b52ca0`, linux_arm64 `b84269e78dfc2d5329a4aab373da3200de95e6c138338cf6c66c10c0a3f248c1`.
+  - distribution v3.1.2 (2026-09-24), commit `3220848f15d9279c66a41aa0a257469e6aede1e9`, Apache-2.0. `registry_3.1.2_linux_amd64.tar.gz` `40df2224d410f72ae425c3371873b078bbdbda3b8b612be9571f0e6751f3acc8`, `…_linux_arm64.tar.gz` `09d26f88d2c0f161bd1b8bfc6c123571cc3d291dcca8af5477b3cacc4ec95e73`. The image `distribution/distribution:3.1.2` (also `3`, `3.1` and `latest`) is index `sha256:d106962e6fe3fa69c178cec77eeeee5edb626b8df6535b7bd6b95e658a0a5ca9` on both docker.io and ghcr.io, pushed 2026-09-24.
+  - gh 2.103.3 (2026-10-26), commit `63837fb778d6a39f02be0ce76ff89f2bc8d74bdc`, preinstalled on the runners.
+  - skopeo v1.25.1 (2026-11-10), commit `1fb351f23dbde474416ba33c3786a8d04304429b`, has no release assets. zot v2.1.23 (2026-11-02), commit `d7915e82e6693255338ef7fa9bb15300c82db020`.
+  - **Too young to pin:** gh 2.104.0 (2026-11-12), oras v1.4.0 (2026-11-17), skopeo v1.25.2 (2026-11-16) and BuildKit v0.35.0 (2026-11-11), whose newest eligible release is v0.34.2 (2026-11-03). Also the Docker Official Image `registry:3`, `3.1`, `3.1.2` and `latest`: all are `sha256:82f6ff4a7f982960c8aa51617fea3aabc485df6e55cce80d22deb1de36f1bc3c`, pushed 2026-11-11T23:38:20Z.
+- **GHCR has no referrers API:**
+  - An anonymous `GET /v2/<name>/referrers/<digest>` returns 404 `MANIFEST_UNKNOWN`. That held for signed digests in four repositories and for the zero digest.
+  - The spec says a registry that supports the API "MUST NOT return a `404 Not Found`". A client that gets a 404 must use the referrers tag schema `<alg>-<ref>` instead (distribution-spec v1.1.1, lines 577 and 720).
+- **The fallback index on GHCR:**
+  - Referrers are listed in an OCI image index tagged `sha256-<subject hex>`. cosign v3.1.4's own index `sha256:0f06154836d2de34f887a5c273506d52ca43edaa1d9e53e6510fa78a48f69c2d` has one at `sha256-0f06…` (digest `sha256:87565cc0acb1dedc401035be388172c5695da7dea2b31c4c208376706bcda46f`).
+  - That index has two entries. Both have `artifactType` `application/vnd.dev.sigstore.bundle.v0.3+json`, `dev.sigstore.bundle.content: dsse-envelope` and `dev.sigstore.bundle.predicateType: https://sigstore.dev/cosign/sign/v1`.
+  - `actions/actions-runner`'s index has a provenance entry (`https://slsa.dev/provenance/v1`), pushed by `actions/attest-build-provenance@v4` with `push-to-registry: true`. Its signer is `https://github.com/actions/runner/.github/workflows/docker-publish.yml@refs/heads/main`.
+  - Signatures and attestations share one artifact type. Only the `predicateType` annotation tells them apart.
+- **GHCR manifest behaviour:**
+  - GHCR stores and serves OCI 1.1 manifests unchanged: `subject`, `artifactType` and the empty config (`application/vnd.oci.empty.v1+json`).
+  - It serves untagged manifests by digest.
+  - Manifest GETs return an `ETag` equal to the digest.
+  - Fallback tags are listed by `tags/list` as ordinary tags: 23 of `actions/actions-runner`'s 80 tags. `tags/list` returns at most 1,000 tags per page, with `Link: …; rel="next"`, even when asked for `n=5000`.
+- **Names:**
+  - The OCI grammar allows only lowercase (`[a-z0-9]+((\.|_|__|-+)[a-z0-9]+)*…`, spec line 157).
+  - go-containerregistry v0.22.1 rejects any repository name containing an uppercase letter (`repositoryChars`). So do cosign, crane and gh, which use it.
+  - `actions/attest` lowercases the subject name when `push-to-registry` is set.
+  - GHCR itself served `Sigstore/cosign/cosign` with a 200.
+  - `${{ github.repository }}` is `jabbott-iii/Grimoire`. So Grimoire writes the image name as the literal `ghcr.io/jabbott-iii/grimoire`.
+- **Auth from Actions:**
+  - GitHub's docs recommend `GITHUB_TOKEN`, with `packages: write` and `contents: read`. The login is `docker login ghcr.io -u ${{ github.actor }} --password-stdin`.
+  - A package first published by a workflow with `GITHUB_TOKEN` is linked to that repository. `GITHUB_TOKEN` can't push to a name that was pushed earlier but never connected to the repository.
+  - Repositories that publish through a workflow get `admin` on the package.
+  - A package inherits the repository's access only if it is linked before its first publish, for example through the `org.opencontainers.image.source` label.
+  - "Manage Actions access" → **Add Repository** grants other repositories' workflows access. Giving a public repository access to private packages can expose them to forks.
+- **Visibility:**
+  - The docs conflict. One page says "When you first publish a package, the default visibility is private." Another says a package created by a workflow with `GITHUB_TOKEN` "inherits the visibility and permissions model of the repository". A third says a linked package inherits "the access permissions (but not the visibility)".
+  - "Once you make a package public, you cannot make it private again."
+  - The REST API has only get, list, delete and restore for packages and versions. No endpoint changes visibility.
+  - Public packages can be pulled anonymously. An unauthenticated request gets `401` with `Bearer realm="https://ghcr.io/token",service="ghcr.io"`.
+  - The token endpoint returns 200 with a pull token for a public repository, and 403 `DENIED` for a private or missing one.
+  - On 2026-11-17, `jabbott-iii/grimoire` gave 403 there and 404 "Package not found" from REST.
+- **Other GHCR rules:**
+  - Each layer is limited to 10 GB, and each upload to 10 minutes.
+  - The package page shows `org.opencontainers.image.source`, `.description` (at most 512 characters) and `.licenses` (at most 256). For a multi-arch image the description comes from the index `annotations`. The docs' example uses `outputs: type=image,name=target,annotation-index.org.opencontainers.image.description=…`.
+  - Deleting or restoring versions with `GITHUB_TOKEN` needs admin on the package, and is in public preview.
+  - A public package with any version over 5,000 downloads can't be deleted. A restore must happen within 30 days.
+  - None of the 87 Packages docs files mention immutability, referrers, untagged versions or signatures.
+- **cosign v3.1.4 image signing:**
+  - By default (`--new-bundle-format`, deprecated, default `true`), cosign signs a DSSE in-toto statement with predicate `https://sigstore.dev/cosign/sign/v1`. It pushes it as a referrer manifest by digest (`repo@sha256:…`), with `artifactType` `application/vnd.dev.sigstore.bundle.v0.3+json` and `subject` set to the signed digest. `--upload` defaults to `true`.
+  - `.sig` tags are written only with `--new-bundle-format=false`. `--registry-referrers-mode` needs `COSIGN_EXPERIMENTAL=1` and is read only on that legacy path.
+  - The push goes through go-containerregistry v0.22.1 `remote.Put`. After every PUT of a manifest with a `subject`, ggcr GETs `/referrers/<subject>` and ignores any `OCI-Subject` header.
+  - On a 404 or 400, ggcr GETs the `sha256-<hex>` index, appends the new descriptor and PUTs the index back. This fallback is on by default. It sends no conditional request ("TODO: use conditional requests to avoid race conditions").
+  - Without `-r/--recursive`, `cosign sign ref@sha256:<index>` signs only the index. With it, cosign walks every child image manifest, including BuildKit's `unknown/unknown` attestation manifests, and signs each. `--bundle` is refused with `--recursive` or with several images.
+  - `COSIGN_REPOSITORY` changes the repository where signatures are written and read.
+  - If a Rekor upload is configured and `--yes` is absent, cosign makes an unauthenticated GET of the image. If that fails, it warns that the image "appears to be a private repository" and asks. A declined or failed answer drops the Rekor upload. `--yes` skips that check and the privacy prompt.
+  - `cosign load --dir` reads only layouts written by `cosign save`. It selects them by `kind` annotations (`dev.cosignproject.cosign/image`, `…/imageIndex`).
+- **cosign offline image dry-run** (read from source):
+  - `--key` with a `cosign signing-config create` file that names no services fetches no TUF root and gets no OIDC token. It calls no Fulcio, Rekor or TSA.
+  - The only traffic goes to the registry: a GET and a HEAD of the subject, uploads of the bundle and the empty-config blob, a PUT of the referrer manifest by digest, a GET of `/referrers`, then a GET and a PUT of the fallback tag.
+  - `cosign verify --key <pub> --insecure-ignore-tlog <ref>@sha256:…` skips the trusted-root fetch.
+  - `--tlog-upload=false` together with a signing config is refused.
+  - **Checked locally (2026-11-17, cosign 3.1.4, on the local `crane registry serve` below):** an offline signature of the pushed index, made with a throwaway key and a signing config that names no services, landed in the `sha256-<index hex>` fallback tag as an `application/vnd.dev.sigstore.bundle.v0.3+json` manifest annotated `dev.sigstore.bundle.predicateType=https://sigstore.dev/cosign/sign/v1`.
+- **cosign verify:**
+  - It resolves the reference to a digest, lists referrers (falling back to the tag) and fetches each bundle.
+  - **If it finds no new-format bundle, it silently switches to legacy `.sig` lookup.**
+  - Keyless verification fetches the TUF trusted root unless `--trusted-root` is given. The Grimoire SAN is in SUPPLY-CHAIN-P5.
+- **Plain HTTP:**
+  - For `localhost:<port>`, `*.localhost`, `127.0.0.1`, `::1` and RFC 1918 addresses, go-containerregistry tries HTTPS first and falls back to HTTP. That covers cosign and crane. A bare `localhost` with no port doesn't match.
+  - cosign also has `--allow-http-registry` ("Don't use this for anything but testing").
+  - regctl enables TLS for every host until `regctl registry set <host> --tls disabled` is run.
+  - oras uses plain HTTP by default only when the host is `localhost`. Other hosts need `--plain-http`.
+  - skopeo uses `--dest-tls-verify=false`.
+- **`actions/attest` v4.2.2 for images:**
+  - Inputs are `subject-name` (fully qualified), `subject-digest` (`sha256:…`) and `push-to-registry: true`. The README says not to include a tag, and v4.2.2 strips one anyway.
+  - A push needs exactly one subject with a SHA-256 digest. The name is lowercased.
+  - Credentials come only from `$HOME/.docker/config.json`, under `auths[<registry>].auth` or `identitytoken`, matched to the exact canonical registry name. `DOCKER_CONFIG` and credential helpers are ignored.
+  - The write path pushes the blobs and the referrer manifest by digest, then GETs `/referrers/sha256:000…0`. If that isn't a 200, or the PUT returned no `OCI-Subject`, it updates the `sha256-<hex>` index and sends the GET's `ETag` as `If-Match`.
+  - The README's image example grants `id-token: write`, `attestations: write`, `packages: write`, `contents: read` and `artifact-metadata: write`.
+  - Storage records are for organization-owned repositories only. With `create-storage-record` at its default of `true`, the action calls `GET /repos/{owner}/{repo}`, and returns before creating a record when the owner is a user. Errors there only warn.
+- **`gh attestation verify` for images** (v2.103.3):
+  - `oci://<image>@sha256:… --repo OWNER/REPO` fetches attestations from the GitHub API. The API answers anonymous reads for a public repository, but gh skips its own auth check only with `--bundle`. The help says an OCI URL also needs a registry login.
+  - `--bundle-from-oci` reads referrers, falling back to the tag, through go-containerregistry v0.22.1 and `DefaultKeychain`. It keeps artifact types starting with `application/vnd.dev.sigstore.bundle`, and then checks only the names in the certificate.
+- **crane v0.22.1:**
+  - The release has `checksums.txt` and `multiple.intoto.jsonl`. The latter is a Sigstore v0.3 bundle holding SLSA v0.2 provenance, signed by `https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@refs/tags/v2.1.0`, with build trigger `https://github.com/google/go-containerregistry/.github/workflows/release.yml@refs/tags/v0.22.1`. Its subjects match `checksums.txt`.
+  - There is no cosign signature asset, and the attestations API returns 404.
+  - `crane push <dir> <ref>` reads a directory as an OCI layout. If `index.json` has exactly one entry and it is an index, crane pushes it with `remote.WriteIndex`. Child manifests, attestation manifests included, are written first.
+  - It prints `<repo>@<digest>` to stdout. `--image-refs <file>` also writes it to a file with mode 0600.
+  - With more than one entry it fails ("layout contains %d entries, consider --index"). `--index` pushes `index.json` itself as a new index, with a different digest.
+  - BuildKit v0.34.2's OCI exporter, through containerd v2.4.2, writes one `index.json` entry when no image name is given, and one entry per name otherwise.
+  - `crane auth login <registry> -u <user> --password-stdin` saves through docker/cli's config package, to `$DOCKER_CONFIG` or `~/.docker/config.json`.
+  - `crane registry serve` listens on `:$PORT`, or a random port, on all interfaces, unless `--address` is given.
+  - Its manifests are always held in memory. `--disk <dir>` stores blobs only.
+  - Its referrers API is off, so `/referrers` returns 404 `METHOD_UNKNOWN`. Image manifests aren't checked for media type, and an index PUT fails until its child manifests exist.
+  - **Checked locally (2026-11-17, rootless Docker 29.9.3, crane v0.22.1):** `crane push` of Grimoire's buildx layout (both platforms, with the SBOM and mode=max provenance attestation manifests) to a local `crane registry serve` kept the index digest: the digest it printed equals the layout's single `index.json` entry. The registry answered `/referrers` with 404 `METHOD_UNKNOWN`, so the push wrote `sha256-<platform hex>` fallback tags for BuildKit's attestation manifests, which carry a `subject`. GHCR will show the same tags: never delete them.
+- **regctl v0.11.7:**
+  - Each binary has a keyless cosign signature: `.sig`, `.pem` and a `.sigstore.json` v0.3 message-signature bundle. The SAN is `https://github.com/regclient/regclient/.github/workflows/go.yml@refs/tags/v0.11.7` and the issuer `https://token.actions.githubusercontent.com`. The bundle's digest equals the asset digest.
+  - The release also has SPDX and CycloneDX SBOMs.
+  - `regctl image copy ocidir://<dir>@sha256:<d> <ref>` PUTs the source manifest bytes. `--referrers` and `--digest-tags` also copy referrers and `sha256-<digest>.*` tags.
+- **oras v1.3.6:**
+  - The release has a checksums file and GPG `.asc` signatures. New in 1.3.6, the archives and the checksums file also have GitHub SLSA v1 attestations.
+  - `oras cp --from-oci-layout <dir>@<digest> <ref>:<tag>` copies every manifest of an index. `-r` (preview) also copies referrers.
+- **skopeo:**
+  - The maintainers "prefer to run Skopeo using distro packages or within containers".
+  - The `ubuntu-24.04` image 20261111.370.1 ships skopeo 1.13.3, Docker 28.0.4, buildx 0.38.2 and Podman 4.9.3.
+  - `skopeo copy --all --preserve-digests oci:<dir> docker://<ref>` copies a layout. `--preserve-digests` fails if a digest can't be kept.
+- **Local registries:**
+  - distribution v3.1.2 has no referrers route. Its routes are base, manifest, tags, blob, blob-upload, blob-upload-chunk and catalog, and no file in the tree mentions referrers.
+  - Its tarballs hold a static `registry` binary plus README and LICENSE.
+  - Each `.sha256` file holds the 64 hex characters and a newline, with no file name.
+  - Each `.provenance.json` is an unsigned in-toto statement (SLSA v1). The attestations API returns 404.
+  - The `distribution/distribution` image is Alpine 3.24 with no `USER`. It runs `registry serve /etc/distribution/config.yml`, copied from `config-dev.yml`: port 5000, debug and Prometheus on 5001, deletes enabled.
+  - Its index lists 7 platforms (linux/amd64 and linux/arm64 among them) and BuildKit attestation manifests. It has no fallback tag, so no signatures.
+  - zot v2.1.23 registers `/v2/<name>/referrers/<digest>` unconditionally, and publishes `checksums.sha256.txt`.
+- **Service containers:**
+  - The runner (v2.338.2) passes `services.<id>.image` to Docker unchanged, so `name@sha256:…` works.
+  - zizmor 1.32.0's `unpinned-images` audit covers services. A tag without a digest is a pedantic finding; `latest` or no tag is a regular one.
+  - A job that runs on the host must map the service's ports and reach it on `localhost`.
+  - GitHub-hosted runners "are not subject to" Docker Hub's rate limits.
+- **Changed since the register:**
+  - GHCR's referrers support, left open in COSIGN and SUPPLY-CHAIN-P5, is settled. GHCR has no referrers API and uses the referrers tag schema. Image signatures are OCI 1.1 referrer manifests, listed on GHCR through the `sha256-<hex>` tag.
+  - ATTEST's permissions need `packages: write` when attestations are pushed to an image.
+  - Unchanged: cosign v3.1.4, cosign-installer v4.1.3, `actions/attest` v4.2.2 and gh 2.103.3 are still the newest eligible releases.
+- **UNVERIFIED:**
+  - whether GHCR sends `OCI-Subject` on a manifest PUT with a subject, and whether it honours `If-Match` (both need a push);
+  - which visibility a package first pushed by a workflow in a user account actually gets;
+  - that GHCR has no tag-immutability feature at all (the docs are silent);
+  - whether GHCR links a multi-arch package from the index annotation or from the platform config label;
+  - whether referrer manifests and fallback indexes appear as separate package versions, and whether untagged-version cleanup deletes them (listing versions needs `read:packages`);
+  - whether a private `grimoire` package already exists;
+  - whether the `ubuntu-24.04` image sets a Docker `credsStore` (code search found none);
+  - end-to-end digest preservation in regctl, oras and skopeo (read, not run), and in any tool pushing to GHCR itself;
+  - how skopeo's `oci:` transport handles attestation manifests;
+  - how policy engines treat a signature on the index compared with one on each platform manifest;
+  - what cosign's confirmation prompt does without a terminal.
+- **Settled after the research:** whether `crane registry serve` accepts a full BuildKit layout with an SBOM and max provenance, and digest preservation by crane, to a local registry; and where cosign's offline image signature lands. All three were checked locally (above).
+
+### SCAN-P6: Grype as the image vulnerability gate
+Sources: https://github.com/anchore/grype at v0.121.3 (commit `cd1f23eb50df`: `cmd/grype/cli/{cli.go,options/,commands/}`, `grype/db/v6/{distribution,installation}/`, `grype/load_vulnerability_db.go`, `grype/match/ignore.go`, `grype/vex/`, `grype/vulnerability_matcher.go`, `grype/vulnerability/severity.go`, `internal/format/`, `.goreleaser.yaml`, `.github/workflows/release.yaml`, `install.sh`, `go.mod`), its release API, release assets and attestations API, and https://github.com/anchore/grype/blob/v0.118.0/go.mod; https://github.com/anchore/scan-action at v7.4.2 (`27805bf3b4e8`: `action.yml`, `action.js`, `GrypeVersion.js`, `dist/index.js`, `download-grype/action.yml`) and main `aba84ded01d9`; https://github.com/anchore/syft at v1.57.1 (`internal/task/package_tasks.go`, `syft/pkg/cataloger/{debian,rust,binary}/`); https://github.com/anchore/stereoscope at v0.4.1 (`pkg/image/{platform.go,image.go}`, `pkg/image/oci/`, `pkg/image/docker/tarball_provider.go`); https://github.com/anchore/grype-db at `de4285eb2e68` (`.github/workflows/daily-db-publisher-r2.yaml`, `manager/src/grype_db_manager/cli/db.py`); https://github.com/anchore/oss-docs at `75cad52cd932` (`content/docs/guides/vulnerability/{database,filter-results,scan-targets}.md`, `guides/sbom/scan-targets.md`, `architecture/grype-db.md`, `reference/grype/{cli,configuration}.md`, `capabilities/snippets/ecosystem/rust/`, `announcements/grype-db-v5-eol.md`; the references were generated with Grype 0.119.0); https://grype.anchore.io/databases/v6/latest.json; https://github.com/anchore/vunnel/blob/32e6589725bb/src/vunnel/providers/debian/parser.py; https://github.com/GoogleContainerTools/distroless at `0af09fb8f491` (`static/config.bzl`, `static/static.bzl`, `MODULE.bazel`); https://github.com/GoogleContainerTools/rules_distroless/blob/v0.8.0/apt/private/dpkg_statusd.sh; https://gcr.io/v2/distroless/static-debian13/manifests/nonroot; https://ghcr.io/v2/anchore/grype/manifests/v0.121.3; https://github.com/rust-secure-code/cargo-auditable/blob/v0.7.7/README.md; https://github.com/sigstore/cosign/blob/v3.1.4/cmd/cosign/cli/options/certificate.go; https://github.com/spf13/pflag/blob/v1.0.10/string_array.go; https://github.com/zizmorcore/zizmor at v1.32.0 (`crates/zizmor/src/audit/`, `crates/zizmor/data/`); the repository advisories of anchore/grype, syft, stereoscope and scan-action, and the global advisory database. Status: Verified, except the gaps listed. The research ran no Grype scan and no cosign verification. The checksums bundle's certificate was decoded with `openssl x509`. Registries, the release and attestations APIs and the DB listing were queried anonymously with `curl` or with `gh api`.
+
+- **Pins:**
+  - Grype **v0.121.3** (2026-11-09T15:17:25Z), the newest release at least 7 days old. Tag object `c1fb20024a1fd80208894d7a11bfdce98f1e666d`, commit `cd1f23eb50dfb52647090158f453c7359172591f`. The release is immutable.
+  - `grype_0.121.3_linux_amd64.tar.gz`: SHA-256 `e9da18cc1429e786722e32161288103600efffd8e483c90761f90485bd1bec85`, 32,643,999 bytes. `grype_0.121.3_linux_arm64.tar.gz`: `b7815598d48da78bfd16f5b98ef28e1bb09c03d34fc8c3e350f99b6ccb3c7cba`. The release API digest, `grype_0.121.3_checksums.txt` and GitHub's release attestation all agree.
+  - `grype_0.121.3_checksums.txt`: `1f8cea030e00f362d6b0bb0d1843b123af1d6baad70975dff1cf6fe14096866f`. Its bundle, `grype_0.121.3_checksums.txt.sigstore.json`: `c45178e6831b38291cd48f51d49dfa5ef2251afdbed7c3812d6b33bf9049fe74`.
+  - `anchore/scan-action` v7.4.2 (2026-08-28), commit `27805bf3b4e84b4a5c980df22ed233c00390a439`, is unchanged and still the newest release. It is recorded for comparison only. Tag v7.4.1 exists without a release.
+  - `gcr.io/distroless/static-debian13:nonroot` re-resolved unchanged: index `sha256:aafe993665bf6200db38a02c11a9351e782a84b6a45e7f33b6695638c88e3931`, linux/amd64 `sha256:816dc4d589459a7fe33b8a2e69edb70da56ffad7161f4b415937fa2bfe7e92e8`, linux/arm64/v8 `sha256:50e178649a8d77a5d8414f205471c829f06b876cbdb2455dace0b5de549fd1e5`. Grimoire pins the previous index, `25ac8f0c…` (BASE-IMAGE-P6).
+- **Changed since SCAN (2026-11-16):** v0.122.0 (2026-11-16) is too young to pin, so the pin is v0.121.3. v0.121.3 embeds syft v1.57.1 and stereoscope v0.4.1. Its `go.mod` declares `go 1.26.8` and has no `toolchain` line.
+- **Checked locally (2026-11-17, Grype 0.121.3, DB schema v6.1.10 built 2026-11-17T06:20:58Z):** Grimoire's image, on the pinned base `25ac8f0c…`, has **no findings on either platform**.
+- **Release signing:**
+  - goreleaser signs only the checksums file, with `cosign sign-blob --bundle`. There are no per-archive signatures and no SLSA build provenance: the attestations API holds only GitHub's release attestation for the tarball.
+  - The `ghcr.io/anchore/grype` images are unsigned. The goreleaser config has no `docker_signs`, and `v0.121.3` (`sha256:13113eeceab017260370cf540e1d25442c59665fd07d1b09b66d63bb0c282887`) has no `.sig` tag; the referrers query returns 404.
+  - The bundle certificate has SAN `https://github.com/anchore/grype/.github/workflows/release.yaml@refs/heads/main` and issuer `https://token.actions.githubusercontent.com`. Its other values: trigger `workflow_dispatch`, workflow name `Release`, repository `anchore/grype`, ref `refs/heads/main`, workflow SHA `cd1f23eb50dfb52647090158f453c7359172591f`. The message digest equals the checksums file's SHA-256. The bundle carries a Rekor v1 inclusion proof (log index 3766582882, 2026-11-09 15:13:21 UTC) and one RFC 3161 timestamp.
+  - cosign v3.1.4 can pin all of these with `--certificate-identity`, `--certificate-oidc-issuer` and `--certificate-github-workflow-{sha,trigger,name,repository,ref}`.
+  - GitHub's release attestation (SAN `https://dotcom.releases.github.com`, predicate `https://in-toto.io/attestation/release/v0.2`) has 18 subjects: the 17 assets and `pkg:github/anchore/grype@v0.121.3`, keyed by the tag object's SHA-1.
+  - Grype's `install.sh` checks the bundle only with `-v`, using the same SAN and issuer. Its error message says bundles need cosign v2.5.0 or later, while a comment in the same script says v2.4.2.
+  - Grype's release workflow runs only on `workflow_dispatch`, in a `release` environment. It has a `skip-checks` input that releases even if checks haven't passed on `main`.
+- **Release contents:** Apache-2.0. Linux builds use `CGO_ENABLED=0`, `-extldflags '-static'` and `-w -s`. `install.sh` installs `grype` from the archive root.
+- **scan-action v7.4.2 (not used):**
+  - On Linux it downloads `https://raw.githubusercontent.com/anchore/grype/<tag>/install.sh` and runs it with `sh`, with `DOWNLOAD_TAG_INSTALL_SCRIPT=false`. No hash is pinned and `-v` isn't passed. The installer checks the tarball only against the same release's `checksums.txt`.
+  - A `grype-version` that isn't a release tag (`^v\d+\.\d+\.\d+([-+][\w.+-]+)?$`) gets the installer from `main` with `DOWNLOAD_TAG_INSTALL_SCRIPT=true`. That installer then downloads another one from `https://get.anchore.io/grype/<tag>/install.sh` (falling back to raw.githubusercontent.com) and pipes it to `sh`.
+  - Its default Grype is v0.118.0, both at v7.4.2 and on `main` (`aba84ded01d9`, 2026-11-13). v0.118.0 embeds syft v1.51.1 and stereoscope v0.3.1. That syft is below the fix for GHSA-mw2c-m758-9v5q (v1.52.0).
+  - Defaults: `fail-build: true`, `severity-cutoff: medium` (passed as `--fail-on`), `output-format: sarif`, and `cache-db` off. It runs on node24.
+  - It sets `GRYPE_CHECK_FOR_APP_UPDATE=false` and passes the step environment to Grype. It has no platform input. It reads `registry-username` and `registry-password`, which `action.yml` doesn't declare. It keeps the binary in the runner tool cache.
+  - Exit 2 fails the step, or only warns when `fail-build` is false. Any other non-zero exit fails it.
+  - The `vex` input becomes a single `--vex` argument. Grype's `--vex` is a pflag StringArray, which never splits on commas, so the action can pass only one document.
+- **Vulnerability DB:**
+  - The default `db.update-url`, `https://grype.anchore.io/databases`, resolves to `…/v6/latest.json`. It is served anonymously over HTTPS through Cloudflare with `cache-control: public,max-age=300`, and names one archive and its SHA-256. Archives are served with `max-age=31536000`.
+  - On 2026-11-17 the DB was schema v6.1.10, built 2026-11-17T06:20:58Z: `vulnerability-db_v6.1.10_2026-11-17T00:22:24Z_1794896458.tar.zst`, 203,145,524 bytes, `sha256:3f0cbdbc9d40fb69eaeacec1869b27a8c74f1894108804ace8b7468513e2df07`. The source's "~156MB as of 2024-04-17" is stale.
+    - **Checked locally (2026-11-17, Grype 0.121.3):** that DB takes 3.3 GB on disk once unpacked.
+  - The archive is checked only against that SHA-256, through a go-getter `checksum` query parameter. Neither file is signed, so authenticity rests on TLS. `history.json` and `latest.json.sig` return 404, and `db list` shows only the latest entry.
+  - `grype-db` publishes daily at 06:00 UTC (`cron: '0 6 * * *'`). `db build-and-upload` validates the DB first, including a `latest.json` smoke test. It then uploads the archive and, after it, `latest.json`: two uploads, not an atomic swap. Validation can be skipped with `--skip-validate` or disabled per schema.
+  - Schema v5 stopped receiving updates on 2026-03-06. Grype v0.88.0 and later use v6.
+- **DB checks and failure modes (v0.121.3 source):**
+  - Defaults: `db.auto-update: true`, `validate-by-hash-on-start: true`, `validate-age: true`, `max-allowed-built-age: 120h`, `require-update-check: false`, `update-available-timeout: 30s`, `update-download-timeout: 5m`, `max-update-check-frequency: 2h`, `cache-dir: ~/.cache/grype/db`. The env names are `GRYPE_DB_*`.
+  - The load fails, and the scan exits 1, when the DB is older than the maximum age or no longer matches the digest recorded at import. The hash check protects the file on disk, not its origin.
+  - If the listing can't be fetched and `require-update-check` is false, Grype only warns and uses any DB already installed. With no installed DB, the scan fails.
+  - `grype db import` takes a URL or a file. Only a URL with `?checksum=sha256:…` is verified; a local archive is unpacked and activated with no comparison. `db.update-url` can point at a mirror, and the docs describe mirroring for air-gapped systems.
+- **Network at run time:**
+  - A scan reaches `grype.anchore.io`. It also reaches `https://toolbox-data.anchore.io/grype/releases/latest/VERSION` (which returned `v0.122.0`) unless `check-for-app-update` is false (env `GRYPE_CHECK_FOR_APP_UPDATE`).
+  - External sources (Maven) are off by default.
+  - Release downloads redirect from github.com to `release-assets.githubusercontent.com`.
+  - Every one of these hosts was reached anonymously.
+- **Scan sources and platforms:**
+  - Schemes include `oci-dir:`, `oci-archive:`, `docker-archive:`, `registry:`, `docker:`, `podman:`, `containerd:`, `sbom:` and `dir:`. A scheme or `--from` stops auto-detection. The default scope is `squashed`.
+  - `oci-dir:` and `oci-archive:` select exactly one image; `oci-archive:` is unpacked and handed to the directory provider.
+    - A single-image layout is taken as is.
+    - In a multi-image layout, the platform defaults to `linux/<host GOARCH>`, and anything other than exactly one match is an error.
+    - Nested indexes are walked, and buildx attestation manifests are skipped.
+    - With `--platform`, the image config must match.
+    - **Checked locally (2026-11-17, Grype 0.121.3):** `grype oci-dir:<layout> --platform linux/amd64`, and again with `--platform linux/arm64`, each selected that platform's image from Grimoire's buildx layout. The JSON reports list no tags and no repo digests for these `oci-dir:` sources.
+  - `registry:` also defaults to the host architecture for an index, and records `<registry>/<repo>@<digest>` as a repo digest. The Syft docs say the default is `linux/amd64`, but the code uses the host architecture.
+  - `--platform linux/arm64` matches `linux/arm64/v8`: variant `8` or `v8` is normalised to empty, and an empty variant matches any.
+  - `docker-archive:` accepts only one image per tar.
+- **What Grype sees in the image:**
+  - static-debian13 installs six Debian packages: `base-files`, `ca-certificates`, `netbase`, `tzdata`, `tzdata-legacy` and `media-types` (BASE-IMAGE-P6; the research here listed five, without `ca-certificates`). Their control files are under `/var/lib/dpkg/status.d/` (rules_distroless 0.8.0). Syft v1.57.1's dpkg cataloger reads `**/lib/dpkg/status.d/*` in images, and vunnel maps `trixie` to Debian 13.
+    - **Checked locally (2026-11-17, Grype 0.121.3):** Grype lists all six on both platforms.
+  - Rust crates come only from cargo-auditable's `.dep-v0` section, through `cargo-auditable-binary-cataloger` (every executable MIME type, reported as `pkg:cargo`). A binary without that section yields no packages and no warning, and only runtime dependencies are kept.
+    - **Checked locally (2026-11-17, Grype 0.121.3):** `.dep-v0` survives the `dist` profile on both musl targets. Grype's CycloneDX output lists 92 `pkg:cargo` packages at `/usr/local/bin/grimoire` (91 on arm64), and, on both platforms, 135 at `/opt/grimoire/bin/grimoire-mcp-project-docs` and 41 at `/opt/grimoire/bin/grimoire-tool-secret-guard`. `cargo xtask release image coverage` fails the gate when a binary shows none.
+  - Syft's only Rust classifier matches `**/libstd-????????????????.so`, so it never applies to static executables.
+  - cargo-auditable doesn't track statically linked C libraries. By inference, that includes the musl libc that the musl targets link.
+  - Rust packages are matched without CPEs by default (`match.rust.using-cpes: false`). The documented Rust data source is GHSA, with NVD only when CPE matching is on.
+- **The gate:**
+  - `--fail-on`/`-f` exits **2** (config `fail-on-severity`, env `GRYPE_FAIL_ON_SEVERITY`). `db check` exits 100 when an update is available. Every other error exits 1.
+  - Matches with Unknown severity never trip `--fail-on`, and a match whose metadata lookup fails is skipped.
+  - `--only-fixed`, `--only-notfixed`, `--ignore-states`, ignore rules and VEX are all applied first, and the threshold sees only what is left.
+  - **Checked locally (2026-11-17, Grype 0.121.3):** a medium GHSA match exits 2, and an ignore rule keyed on the GHSA ID and the package name suppresses it (exit 0).
+- **Config and ignore rules:**
+  - Config search order: `./.grype.yaml`, `./.grype/config.yaml`, `~/.grype.yaml`, then `$XDG_CONFIG_HOME/grype/config.yaml` (from the docs). **Checked locally (2026-11-17, Grype 0.121.3, `grype config --load`, in the Phase 6 review):** without `-c`, Grype merges every file it finds (ignore rules from all of them, and settings such as `fail-on-severity` from `~/.grype.yaml`); with `-c`, it reads only the named file. `GRYPE_*` environment variables apply either way.
+  - The `--ignore-states` flag is read from the config key `ignore-wontfix` (env `GRYPE_IGNORE_WONTFIX`), not `ignore-states`. The generated docs agree.
+  - Rule fields: `vulnerability`, `include-aliases`, `reason`, `namespace`, `fix-state`, `match-type`, `vex-status`, `vex-justification`, and `package.{name,version,language,type,location,upstream-name}`.
+  - Every field given must match, and a rule with no fields never matches. `reason` is optional and doesn't affect matching. There is no expiry field.
+  - `vulnerability` is compared exactly with the match's ID, and with related IDs only when `include-aliases: true`.
+  - `package.name` and `upstream-name` become anchored regular expressions when they contain regex characters. `location` is a doublestar glob.
+  - **Checked locally (2026-11-17, Grype 0.121.3):** unknown config keys are ignored silently, also inside an ignore rule, where a misspelt criterion is dropped and the rule then matches more (a misspelt `vulnerability` ignores every finding in the package; checked in the Phase 6 review). So Grimoire's workflows repeat the threshold with `--fail-on medium`, and a unit test reads `.grype.yaml` line by line and refuses any unknown key, top-level, under `db` or in a rule, and any rule without a GHSA or CVE id, a package name and a reason.
+- **VEX:**
+  - Grype reads OpenVEX and CSAF (`--vex`, config `vex-documents`), and takes the format from the first document.
+  - By default, `not_affected` and `fixed` statements move matches to the ignored list. `affected` and `under_investigation` add matches only through `vex-add`.
+  - Image products are matched on the image's tags and repo digests (as `pkg:oci` purls), then on each package's own PURL. The `oci-dir:` provider records only the manifest digest, so `pkg:oci@sha256` products don't match an `oci-dir:` scan.
+- **Outputs:** `json`, `table`, `cyclonedx` (XML), `cyclonedx-json`, `sarif` and `template`. The embedded CycloneDX VEX formats are deprecated. `-o <format>=<file>` can be repeated to write several files. `--show-suppressed` works for table output only.
+- **Doc and code conflicts:**
+  - Exit code for `--fail-on`: the `fail-on-severity` description and the generated config docs say 1, but the code exits 2.
+  - Exit code for `db check`: the DB guide says it returns 1 when an update is available, but the code returns 100.
+  - Default platform: the Syft guide says `linux/amd64`, but stereoscope v0.4.1 uses the host architecture.
+- **Incidents and advisories:**
+  - No compromise of Anchore tools was found.
+  - grype: GHSA-6gxw-85q2-q646 / CVE-2025-65965 (credentials in JSON output), fixed in 0.104.1.
+  - syft: GHSA-mw2c-m758-9v5q (memory exhaustion parsing binaries), fixed in v1.52.0 and published 2026-09-17. It has no CVE and isn't in the global advisory database.
+  - syft: GHSA-rjcw-vg7j-m9rc / CVE-2026-33481 (temporary-file cleanup), fixed in v1.42.3, plus one older advisory.
+  - stereoscope: GHSA-hpxr-w9w7-g4gv (OCI tar path traversal, 2024).
+  - scan-action has no advisory.
+- **zizmor 1.32.0:** no file in its audit sources or data files mentions `anchore`, `grype` or `scan-action`. `unpinned-tools` knows only `aquasecurity/setup-trivy`, `1password/load-secrets-action`, `extractions/setup-just` and `extractions/setup-crate`.
+- **UNVERIFIED:**
+  - the bundle's signature and Rekor proof (only the certificate was decoded), and `gh release verify-asset` (local gh is 2.45.0);
+  - whether `cosign verify-blob --bundle` needs network access for the TUF trusted root;
+  - whether older v6 archives stay downloadable by name, and rate limits on `grype.anchore.io`;
+  - whether a new GHCR package can be pulled anonymously before it is made public;
+  - the Go toolchain that built the v0.121.3 binaries;
+  - the VEX status semantics, which come from docs generated with Grype 0.119.0 and weren't checked in v0.121.3 source (the config search order was checked locally, above).
+- **Settled after the research:** whether unknown config keys are rejected (they are ignored), whether `.dep-v0` survives `[profile.dist]` on the musl targets (it does), what Grype reports for the image today (nothing), the DB's unpacked size (3.3 GB), whether a buildx layout carries the index platform fields that `--platform` selection needs (it does: each `--platform` scan found its image), and whether `oci-dir:` sources get tags (they don't): all checked locally, above. GHCR's referrers support: GHCR has none (REGISTRY-P6).
+
+### RUN-P6: running the image, hardening flags, mounted repositories and MCP clients that start containers
+Sources: https://github.com/docker/cli at v29.10.0 (`fdd4b8e5da33`: `docs/reference/commandline/{container_run,docker}.md`, `docs/reference/run.md`, `cli/command/container/{run,create,opts,signals,hijack}.go`, `opts/mount.go`, `cli/streams/in.go`, `cli/config/config.go`); https://github.com/moby/moby at docker-v29.10.0 (`06db1734267b`: `daemon/oci_linux.go`, `Dockerfile`, `api/swagger.yaml`); https://github.com/opencontainers/runc at v1.5.3 (`46365c62967c`: `libcontainer/{env,init_linux}.go`); https://man7.org/linux/man-pages/man7/pid_namespaces.7.html (man-pages 6.19); https://github.com/docker/docs at `947343021a3e` (`content/manuals/engine/network/{_index,port-publishing}.md`, `…/network/drivers/{bridge,host,none}.md`, `…/engine/storage/bind-mounts.md`, `…/engine/security/rootless/{uid-gid-mapping,troubleshoot}.md`, `…/desktop/{release-notes,settings-and-maintenance/settings,features/networking/_index,setup/install/linux/_index,troubleshoot-and-support/troubleshoot/topics}.md`); https://github.com/podman-container-tools/podman at v6.2.0 (`055de046937d`: `docs/source/markdown/options/{userns.container,volume,init}.md`); the registry API at https://gcr.io/v2/distroless/static-debian13/ (`tags/list`, manifests, config and layer blobs) and https://github.com/GoogleContainerTools/distroless/pull/2248; https://code.claude.com/docs/en/{mcp,hooks,env-vars}.md, https://github.com/anthropics/claude-code/blob/9fa26078be41/CHANGELOG.md and the npm registry; https://github.com/openai/codex at rust-v0.169.1 (`c376cf7396ef`: `codex-rs/core/src/session/mcp.rs`, `codex-rs/rmcp-client/src/stdio_server_launcher.rs`, `codex-rs/codex-mcp/src/rmcp_client.rs`), the compare `rust-v0.169.0...rust-v0.169.1` and https://learn.chatgpt.com/docs/extend/mcp.md; https://cursor.com/docs/mcp.md; https://github.com/google-gemini/gemini-cli at v0.68.0 (`5a5c7180ff3f`: `packages/core/src/tools/mcp-client.ts`, `packages/core/src/services/environmentSanitization.ts`, `packages/cli/src/utils/envVarResolver.ts`, `packages/cli/src/config/settings.ts`, `docs/tools/mcp-server.md`, `package-lock.json`); https://unpkg.com/@modelcontextprotocol/sdk@1.23.0/dist/esm/client/stdio.js; https://github.com/nodejs/node/blob/v24.11.0/doc/api/child_process.md; https://github.com/microsoft/vscode-docs at `449410e3df07` (`docs/agents/reference/mcp-configuration.md`) and https://update.code.visualstudio.com/api/update/linux-x64/stable/latest; https://github.com/github/docs at `49a012fa50b4` (`content/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers.md`, `content/code-security/concepts/supply-chain-security/immutable-releases.md`, `content/packages/learn-github-packages/configuring-a-packages-access-control-and-visibility.md`); https://github.com/opencontainers/distribution-spec/blob/v1.1.1/spec.md; https://github.com/modelcontextprotocol/modelcontextprotocol at tag 2026-07-28 (`5f5440bb26a6`: `docs/specification/2026-07-28/basic/transports/{stdio,streamable-http}.mdx`); https://github.com/actions/runner-images at `27322eb52686` and `74456c0b4eff` (`images/ubuntu/Ubuntu2404{,-Arm64}-Readme.md`); Grimoire's own sources. Status: Verified from documentation, source and registry APIs, except the gaps listed. The research ran nothing against a Docker or Podman daemon; locally it ran only `cargo tree --locked --offline -e normal` and `grep`. The local checks below came later.
+
+- **Versions read.** None of these is pinned in a workflow.
+  - **Docker and runc:**
+    - docker/cli v29.10.0 was tagged on 2026-11-13 (`fdd4b8e5da335e1d0d83d29af5045f57280cd694`) and has no GitHub release object.
+    - moby docker-v29.10.0 was released on 2026-11-16 (`06db1734267bf7770914b417bff6556d835bf8cc`).
+    - runc v1.5.3 was released on 2026-11-12 (`46365c62967c76a765a5e347f48f0c7b3b571fe9`).
+    - All three are younger than 7 days.
+  - **tini:** v0.19.0, 2020-04-19 (`de40ad007797e0dcd8b7126f27bb87401d224240`). moby's `Dockerfile` builds it as `docker-init` (`ARG TINI_VERSION=v0.19.0`).
+  - **Podman:** v6.2.0, 2026-11-10 (`055de046937d29450f310fce0fe3071485d8bed9`). The repository is now `podman-container-tools/podman`, and `containers/podman` redirects to it.
+  - **Docker Desktop:** 4.99.0, 2026-11-09.
+  - **Claude Code:** npm `latest` is 2.1.327 (2026-11-17) and `stable` is 2.1.311 (2026-10-26).
+  - **Codex:**
+    - rust-v0.169.1 was published on 2026-11-17 (`c376cf7396eff83ce4c6ac61b9553df142e7a0be`), and rust-v0.169.0 on 2026-11-13 (`d32063f96c2dff1dc96af839b3952abb6acfeda4`).
+    - The newest stable release on or before 2026-11-10 is rust-v0.167.1 (2026-11-10, `0a94398fa60c4fac0e7659e4213a0a36e613dd46`).
+  - **Gemini CLI:** v0.68.0 (2026-11-10, `5a5c7180ff3f0a02511f54b54db7f228d4982a30`) is still the latest stable release. It uses `@modelcontextprotocol/sdk` 1.23.0.
+  - **VS Code:** 1.146.0 (2026-11-10, build `69047191fc427f2f92828279aae1d90d8eeda7ab`).
+  - **GitHub runners on 2026-11-17:**
+    - `ubuntu-24.04` has image 20261116.376.1 and `ubuntu-24.04-arm` has 20261116.188.1.
+    - Both ship Docker client and server 28.0.4, Buildx 0.39.0, Compose 2.38.2, Podman 4.9.3, Buildah 1.33.7 and Skopeo 1.13.3.
+    - That is a major version behind Engine 29.10.0.
+- **Changed since earlier entries:**
+  - **BASE-IMAGE:** now records upload dates and the cooldown; see the next bullet.
+  - **GEMINI-SETTINGS:** corrected. Unset variables are not blanked everywhere.
+  - **CC-MCP:** the `:-` default rule now also covers `~/.claude.json` entries.
+  - **CODEX-MCP-P4:** the fallback cwd is now verified.
+  - **ACTIONS-P5:** it recorded the 20261111 runner images; the 20261116 images began deploying on 2026-11-17 (above), and jobs may get either until that ends.
+- **Base image `gcr.io/distroless/static-debian13`:**
+  - **Current `nonroot`:**
+    - It still resolves to index `sha256:aafe993665bf6200db38a02c11a9351e782a84b6a45e7f33b6695638c88e3931` (tags `nonroot` and `nonroot-0af09fb8f491…`).
+    - GCR records the upload as 2026-11-12T21:16:35Z, 4 minutes after distroless PR #2248 ("Update os-release permissions") merged. It is younger than 7 days until 2026-11-19.
+    - amd64 is `sha256:816dc4d589459a7fe33b8a2e69edb70da56ffad7161f4b415937fa2bfe7e92e8`, and arm64 is `sha256:50e178649a8d77a5d8414f205471c829f06b876cbdb2455dace0b5de549fd1e5`.
+  - **Previous `nonroot` index** (the one Grimoire pins):
+    - `sha256:25ac8f0c3b2334a9eb05452266bd4697864a8c8ef0ef71e5e6480d7f92868329`, uploaded 2026-10-31T22:37:00Z.
+    - amd64 is `sha256:336e53e9941facdb69b755e6fd2c63f5400abd3b1ba47bb17ebafc2b1547cebd`, and arm64 is `sha256:bf6233b64054d17b31c3b555b1bbcee58958896830a305ef4d51faa257990d87`.
+    - Its tags include `nonroot-f7838e0a1072…` and `update-available-25ac8f0c…`. Its `.sig` and `.att` tags exist.
+  - **Digests:** every fetched manifest, config and layer hashed to its digest.
+  - **What differs:** besides the configs, the two indexes differ in one layer, `usr/lib/os-release`. Its content is identical in both (`b4d56a90…`). Its mode is 0555 in `25ac8f0c` (layer `ebddc55f…`) and 0644 in `aafe9936` (layer `c3c9c2f2…`).
+  - **Config:**
+    - `User` is `65532`, and `WorkingDir` is `/home/nonroot`.
+    - `Env` sets `PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin` and `SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt`.
+    - There is no `HOME`.
+  - **Files:**
+    - `/etc/passwd` holds root, nobody and `nonroot:x:65532:65532:nonroot:/home/nonroot:/sbin/nologin`.
+    - `/home/nonroot` is 0700 and owned by 65532. `/tmp` is 1777.
+    - `/bin`, `/sbin`, `/lib` and `/lib64` are symlinks into `usr/`. `usr/bin` and `usr/sbin` are empty, so there is no shell.
+    - A CA bundle is present.
+- **stdio through `docker run`:**
+  - **`-i`** keeps the container's stdin open ("Keep STDIN open even if not attached"). Unless `-d` is given, stdout and stderr are attached.
+  - **`-i -t`** fails when stdin is a pipe: "cannot attach stdin to a TTY-enabled container because stdin is not a terminal". With `-t`, the CLI also writes the container's error stream to its own stdout.
+  - **Pull output:** pull progress and "Unable to find image … locally" go to the CLI's stderr, and `-q` suppresses them (`create.go`).
+  - **EOF:**
+    - With `-i` attached, the CLI sets `StdinOnce`, which the API describes as "Close `stdin` after one attached client disconnects".
+    - When the CLI's own stdin reaches EOF, it half-closes the attach connection (`CloseWrite`), so the container's stdin reads EOF.
+  - **Signals:** `--sig-proxy` defaults to true. The CLI forwards every signal it receives through the kill API, except SIGCHLD, SIGPIPE, Go runtime signals (SIGURG) and names missing from its signal map.
+  - **`--rm`** sets the daemon-side `HostConfig.AutoRemove`, which "Automatically remove[s] the container when the container's process exits". It conflicts with `--restart`.
+  - **`docker stop`** sends the image's `STOPSIGNAL`, or SIGTERM if there is none. It sends SIGKILL after the daemon's stop timeout: 10 s for Linux containers.
+  - **Environment:**
+    - `-e NAME` without `=` copies the CLI's own value of `NAME` into the container, and leaves it unset if the CLI has none.
+    - The CLI also adds the proxy variables from its config file (`run.go`).
+- **PID 1 and `--init`:**
+  - **The signal rule:** pid_namespaces(7) says a namespace's init receives a signal only if it has a handler for it. SIGKILL and SIGSTOP from an ancestor namespace are forced. The `docker run` reference says a PID 1 process "ignores any signal with the default action".
+  - **Docker's `--init`:**
+    - The daemon runs `/sbin/docker-init -- <cmd>`, bind-mounted read-only from the daemon's host. It does this only in a private PID namespace (`oci_linux.go`).
+    - Docker says it is "backed by tini".
+    - The image needs nothing for it. In this base image, `/sbin` is a symlink to `usr/sbin`.
+  - **Podman's `--init`:** it mounts `container-init` at `/run/podman-init`. "Mounting over `/run` breaks container execution."
+  - **Grimoire's handlers** (`cargo tree` run 2026-11-17):
+    - `agent-grimoire-mcp`'s `shutdown_signal` waits for SIGINT and, on Unix, SIGTERM through tokio. The stdio transport also stops on stdin EOF.
+    - `grimoire-mcp-project-docs` has tokio 1.54.1 and signal-hook-registry 1.4.8.
+    - `agent-grimoire` and `grimoire-tool-secret-guard` have no tokio, signal-hook or ctrlc, and install no handlers.
+- **Hardening flags:**
+  - **`--read-only`:** "prohibiting writes to locations other than the specified volumes".
+  - **Capabilities:** `--cap-add` and `--cap-drop` accept `ALL`.
+  - **`--security-opt no-new-privileges`:** "commands that raise privileges such as `su` or `sudo` no longer work."
+  - **`--network none`:** creates only `lo`, with `127.0.0.1/8`. "No IPv6 loopback address is configured".
+  - **`--user`:**
+    - A numeric uid must be in 0 to 2147483647 and needs no passwd entry.
+    - A name must exist in the container.
+  - **`HOME`:** Docker sets it "based on the value of `USER`". runc v1.5.3 reads it from the container's `/etc/passwd`, and uses `/` for a uid with no entry.
+  - **Working directory:**
+    - The default is the image's `WorkingDir`, else `/`. `-w` overrides it and creates the directory if it is missing.
+    - runc changes to the directory before switching user, and tries again afterwards only on EPERM. So a uid other than 65532 can start inside `/home/nonroot` (0700) without permission to read it. Grimoire's image sets `WORKDIR /repo` instead.
+  - **`--pull`:** defaults to `missing`, which uses the cached image when one exists. An image is referenced as `IMAGE[:TAG][@DIGEST]`.
+- **Checked locally (2026-11-17, rootless Docker 29.9.3):** on Grimoire's linux/amd64 image, all under `--network none --read-only --cap-drop ALL --security-opt no-new-privileges`:
+  - `grimoire --version`, and `--version` of both asset binaries started with `--entrypoint /opt/grimoire/bin/<name>`;
+  - `init`, `add … --apply` and `verify` on a bind-mounted repository, with `--user 0:0`, which rootless Docker maps to the host user;
+  - an MCP `initialize` over stdio: `docker run -i … --mount …,ro --entrypoint /opt/grimoire/bin/grimoire-mcp-project-docs … --root /repo`;
+  - `grimoire-tool-secret-guard scan` on stdin.
+- **Ports and networks:**
+  - **Publishing without an address:** `-p H:C` publishes on all interfaces. This "also applies if you configured UFW to block this specific port".
+  - **Publishing to localhost:**
+    - With `127.0.0.1` or `::1`, "only the Docker host can access the published container port".
+    - Before Engine 28.0.0, hosts on the same L2 segment could reach ports published to localhost (moby#45610).
+  - **Bridge networks:**
+    - "all ports of containers on bridge networks are accessible from the Docker host and other containers connected to the same network", whether published or not.
+    - Containers started without `--network` join the default bridge.
+  - **Loopback:** each container has its own loopback. A `127.0.0.1` listener can be reached only from the same network namespace, for example with `--network container:<id>`.
+  - **Host networking:**
+    - It ignores `-p`.
+    - It is supported by Engine on Linux, and by Docker Desktop 4.34 and later as an opt-in setting. Since Desktop 4.35.0 it no longer requires sign-in.
+    - On Desktop, processes "cannot bind to the IP addresses of the host", it works at layer 4, and it doesn't work with Enhanced Container Isolation.
+    - Desktop's settings reference lists "Enable host networking" for Mac only.
+  - **Docker Desktop `-p`:** it listens on `0.0.0.0` by default and can be restricted to `127.0.0.1`.
+  - **Rootless Docker:**
+    - A container's `IPAddress` lives in RootlessKit's network namespace and can't be reached from the host.
+    - `-p` doesn't propagate source addresses by default.
+    - Until Engine v29.5, `--net=host` was namespaced inside RootlessKit, so its ports couldn't be reached from the host.
+- **Bind mounts:**
+  - **Relative sources:** the CLI makes a relative source that starts with `.` absolute, against the CLI's own cwd (`filepath.Abs`). This applies to both `-v` and `--mount`.
+  - **Missing sources:** `-v` creates a missing host source as a directory. `--mount` fails with "bind source path does not exist" unless `bind-create-src` is set.
+  - **Read-only:** bind mounts are read-write unless `ro`/`readonly` is set. Read-only mounts are recursively read-only only on kernel 5.12 and later.
+  - **SELinux:** `z` and `Z` relabel the host path and work only with `-v`. "It is not possible to modify the SELinux label using the `--mount` flag."
+- **Ownership:**
+  - **Rootless Docker:**
+    - Container uid 0 is the host user, and uid n (n ≥ 1) maps to subuid + (n − 1).
+    - "files owned by your host user appear as owned by `root` inside the container."
+  - **Rootless Podman:**
+    - The default `--userns` is `host`, which maps the host user to container root, unless `PODMAN_USERNS` or `containers.conf` sets it.
+    - `keep-id` maps the user's UID:GID unchanged and runs init as that UID. That overrides the image `USER` unless `--user` is set. `keep-id:uid=,gid=` choose the IDs inside the container.
+    - `:U` changes "recursively the owner and group of the source volume" on the host.
+  - **Docker Desktop:**
+    - From Windows, shared volumes get 0777, and that can't be configured.
+    - On Mac VirtioFS, 4.80.0 stopped persisting ownership changes: "Calls to `chown` will succeed, but `stat` will not be affected". 4.96.0 fixed ownership and transient `0:0` reporting on Apple Virtualization Framework + VirtioFS bind mounts.
+    - Desktop for Linux needs no ID-mapping setup from 4.35.
+    - The default virtual file shares are `/Users`, `/Volumes`, `/private`, `/tmp` and `/var/folders`. Other paths give "Mounts denied".
+- **MCP 2026-07-28:**
+  - **Streamable HTTP:** servers MUST validate `Origin`, with 403 when it is present and invalid. When local, they SHOULD bind only to localhost, and they SHOULD authenticate.
+  - **stdio shutdown:**
+    - The client SHOULD close the server's stdin, wait, and then force termination (SIGTERM, then SIGKILL, on POSIX).
+    - Servers SHOULD exit promptly on EOF, which is "the only portable" graceful signal.
+    - A client SHOULD restart a server that exits unexpectedly.
+- **What Grimoire's binaries rely on** (source read, not run):
+  - **Common:**
+    - Outside tests, none spawns a process. The only `Command::new` is `mkfifo` in a `#[cfg(test)]` module.
+    - None uses git, reads `HOME`, uses a temp directory or links TLS. No binary's tree has rustls, openssl, native-tls or an HTTP client.
+  - **`grimoire`:**
+    - It reads its cwd at start, and opens the project at `-C DIR` (resolved against the cwd) or at the cwd.
+    - It is interactive only when stdin is a terminal and `CI` is unset or empty.
+    - It reads `PATH` for `doctor`, and for the `plan/hook-binary-missing` warning that `plan`, `apply`, `update` and the other planning commands can emit. In a container that is the container's `PATH`, so Grimoire's image keeps the asset binaries off it, in `/opt/grimoire/bin/` (ADR-0011).
+    - Writes are atomic: a temp file in the destination directory gets the old file's permissions and is then renamed. The writing uid owns the result.
+  - **`grimoire-mcp-project-docs`:**
+    - It takes `--root DIR`, which isn't checked for absoluteness, or else `CLAUDE_PROJECT_DIR`, which must be absolute.
+    - `serve-http` defaults to `127.0.0.1:8931` and `/mcp`. It speaks plain HTTP/1 (hyper `http1::Builder`) with no TLS.
+    - `serve-http` needs either `--auth-resource`, `--auth-issuer` and `--auth-jwks`, or `--no-auth`.
+  - **`HttpServer::bind`:**
+    - It refuses to run without authorization on a non-loopback address, and `0.0.0.0` isn't loopback.
+    - The `Host` allowlist is built from the bound address; `localhost`, `127.0.0.1` and `[::1]` with the port, on a loopback bind only; the resource URI's host, with and without the default port; and each `--allowed-host`.
+    - Requests without `Origin` pass. The origin allowlist is empty by default.
+    - With auth, the MCP path is the resource URI's path. `--auth-resource` must be `https://`, or `http://` for `localhost`, `127.0.0.0/8` and `[::1]`.
+  - **JWKS:**
+    - The file is re-read at most every 5 s, and only when its mtime changes.
+    - It must be a regular file (symlinks are followed) of at most 1 MiB.
+    - Deleting it revokes every key. An unreadable or unparsable file keeps the previous keys.
+  - **`grimoire-tool-secret-guard`:**
+    - It reads the hook event on stdin.
+    - For Write, Edit, MultiEdit and NotebookEdit, it reads the file at `file_path` or `notebook_path` exactly as given, if it is a regular file and not a symlink. It then exempts secrets that the file already holds.
+- **Claude Code:**
+  - **`CLAUDE_PROJECT_DIR`:**
+    - Claude Code sets it in a stdio server's environment, not in its own.
+    - In the `command` or `args` of a project `.mcp.json` entry, and now also of a local- or user-scope entry in `~/.claude.json`, it therefore needs a default such as `${CLAUDE_PROJECT_DIR:-.}`.
+    - Plugin MCP configs substitute it directly.
+    - Stdio servers have received it since 2.1.139.
+  - **Expansion:**
+    - `command`, `args`, `env`, `url` and `headers` are expanded.
+    - An unset variable with no default stays literal, with a warning. An empty value counts as set.
+    - `MCP_TIMEOUT` (startup) defaults to 30000 ms.
+  - **Stopping a server** on macOS and Linux: SIGINT, then SIGTERM 100 ms later, then SIGKILL after a further 400 ms.
+  - **Hooks:**
+    - Exec-form hooks substitute `${CLAUDE_PROJECT_DIR}` into each `args` element as a plain string.
+    - In a worktree, `${CLAUDE_PROJECT_DIR}` stays at the main checkout, while the hook input's `cwd` follows Claude.
+  - **Working directory:** the docs give one only for `headersHelper`.
+- **Codex:**
+  - **0.169.1:** the `rust-v0.169.0...rust-v0.169.1` compare (4 commits) touches only model-provider, `core/src/client.rs`, model and TUI files. CODEX-MCP-P4 therefore holds: no `${VAR}` interpolation, an emptied environment plus an allowlist, and the `env_vars` and `cwd` keys.
+  - **Working directory:** without `cwd`, a local stdio server starts in the local environment's cwd, falling back to the session configuration's cwd.
+  - **Process group:** servers are spawned in a new process group.
+  - **Startup timeout:** `startup_timeout_sec` defaults to 10 (docs).
+- **Cursor** (unchanged from CURSOR-MCP):
+  - **Interpolation:** `command`, `args`, `env`, `url` and `headers` resolve `${env:NAME}`, `${userHome}`, `${workspaceFolder}` ("the folder that contains `.cursor/mcp.json`"), `${workspaceFolderBasename}`, `${pathSeparator}` and `${/}`.
+  - **stdio fields:** the table marks `type: "stdio"` as required and lists `"docker"` as an example `command`.
+  - **Working directory:** a server's cwd is still undocumented.
+- **Gemini CLI v0.68.0:**
+  - **Settings load (corrects GEMINI-SETTINGS):**
+    - `resolveEnvVarsInObject` leaves an unset `$VAR` or `${VAR}` without a default as literal text.
+    - Only `env` and `headers` get the second pass, which blanks unset variables (GEMINI-P4).
+  - **Trust:** in an untrusted folder, a stdio server fails with "uses stdio transport but current folder is not trusted".
+  - **Working directory:** `cwd` is passed only when configured. Otherwise Node's `spawn` inherits the CLI's cwd.
+  - **Environment:**
+    - The inherited environment always keeps `PATH`, `HOME`, `LANG`, `SHELL`, `TMPDIR`, `USER`, `LOGNAME` and `TERM`.
+    - It drops names matching `TOKEN`, `SECRET`, `PASSWORD`, `PASSWD`, `KEY`, `AUTH`, `CREDENTIAL`, `CREDS`, `PRIVATE` or `CERT`. `DOCKER_CERT_PATH` is dropped; `DOCKER_HOST`, `DOCKER_CONTEXT` and `DOCKER_CONFIG` match none of these. Under strict sanitization, which v0.68.0 turns on when `GITHUB_SHA` is set or `SURFACE=Github` (so in GitHub Actions), a stdio server inherits only the always-allowed names (`PATH`, `HOME`, `LANG`, `SHELL`, `TMPDIR`, `USER`, `LOGNAME`, `TERM`, `COLORTERM` and a few platform names), `GEMINI_CLI_*`, `GIT_CONFIG_*` and the names in `security.environmentVariableRedaction.allowed`; so `DOCKER_HOST`, `DOCKER_CONTEXT` and `DOCKER_CONFIG` are dropped too, unless they are set in the entry's `env` or allow-listed (packages/core/src/services/environmentSanitization.ts and src/tools/mcp-client.ts at v0.68.0, checked in the Phase 6 review).
+  - **Stopping a server:** SDK 1.23.0's `StdioClientTransport.close()` aborts the child through an `AbortSignal`, and Node's `killSignal` for that defaults to `'SIGTERM'`. It doesn't close stdin first.
+  - **Docs example:** the Docker example mounts `"-v", "${PWD}:/workspace"`.
+- **VS Code and Copilot** (COPILOT-MCP unchanged):
+  - **Native workspace-root `.mcp.json`:**
+    - It documents `${NAME}` and `${NAME:-default}` in stdio `command`, `args` and `env`, and no workspace-folder variable.
+    - VS Code's configuration form (the editor UI) for the workspace-root `.mcp.json` offers no `cwd` field (the user form does) and rejects `${...}`: edit the file directly ("Other Properties"). The docs say a form restriction doesn't mean the runtime can't read the reference; the file format has `cwd` (COPILOT-MCP).
+  - **Legacy `.vscode/mcp.json`:**
+    - It supports predefined variables such as `${workspaceFolder}`.
+    - Its `cwd` "Defaults to the workspace folder when run in a workspace".
+    - The docs say not to use `-d` with Docker stdio servers.
+  - **Copilot CLI `/mcp add`:**
+    - "The `PATH` variable is automatically inherited from your environment. All other environment variables must be configured here."
+    - Its example is `docker run -i --rm -e GITHUB_PERSONAL_ACCESS_TOKEN ghcr.io/github/github-mcp-server`.
+  - **docker CLI:**
+    - It finds its config directory through `os.UserHomeDir`, falling back to an NSS lookup outside Windows.
+    - It reads `DOCKER_HOST`, `DOCKER_CONTEXT` (which overrides `DOCKER_HOST`), `DOCKER_CONFIG` and `DOCKER_CERT_PATH`.
+- **Registry and releases:**
+  - **Names:** repository names follow `[a-z0-9]+((\.|_|__|-+)[a-z0-9]+)*(\/…)*` (distribution-spec v1.1.1), so they are lowercase.
+  - **GHCR visibility:**
+    - The access-control page says a package first published under a personal account is private. Other GitHub pages conflict (REGISTRY-P6).
+    - "Once you make a package public, you cannot make it private again."
+  - **GHCR access:** a package linked to a repository before its first publish, for example with the `org.opencontainers.image.source` label, inherits the repository's access permissions but not its visibility. The linked repository's workflows then get access.
+  - **Anonymous pulls:**
+    - For the public `github/github-mcp-server`, the anonymous token and the `latest` manifest both returned 200.
+    - The token endpoint returned 403 for `jabbott-iii/grimoire`, which doesn't exist yet.
+  - **Immutable releases:** the title and notes stay editable. The release attestation covers the tag, the commit SHA and the assets.
+- **UNVERIFIED:**
+  - **Not exercised:**
+    - The local checks above used rootless Docker only. Not checked: `--init` with `--read-only` on this base, `-p`, a `--user` other than `0:0`, an arm64 image, and any rootful Docker, Docker Desktop or Podman run.
+    - That StdinOnce gives the server EOF after the CLI is SIGKILLed comes from source only.
+  - **Client behaviour:**
+    - A stdio server's working directory in Claude Code (project `.mcp.json`), Copilot CLI, the VS Code native harness and Cursor, including whether Cursor honours `cwd`.
+    - Whether Claude Code passes its whole environment (for example `DOCKER_HOST`) to stdio servers.
+    - How Codex stops a stdio server.
+    - Whether VS Code resolves `${workspaceFolder}` in a legacy `.vscode/mcp.json` before forwarding it.
+  - **Docker Desktop:**
+    - What owner a non-root uid sees on Mac VirtioFS and Windows bind mounts.
+    - The uid mapping on Desktop for Linux.
+    - Whether a `127.0.0.1` listener in a host-network container can be reached from the host.
+    - Which platforms have "Enable host networking".
+    - The "bind to localhost by default" setting that the networking page mentions but the settings page doesn't list.
+  - **Mounts and networks:**
+    - Whether a single-file bind mount sees a host-side atomic replace.
+    - Whether `-p '[::1]:H:C'` works on an IPv4-only bridge.
+  - **Versions in use:**
+    - Which tini the docker-ce packages ship as `docker-init`, and which runc a given engine uses. The runc facts above are from v1.5.3.
+    - Whether Podman 4.9.3 on the runners matches the v6.2.0 option docs.
+  - **Windows and runc details:**
+    - The docker CLI on Windows when only `PATH` is inherited.
+    - `${PWD}` on Windows shells.
+    - Whether runc drops capabilities before or after its first chdir.
+  - **Our own image:** pull behaviour for `ghcr.io/jabbott-iii/grimoire`.
+
+### SIGN-P6: signing from a reusable workflow
+Sources: https://github.com/sigstore/fulcio at v1.10.1 (commit `aef42c7754e1`: `config/identity/config.yaml`, `pkg/certificate/extensions.go`, `docs/oid-info.md`) and the v1.10.0...v1.10.1 compare; https://github.com/github/docs at `49a012fa50b4` (`content/actions/reference/security/oidc.md`, `content/actions/how-tos/secure-your-work/security-harden-deployments/oidc-with-reusable-workflows.md`, `content/actions/reference/workflows-and-actions/{reusing-workflow-configurations,workflow-syntax,contexts,events-that-trigger-workflows}.md`, `content/actions/how-tos/reuse-automations/reuse-workflows.md`, `content/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs.md`, `content/actions/how-tos/secure-your-work/use-artifact-attestations/increase-security-rating.md`, `content/actions/concepts/security/workflow-dependency-lockfiles.md`, `content/actions/how-tos/administer/control-workflow-execution.md`, `content/actions/reference/limits.md`, `data/reusables/actions/{reusable-workflow-calling-syntax,partial-reruns-with-reusable,workflow-ref-description,forked-write-permission,github-token-available-permissions}.md`, `data/reusables/actions/jobs/section-using-environments-for-jobs.md`); https://github.blog/changelog/2026-07-30-reference-same-repository-actions-with-self-repository-syntax/; https://github.com/sigstore/cosign at v3.1.4 (`cmd/cosign/cli/options/certificate.go`, `cmd/cosign/cli/verify.go`, `cmd/cosign/cli/verify/{verify,verify_blob}.go`, `pkg/cosign/{verify,verify_bundle,certextensions}.go`, `go.mod`); https://github.com/sigstore/sigstore-go at v1.3.0 (`22d3691c7b8e`: `pkg/fulcio/certificate/{extensions,summarize}.go`, `pkg/verify/{certificate_identity,signed_entity}.go`); https://github.com/cli/cli at v2.103.3 (`pkg/cmd/attestation/verify/{verify,policy}.go`, `pkg/cmd/attestation/verification/{extensions,sigstore}.go`, `go.mod`); https://github.com/actions/attest at `1e69f48acb82` (v4.2.2: `README.md`, `dist/index.js`); https://github.com/actions/download-artifact/blob/9000827ccba6/README.md; https://github.com/zizmorcore/zizmor at v1.32.0 (`crates/zizmor/src/audit/{self_repository,unpinned_uses,excessive_permissions,undocumented_permissions,anonymous_definition,secrets_inherit,secrets_outside_env,concurrency_limits,template_injection}.rs`, `crates/zizmor/src/models/workflow.rs`, `crates/github-actions-models/src/common.rs`, `docs/{audits,usage,release-notes}.md`); https://github.com/github/gh-actions-lock at v0.4.1 (`04b7a1a4d00b`: `internal/workflowfile/workflowfile.go`); https://github.com/github/actions-lockfile/blob/go/v0.0.6/go/pkg/lockfile/uses.go; https://github.com/rhysd/actionlint at v1.7.12 (`rule_workflow_call.go`, `docs/{config,usage}.md`) and issue #711; real certificates from the GitHub attestations API (`zizmorcore/zizmor` v1.30.0 `sha256:ec8c95cd…` and v1.32.0 `sha256:bb110cc7…`; `astral-sh/uv` 0.13.9 image index `sha256:d3b601f0…`) and from https://github.com/google/go-containerregistry/releases/download/v0.22.1/multiple.intoto.jsonl (SHA-256 `fb042be9…`); the workflows that made them (`zizmorcore/zizmor` at v1.30.0 and v1.32.0, `astral-sh/uv` at `6b2d39dcc390`, `google/go-containerregistry` at v0.22.1); `GET /repos/jabbott-iii/Grimoire` and `GET /repos/astral-sh/uv/actions/runs/44053076542`.
+Checked 2026-11-17. Status: Verified, except the gaps listed. The research ran no cosign, gh, zizmor, actionlint or gh-actions-lock binary. Certificates were decoded with Python cryptography 41.0.7 and OpenSSL 3.0.13.
+
+- **Pins:**
+  - Fulcio v1.10.1 (2026-11-16) is the newest tag. Of the 36 files changed since v1.10.0, none is under `config/`, `pkg/certificate/`, `pkg/identity/` or `docs/oid-info.md`.
+  - The rest are unchanged from SUPPLY-CHAIN-P5, CI-PINS and ZIZMOR: cosign v3.1.4 and gh 2.103.3, which both use sigstore-go v1.3.0; `actions/attest` v4.2.2; zizmor 1.32.0; actionlint 1.7.12; gh-actions-lock v0.4.1.
+  - The repository is public. Its ID is `1460666977` and its owner ID `84321953`.
+- **Token claims in a called job:**
+  - The standard claims describe the caller: `repository`, `ref`, `sha`, `workflow` (the caller's `name:`), `event_name`, `workflow_ref` and `workflow_sha` (the top-level workflow), and `run_id`.
+  - `job_workflow_ref` and `job_workflow_sha` describe the called file.
+  - With a local `./` or `$/` call, `job_workflow_ref` carries the caller run's ref, and `job_workflow_sha` equals the run's commit. Real examples: zizmor v1.30.0 (`./`, tag push) and uv 0.13.9 (`$/`, nested twice, `workflow_dispatch` on `refs/heads/main`).
+  - `environment` and the environment form of `sub` come from the job inside the called workflow. A called job without an environment has no `environment` claim.
+  - Inside the called workflow, the `github` context is the caller's. `job.workflow_ref`, `job.workflow_sha`, `job.workflow_repository` and `job.workflow_file_path` name the called file. A job-level `if:` may use `github`, `needs`, `vars` and `inputs`, but not `job`.
+- **The certificate:**
+  - The SAN and OID 1.9 are `https://github.com/{job_workflow_ref}`, and 1.10 is `job_workflow_sha`: the called workflow.
+  - OID 1.18 is `https://github.com/{workflow_ref}` and 1.19 is `workflow_sha`: the top-level caller.
+  - Fulcio v1.10.1 still issues the deprecated 1.1 to 1.6 as raw strings, whenever they are non-empty. Certificates issued on 2026-11-02 and 2026-11-17 carry them.
+- **Which OIDs name which workflow** (real certificates, same-repository calls):
+  - The called file: the SAN, 1.9 and 1.10.
+  - The caller or the run: 1.2 (event), 1.3 (sha), 1.4 (the caller's `name:`), 1.5 (repository), 1.6 (ref), 1.12 to 1.17, 1.18 (top-level file and ref), 1.19, 1.20, 1.21 (the caller's run, which holds the called jobs) and 1.22.
+  - The called job's own settings: 1.11 (its runner) and 1.23 (its environment).
+  - 1.24 is the raw `sub`, unchanged by the call.
+  - An intermediate workflow of a nested call appears nowhere.
+- **Expected values for `sign.yml`** (derived, not observed):
+  - SAN and 1.9: `https://github.com/jabbott-iii/Grimoire/.github/workflows/sign.yml@refs/heads/main`.
+  - 1.18: `…/release.yml@refs/heads/main`.
+  - 1.3, 1.10, 1.13 and 1.19: `GITHUB_SHA`.
+  - 1.4: `Release`. 1.5: `jabbott-iii/Grimoire`. 1.6 and 1.14: `refs/heads/main`. 1.2 and 1.20: `push` or `workflow_dispatch`.
+  - 1.15: `1460666977`. 1.17: `84321953`.
+  - 1.23 is present only if the `sign.yml` job sets an environment.
+- **Anyone can get the same SAN:**
+  - A public repository's reusable workflow can be called from any repository on github.com. Access settings exist only for private and internal called repositories.
+  - A cross-repository call puts the called repository's file and ref in the SAN, with the written ref normalised (`@v2.1.0` becomes `@refs/tags/v2.1.0`). The docs' example shows a branch as `@refs/heads/main`. Every caller field (1.3 to 1.6 and 1.12 to 1.19) names the calling repository, and 1.10 is the called repository's commit. go-containerregistry's certificate for slsa-github-generator shows exactly this.
+  - So once `sign.yml` has `on: workflow_call`, a call of `jabbott-iii/Grimoire/.github/workflows/sign.yml@main` from another repository gets Grimoire's exact SAN over bytes that caller chooses.
+  - A call by SHA or tag gives `…@<sha>` or `…@refs/tags/<tag>`. Release tags make the latter callable.
+  - `actions/attest` stores attestations on `GITHUB_REPOSITORY`, which is the caller's repository.
+- **Pull requests and other workflows in this repository:**
+  - Any workflow of the repository can call a local reusable workflow, on any event.
+  - `pull_request` runs have `GITHUB_REF` `refs/pull/<N>/merge`. A `closed` run of a merged PR has the target branch's ref.
+  - Fork `pull_request` runs get write permissions downgraded to read, and `id-token` has only `write` or `none`, so they get no OIDC token.
+  - Another workflow on `main` that calls `sign.yml` differs from a release only in 1.18.
+- **cosign v3.1.4:**
+  - `--certificate-identity` is an exact comparison with the SAN, which here is the called workflow.
+  - `--certificate-github-workflow-{trigger,sha,name,repository,ref}` compare OIDs 1.2 to 1.6, exactly and case-sensitively, and only when set. `-ref` is the git ref, not a workflow path. `-name` is the caller's mutable `name:`.
+  - `verify` and `verify-blob` with a new-format bundle use sigstore-go `CompareExtensions`; legacy signatures use `validateCertExtensions`. Both fail closed when an expected OID is missing.
+  - The flags aren't deprecated and print no warning. Only `--certificate`, `--ca-intermediates`, `--ca-roots`, `--certificate-chain` and `--sct` are.
+  - There is no flag for 1.9 to 1.24, so cosign can't pin the caller file, the environment, or the repository or owner IDs.
+- **gh 2.103.3:**
+  - The help says the reusable workflow is the signer and needs `--signer-workflow` or `--signer-repo`. Its example is `gh attestation verify example.bin --owner github --signer-repo actions/example`.
+  - `--repo O/R` fetches from that repository's API and checks 1.12 and 1.16, case-insensitively. `--owner` checks 1.16 only.
+  - `--signer-repo` matches the SAN with `(?i)^https://github.com/<repo>/`.
+  - `--signer-workflow` matches the SAN with an anchored, case-sensitive pattern. The ref must match exactly when the value ends in `@refs/…` or `@<hex>`; otherwise any ref is accepted. `--cert-identity` compares the SAN exactly. These four flags are mutually exclusive.
+  - `--source-ref` checks 1.14, case-sensitively. `--deny-self-hosted-runners` checks 1.11. `--signer-digest` checks 1.10 and `--source-digest` 1.13.
+  - No flag checks 1.18 or 1.23. `--format json` exposes `.verificationResult.signature.certificate.{buildConfigURI,sourceRepositoryIdentifier,sourceRepositoryOwnerIdentifier}`, so jq can pin the caller file and both IDs. sigstore-go v1.3.0 parses nothing after 1.22.
+  - GitHub's SLSA L3 guide uses `--owner` or `--repo` for the caller, plus `--signer-repo` or `--signer-workflow` for the reusable workflow. It moves the build steps themselves into the reusable workflow.
+- **`actions/attest` in a called job:**
+  - Both the calling job and the called job need `attestations: write`, `contents: read` and `id-token: write`, plus `packages: write` for images.
+  - In the provenance, `externalParameters.workflow` (path and ref) comes from `workflow_ref` and `ref`, so it names the caller. `runDetails.builder.id` is `https://github.com/{job_workflow_ref}`, the called file. `resolvedDependencies` and `invocationId` describe the caller's repository and run.
+  - Nothing else differs from a top-level job.
+- **Calling:**
+  - `$/.github/workflows/F` is recommended (runner 2.336.0 or later, github.com only). `./.github/workflows/F` also works. Both take no `@ref` and no expressions, and load the called file from the caller's commit.
+  - A calling job may use only `name`, `uses`, `with`, `secrets`, `strategy`, `needs`, `if`, `concurrency`, `permissions` and `cache-mode`. That excludes `environment`, `runs-on`, `env`, `outputs` and `timeout-minutes`.
+  - Without job-level `permissions`, the called workflow gets "the default permissions for the `GITHUB_TOKEN`". A called or nested workflow can only keep or reduce the permissions it is passed. `github.token` is granted to the called workflow automatically.
+- **Data in and out:**
+  - Inputs are `boolean`, `number` or `string`. An undeclared input is an error. `with` may use the `github`, `needs`, `strategy`, `matrix`, `inputs` and `vars` contexts. Inputs reach the called workflow through `inputs.*`, not as environment variables.
+  - The caller's workflow-level `env` isn't propagated. `needs` holds only direct dependencies.
+  - `on.workflow_call.outputs.<id>.value` maps a called job's output. Every downstream caller job reads it as `needs.<calling job>.outputs.<id>`. From a matrix, only the last successful non-empty value survives.
+  - `strategy` may use `inputs`. `download-artifact` with `artifact-ids` reads the current run, which is the caller's.
+- **Runs:**
+  - Re-runs keep `GITHUB_SHA`, `GITHUB_REF` and the original actor. Partial re-runs also re-run the jobs that depend on them, and the others keep their outputs. A run allows at most 50 re-runs.
+  - Sharing a `jobs.<id>.concurrency` group with `cancel-in-progress` between caller and callee cancels the caller.
+  - Limits: 10 levels of workflows, and 50 unique reusable workflows per workflow file. A run counts as one for the queue limit.
+- **Environments:**
+  - An environment can be set only on the job inside the called workflow. `environment.name` may use `inputs`.
+  - All protection rules must pass before the job is sent to a runner. `deployment: false` doesn't work with custom protection rules.
+- **Guard** (uv's `publish-docker-image.yml` does the same): `if: github.repository_id == '1460666977' && github.workflow_ref == 'jabbott-iii/Grimoire/.github/workflows/release.yml@refs/heads/main'` on every `sign.yml` job keeps foreign and other in-repository callers from minting a token.
+- **zizmor 1.32.0** (Grimoire runs `persona: pedantic`, so every finding below blocks):
+  - `self-repository` (since v1.30.0) flags `./` on calling jobs: Low severity, regular persona, with an unsafe fix to `$/`.
+  - `unpinned-uses` ignores every local `uses:`, `./` and `$/` alike.
+  - `excessive-permissions`: a calling job without permissions is a regular finding when the workflow sets none at the top. A reusable-only workflow, or a job in it, without permissions is a pedantic finding.
+  - `undocumented-permissions` covers calling jobs.
+  - `anonymous-definition` needs `name:` on the workflow and on normal jobs.
+  - `secrets-inherit` flags `secrets: inherit` (Medium).
+  - `concurrency-limits` and `secrets-outside-env` skip reusable workflows.
+  - `template-injection` rates `inputs.<string>` High and boolean or number inputs Low (pedantic).
+  - Inline ignores take the form `# zizmor: ignore[rule]`.
+- **actionlint 1.7.12:**
+  - It accepts only `./path` or `owner/repo/path@ref`, so `$/…` is an error (issue #711, open since 2026-07-30).
+  - For `./` calls it checks the inputs and secrets of the call.
+  - It has no line-scoped ignore, only `-ignore` and `paths.<glob>.ignore` message regexes.
+- **Lockfiles:**
+  - gh-actions-lock skips a job-level `./…yml` and records a bare `$/…` as pinned; `$/…@ref` is an error.
+  - It scans every `*.yml` in `.github/workflows`, so `sign.yml` gets its own entry with its actions.
+  - Lockfiles and "Require lockfile" don't cover `jobs.<id>.uses`. A called workflow is covered by its own repository's lockfile, and "Require lockfile" blocks the caller's run if the called workflow isn't onboarded there.
+- **Changed since the register:**
+  - COSIGN, ATTEST and SUPPLY-CHAIN-P5 assume a top-level signer, where 1.9 equals 1.18. With `sign.yml` the SAN is `…/sign.yml@refs/heads/main`, and 1.18 keeps `release.yml`.
+  - The SAN alone no longer identifies Grimoire, so verifiers must also pin the repository (1.5, or 1.12 through `--repo`) and an exact ref.
+  - Releases signed before the switch would keep the `release.yml` identity. Grimoire made none: its first release is signed by `sign.yml`.
+- **UNVERIFIED:**
+  - `job_workflow_ref` for a `pull_request` run calling `sign.yml` (expected `…@refs/pull/<N>/merge`). No real certificate was found.
+  - That a cross-repository `@main` call gives `@refs/heads/main`. Only the docs' example token shows it.
+  - The literal 1.24 for Grimoire (expected `repo:jabbott-iii@84321953/Grimoire@1460666977:ref:refs/heads/main`).
+  - What GitHub does when a called job asks for a permission the caller didn't grant.
+  - What a calling job without `permissions` gets under a top-level `permissions: {}`.
+  - Whether caller `defaults` propagate.
+  - That a called job can't read `needs.<caller job>.outputs`. Inferred from the `needs` definition; not tested.
+  - That the environment of a called job in an external caller's run belongs to the caller's repository.
+  - How approval appears for a job inside a called workflow.
+  - Whether a matrix inside a called workflow counts toward the 256-jobs-per-run limit.
+  - Whether an external caller can use a fork-network (impostor) commit of `sign.yml`. Its SAN would end in `@<sha>` anyway.
+  - Runtime lockfile enforcement for a local reusable workflow's own entry.
+  - The Fulcio version deployed on public-good. Only its behaviour was observed.
+  - Whether a later actionlint accepts `$/`.
+  - Where cosign's own `sign-blob` bundles keep the certificate (the v0.3 attestation bundles use `verificationMaterial.certificate`).

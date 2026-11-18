@@ -1,6 +1,6 @@
 # ADR-0004: Package and binary names
 
-- **Status:** Accepted (maintainer approved all Phase 0 proposals, 2026-11-16). **Nothing has been reserved or registered.** Amended by [ADR-0009](0009-release-pipeline.md) (2026-11-17): the repository stays `jabbott-iii/Grimoire`; the winget identifier is `jabbott-iii.agent-grimoire`, with the command alias `agent-grimoire`, because `CatfinityStudios.Grimoire` already uses `grimoire`; PyPI wheels are written by `cargo xtask`, not maturin.
+- **Status:** Accepted (maintainer approved all Phase 0 proposals, 2026-11-16). **Nothing has been reserved or registered.** Amended by [ADR-0009](0009-release-pipeline.md) (2026-11-17): the repository stays `jabbott-iii/Grimoire`; the winget identifier is `jabbott-iii.agent-grimoire`, with the command alias `agent-grimoire`, because `CatfinityStudios.Grimoire` already uses `grimoire`; PyPI wheels are written by `cargo xtask`, not maturin. Amended by [ADR-0011](0011-container-image.md) (2026-11-17): the container image name must be lowercase.
 - **Date:** 2026-11-16
 
 ## Context
@@ -72,7 +72,7 @@ Other checks:
 | Scoop | manifest **`agent-grimoire.json`** in bucket repo **`jabbott-iii/scoop-bucket`** |
 | winget | identifier in `Publisher.Package` form, e.g. `JAbbottIII.AgentGrimoire`. Exact form validated against schema 1.28 in Phase 5 |
 | Asset binaries (ADR-0002) | **`grimoire-mcp-<id>`**, **`grimoire-tool-<id>`** (not published to registries) |
-| Container image | **`ghcr.io/jabbott-iii/grimoire`**, lowercase. Whether lowercase is mandatory for GHCR/OCI names is to be confirmed in Phase 6 |
+| Container image | **`ghcr.io/jabbott-iii/grimoire`**, lowercase. Settled in Phase 6: lowercase is mandatory, because OCI distribution-spec v1.1.1 allows only lowercase repository names. The name is written out, never built from `github.repository` (`jabbott-iii/Grimoire`) ([ADR-0011](0011-container-image.md)) |
 | Claude Code marketplace | **`grimoire`** (not on the reserved list in `CC-MKT`). Plugin names = asset IDs |
 
 ## Consequences

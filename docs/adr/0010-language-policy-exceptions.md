@@ -1,6 +1,6 @@
 # ADR-0010: Language-policy exceptions
 
-- **Status:** Accepted (the maintainer chose to write Grimoire's own installers, 2026-11-17, during Phase 5, revised the same day after the Phase 5 review)
+- **Status:** Accepted (the maintainer chose to write Grimoire's own installers, 2026-11-17, during Phase 5, revised the same day after the Phase 5 review). Amended by [ADR-0011](0011-container-image.md) (2026-11-17): a seventh exception, `.github/scripts/image-tags.sh`.
 - **Date:** 2026-11-17
 - **Specs:** `INSTALLERS-P5`, `NPM-P5`, `BREW-SCOOP-P5`, `ACTIONS-P5` in [`../specs.md`](../specs.md)
 - **Related:** [ADR-0003](0003-release-tooling.md), which named this ADR as the fallback if dist's installers didn't fit, and [ADR-0009](0009-release-pipeline.md), the pipeline that needs these files
@@ -18,7 +18,7 @@ Rust's checks don't reach these pieces, so each one needs a reason, a limit on w
 
 ## Decision
 
-**Rust is the default for all code.** The six exceptions below are the only ones. Any other code that isn't Rust needs a new ADR.
+**Rust is the default for all code.** The six exceptions below, and a seventh that [ADR-0011](0011-container-image.md) adds (decision 7: `.github/scripts/image-tags.sh`, the container image's registry steps), are the only ones. Any other code that isn't Rust needs a new ADR.
 
 Data files that `cargo xtask` generates, such as the Scoop manifest (JSON), the winget manifests (YAML) and npm's `package.json`, are not code and aren't exceptions. The Homebrew formula is an exception because it is Ruby.
 
@@ -99,7 +99,7 @@ Data files that `cargo xtask` generates, such as the Scoop manifest (JSON), the 
 - **Why not Rust:** they run in repositories that have no Rust toolchain and no xtask.
 - **Scope:**
   - Download `agent-grimoire.rb` or `agent-grimoire.json` from the latest Grimoire release.
-  - Check it with `gh attestation verify` against this repository's release workflow.
+  - Check it with `gh attestation verify` against this repository's signing workflow (`sign.yml` since ADR-0011, called from `release.yml` on `main`).
   - Open a PR with that repository's own `GITHUB_TOKEN`. If an earlier run left the sync branch without a PR, and the branch holds exactly the verified file, open its PR.
   - Before any release exists, end with a notice.
   - Never edit the file.

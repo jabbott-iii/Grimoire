@@ -165,8 +165,9 @@ catalog/
 schemas/                   generated JSON Schemas (checked in; CI fails if stale)
 .claude-plugin/marketplace.json + plugins/claude-code/…   generated (Phase 4; checked in; CI fails if stale)
 docs/  docs/adr/
-.github/                   workflows, templates, CODEOWNERS, dependabot.yml
-Dockerfile
+.github/                   workflows, scripts/ (image-tags.sh, Phase 6, ADR-0011), templates, CODEOWNERS, dependabot.yml
+Dockerfile                 the container image: COPY only, base pinned by digest (Phase 6, ADR-0011)
+.grype.yaml                Grype config for the image scan gate (Phase 6, ADR-0011)
 CLAUDE.md  AGENTS.md       conventions for this repo's own contributors and agents
 ```
 
@@ -282,7 +283,7 @@ Per-asset overrides in v1:
 - **`allow`**: accepted permissions (§6.3);
 - for MCP servers, an env-var *name* remapping and the transport. `transport = "streamable-http"` needs the server's `url` (Phase 3, below). Setting `transport`, `url` or `env` on any other kind is an error (`resolve/options-kind`).
 
-The ADR-0002 override `runtime = "docker"` is added in Phase 6, together with the image it points at. Until then `grimoire.toml` rejects it as an unknown field.
+The ADR-0002 override `runtime = "docker"` is deferred past v1 (the maintainer's choice in Phase 6, [ADR-0011](adr/0011-container-image.md)): no MCP client offers a common variable for the project directory, and the CLI can't embed the digest of the image that contains it. `grimoire.toml` still rejects it as an unknown field. [`container.md`](container.md) shows hand-written, digest-pinned `docker run` entries instead.
 
 Nothing that could alter destinations outside the anchor rules is overridable.
 
@@ -667,6 +668,13 @@ Release assets (Phase 5, [ADR-0009](adr/0009-release-pipeline.md)):
   - `SHA256SUMS`, and a cosign bundle, `{file}.sigstore.json`, for every file.
 - **Asset binaries are discovered from `cargo metadata --no-deps`:** every `bin` target of a package under `catalog/tools/` or `catalog/mcp-servers/`. Nothing is listed by hand, so a new tool or MCP server is released with no core edit. This settles the check ADR-0002 left for Phase 5.
 - **Reproducible archives:** a fixed mtime, uid and gid 0, and sorted entries, so the same binaries always give the same archives.
+
+Container image (Phase 6, [ADR-0011](adr/0011-container-image.md)):
+- **Built from the release archives, not checked in.** The checked-in inputs are `Dockerfile` and `.grype.yaml`. `cargo --locked xtask release image` (`base`, `context`, `check`, `coverage`) holds the logic, and runs only in `release.yml`'s `image` job. `verify-image` runs the image, and `publish-image` pushes it with no cargo. Every PR builds, checks, scans and runs the image; only release mode pushes it.
+- **One image, `ghcr.io/jabbott-iii/grimoire`,** for linux/amd64 and linux/arm64, on distroless static pinned by digest. The CLI is the entrypoint, and every asset binary sits in `/opt/grimoire/bin/`, off `PATH`. A release tags it `X.Y.Z` and `latest`, and the release notes name its index digest.
+- **Inside a container, `doctor` and `plan/hook-binary-missing` describe the container's `PATH`,** not the host's.
+- **Signing and tags.** Every signature and attestation, for the release files and the image, is made in the reusable workflow `.github/workflows/sign.yml`, whose jobs run only when `release.yml` on `main` calls them. Verifiers pin both `sign.yml` and that caller. `publish-image` pushes the image by digest, untagged; `sign-image` signs and attests it through `sign.yml`, and only then tags it with `.github/scripts/image-tags.sh`, a language-policy exception (ADR-0010, amended by [ADR-0011](adr/0011-container-image.md)).
+- [`container.md`](container.md) shows how to run and verify it; ADR-0011 has the design and the supply chain.
 
 ## 11. Open design issues (to settle in the phase noted)
 

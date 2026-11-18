@@ -70,7 +70,7 @@ jobs:
           fi
           echo "latest release: ${tag}"
           echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
-      # Two independent checks: build provenance from release.yml on Grimoire's main branch
+      # Two independent checks: build provenance from Grimoire's signing workflow (sign.yml, run from main)
       # (GitHub-hosted runners only), and GitHub's attestation that the file is an asset of
       # the immutable release.
       - name: Download and verify the formula
@@ -84,7 +84,7 @@ jobs:
           gh release download "${TAG}" --repo "${UPSTREAM}" --pattern "${ASSET}" --dir "${dir}"
           gh attestation verify "${dir}/${ASSET}" \
             --repo jabbott-iii/Grimoire \
-            --signer-workflow jabbott-iii/Grimoire/.github/workflows/release.yml \
+            --signer-workflow jabbott-iii/Grimoire/.github/workflows/sign.yml@refs/heads/main \
             --source-ref refs/heads/main \
             --deny-self-hosted-runners
           gh release verify-asset "${TAG}" "${dir}/${ASSET}" --repo "${UPSTREAM}"
@@ -161,7 +161,7 @@ jobs:
 
           Before opening this pull request, the workflow verified the file with:
 
-          - \`gh attestation verify\`: built by \`.github/workflows/release.yml\` on \`refs/heads/main\` of ${UPSTREAM}, on a GitHub-hosted runner;
+          - \`gh attestation verify\`: attested by \`.github/workflows/sign.yml\` in a run of ${UPSTREAM} on \`refs/heads/main\`, on a GitHub-hosted runner;
           - \`gh release verify-asset ${TAG}\`: an asset of that immutable release.
           EOF
           gh pr create --repo "${repo}" --base "${default}" --head "${branch}" \

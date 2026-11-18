@@ -1,6 +1,6 @@
 # ADR-0002: Packaging MCP servers and tools: separate binaries, released with the CLI
 
-- **Status:** Accepted (maintainer approved all Phase 0 proposals, 2026-11-16). Amended by [ADR-0009](0009-release-pipeline.md) (2026-11-17): the release workflow finds asset binaries with `cargo metadata`, which settles the Phase 5 check under Consequences.
+- **Status:** Accepted (maintainer approved all Phase 0 proposals, 2026-11-16). Amended by [ADR-0009](0009-release-pipeline.md) (2026-11-17): the release workflow finds asset binaries with `cargo metadata`, which settles the Phase 5 check under Consequences. Amended by [ADR-0011](0011-container-image.md) (2026-11-17): the image's exact form is fixed, and `runtime = "docker"` is deferred past v1.
 - **Date:** 2026-11-16
 - **Specs:** `RMCP`, `MCP-SPEC`, `CRATES-TP`, `NPM-TP`, `PYPI-TP`, `MCP-REGISTRY` in [`../specs.md`](../specs.md)
 
@@ -69,12 +69,12 @@ Adopt **(A), separate binaries**, with a deliberately narrow v1 distribution sco
 3. **Released together with the CLI.**
    - The same release workflow builds every asset binary for all six targets.
    - Each binary is attached to the GitHub Release as its own archive, with the same SHA-256 checksums, CycloneDX SBOM, build-provenance attestation and keyless signature as the CLI (ADR-0003).
-   - All binaries are also included in the GHCR image (Phase 6), so a `docker run -i --rm --entrypoint grimoire-mcp-<id> ghcr.io/…@sha256:…` command can act as a stdio server with nothing installed locally. The exact form is fixed in Phase 6.
+   - All binaries are also included in the GHCR image (Phase 6), so a `docker run -i --rm --entrypoint grimoire-mcp-<id> ghcr.io/…@sha256:…` command can act as a stdio server with nothing installed locally. Phase 6 fixed the exact form: asset binaries sit in `/opt/grimoire/bin/`, off the image's `PATH`, so `--entrypoint` takes that absolute path ([ADR-0011](0011-container-image.md), [`docs/container.md`](../container.md)).
 4. **Package managers carry only `grimoire` in v1.** npm, PyPI, Homebrew, Scoop and winget get the CLI only. Extending them to asset binaries, likely as extra binaries inside the existing per-platform packages rather than new packages, is revisited after v1 with real usage data.
 5. **The CLI helps without downloading.**
    - `grimoire doctor` checks that each referenced binary is on `PATH` at a version compatible with the locked asset version (`--version --json`).
    - `apply` and `doctor` print the exact install command.
-   - A per-asset override `runtime = "docker"` lets adapters render the MCP config entry as a pinned-by-digest `docker run` command instead of a local binary. *(Implementation note, Phase 1: deferred to Phase 6, where the image exists.)*
+   - A per-asset override `runtime = "docker"` lets adapters render the MCP config entry as a pinned-by-digest `docker run` command instead of a local binary. *(Implementation note, Phase 1: deferred to Phase 6, where the image exists. Phase 6: deferred past v1 by the maintainer; `grimoire.toml` still rejects the field, and [`docs/container.md`](../container.md) shows hand-written, digest-pinned `docker run` entries instead ([ADR-0011](0011-container-image.md)).)*
 
    An explicit, opt-in `grimoire fetch` that downloads and verifies binaries is out of scope for v1. It would need its own ADR, because it introduces network code into the CLI.
 6. **Shared server hardening lives in one core crate.** A `crates/` library introduced in Phase 3 contains:

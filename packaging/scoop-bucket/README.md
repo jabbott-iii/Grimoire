@@ -30,7 +30,7 @@ The design is in [ADR-0009](../../docs/adr/0009-release-pipeline.md), and the re
 
 1. It finds the latest release of `jabbott-iii/Grimoire` with `gh release view`. Its tag must look like `vX.Y.Z`. If there is no release yet, it stops with a notice.
 2. It downloads `agent-grimoire.json` from that release and verifies it twice:
-   - `gh attestation verify --repo jabbott-iii/Grimoire --signer-workflow jabbott-iii/Grimoire/.github/workflows/release.yml --source-ref refs/heads/main --deny-self-hosted-runners`. This shows that `release.yml` built and signed the file on Grimoire's `main` branch, on a GitHub-hosted runner.
+   - `gh attestation verify --repo jabbott-iii/Grimoire --signer-workflow jabbott-iii/Grimoire/.github/workflows/sign.yml@refs/heads/main --source-ref refs/heads/main --deny-self-hosted-runners`. This shows that Grimoire's signing workflow, `sign.yml`, attested the file in a run of `jabbott-iii/Grimoire` on its `main` branch, on a GitHub-hosted runner. `--repo` and `--source-ref` pin the run, because any repository can call a public reusable workflow. Every release is attested this way: none was made before the switch to `sign.yml`.
    - `gh release verify-asset <tag> agent-grimoire.json`. This shows that the file is an asset of that immutable release.
 3. If `bucket/agent-grimoire.json` on the default branch already has the same bytes, it stops.
 4. If a pull request from the branch `sync/agent-grimoire-<tag>` already exists (open, closed or merged), it stops. If the branch exists without a pull request, which an interrupted run can leave, and it holds exactly the verified file, the workflow opens its pull request. Otherwise it warns: delete the branch to retry.

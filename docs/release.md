@@ -1,15 +1,16 @@
 # Releasing and installing Grimoire
 
-- **Status:** written in Phase 5 (2026-11-17), before the first release, and revised after the Phase 5 review. **No release exists yet**, so no command in this file has been run against a real release.
-- **Decisions:** [ADR-0009](adr/0009-release-pipeline.md) (the pipeline and channels) and [ADR-0010](adr/0010-language-policy-exceptions.md) (the code that isn't Rust).
-- **Facts:** the `*-P5` entries in [`specs.md`](specs.md).
+- **Status:** written in Phase 5 (2026-11-17), before the first release, revised after the Phase 5 review, revised in Phase 6 (2026-11-17) for the container image, and revised after the Phase 6 review, which moved every signature and attestation into `.github/workflows/sign.yml`. **No release exists yet**, so no command in this file has been run against a real release. The image's build, checks, scan, push to a local registry and the tag script's cases were run only locally, with rootless Docker, never on GitHub or against GHCR.
+- **Decisions:** [ADR-0009](adr/0009-release-pipeline.md) (the pipeline and channels), [ADR-0010](adr/0010-language-policy-exceptions.md) (the code that isn't Rust) and [ADR-0011](adr/0011-container-image.md) (the container image).
+- **Facts:** the `*-P5` and `*-P6` entries in [`specs.md`](specs.md); SIGN-P6 for the signing identity.
 
-This file has five parts:
+This file has six parts:
 1. how a release flows, for the maintainer;
 2. the one-time bootstrap, also for the maintainer;
 3. recovering from a failed release;
 4. installing, for users;
-5. verifying a download, for users.
+5. verifying a download, for users;
+6. maintaining the image pins, for the maintainer.
 
 ## 1. How a release flows
 
@@ -27,18 +28,29 @@ This file has five parts:
    - The merge's push to `main` starts `.github/workflows/release.yml`.
    - `plan` chooses release mode only when `GRIMOIRE_RELEASES` is `enabled`, `vX.Y.Z` isn't tagged, and `CHANGELOG.md` has a section for X.Y.Z. Only the merged release PR adds that section. Any other push to `main` stays a dry-run, and `plan` prints a warning that release mode waits for the release PR.
    - `plan` fails at once if the catalog has grown past GitHub's limits: 256 jobs in the SBOM attestation matrix, and 1000 assets in one release. With today's channels, the asset limit is reached at 39 asset binaries.
-   - The run builds all six targets, packages every channel, runs the verification jobs, then attests and signs every file.
+   - The run builds all six targets, packages every channel and runs the verification jobs. Then `sign-files` signs every file (below).
    - Every release-mode job downloads the release files by artifact ID. Before it attests, signs or publishes anything, it checks `SHA256SUMS` against the hash the package job recorded, and that the files are exactly the ones `SHA256SUMS` lists.
+   - **Signing.** Every signature and attestation, for the release files and the image, is made in `.github/workflows/sign.yml`, a reusable workflow that only `sign-files` and `sign-image` call. Its certificates name `https://github.com/jabbott-iii/Grimoire/.github/workflows/sign.yml@refs/heads/main`, which no job in `release.yml` can get, so the publish jobs, and the PyPI action's container, can't sign as the release. Its jobs run only when `release.yml` on `main` in this repository calls them.
+   - `sign-files` makes one provenance attestation over every file, an SBOM attestation for each archive (one matrix job each), and a cosign bundle for each file, which it verifies at once with the identity and the caller pins (§5).
+   - **The container image.** The `image` job builds it from the two Linux musl archives, for linux/amd64 and linux/arm64, as an OCI layout with an SBOM and provenance for each platform. It verifies the base image's signatures first, then checks the layout with `cargo xtask release image check` and scans each platform with Grype. Any medium, high or critical match fails the job (§3).
+   - `verify-image` pushes the layout to a local registry, pulls it on an amd64 and an arm64 runner, and runs every binary in it. Pull requests run both jobs too. They also sign the image with a throwaway key, offline, and run the release's tag script, `.github/scripts/image-tags.sh`, against the local registry, refusals included.
+   - **Where the image digest comes from.** The `image` job prints the layout's index digest. `publish` writes it into the release notes in step 6, before anything is pushed. `publish-image` pushes exactly that index in step 7, and `sign-image` signs it before it gets a tag. `verify-image` and `publish-image` download the layout by artifact ID and check that it is the index the `image` job checked.
 6. **Approve the first deployment, `release`.**
    - The `publish` job waits in the `release` environment. Check that every earlier job passed, then approve.
-   - It verifies `SHA256SUMS`, the cosign bundles and the attestation, tags `vX.Y.Z` at the commit it built, and publishes the GitHub Release (draft, upload, publish). It has no `id-token` permission.
+   - It verifies `SHA256SUMS`, every cosign bundle and the provenance of `SHA256SUMS`, each with `sign.yml`'s identity and the caller pins (§5). It also checks that the provenance certificate's Build Config URI is `https://github.com/jabbott-iii/Grimoire/.github/workflows/release.yml@refs/heads/main`, the calling workflow, and that its repository and owner IDs are Grimoire's (`1460666977`, `84321953`), which no cosign or gh flag can pin.
+   - It then tags `vX.Y.Z` at the commit it built, and publishes the GitHub Release (draft, upload, publish). It has no `id-token` permission.
+   - The notes name the container image by digest, `ghcr.io/jabbott-iii/grimoire@sha256:…`, with the tags `X.Y.Z` and `latest`, and say that it is pushed once the registry jobs are approved.
    - It then prints the release's `immutable` field, and only warns if it isn't `true`. Check that line before going on; §3 says what to do if it is `false`.
-7. **Approve the registry deployments, `crates-io`, `npm` and `pypi`.**
-   - Three jobs now wait at once, each in its own environment. Approve them together.
+7. **Approve the registry deployments, `crates-io`, `npm`, `pypi` and `ghcr`.**
+   - Four jobs now wait at once, each in its own environment. Approve them together.
    - `publish-crates` gets a token with `crates-io-auth-action` and runs `cargo publish --locked -p <crate>` for each crate whose version isn't on crates.io yet, in dependency order.
    - `publish-npm` stages the six platform tarballs, then the launcher.
    - `publish-pypi` uploads the wheels with `pypa/gh-action-pypi-publish` (`skip-existing: true`).
-   - Each job's OIDC token names its own environment, and each registry's trusted publisher accepts only its own, so no job can publish to another registry.
+   - `publish-image` pushes the checked layout to `ghcr.io/jabbott-iii/grimoire` by digest, untagged, with the job's `GITHUB_TOKEN` (`image-tags.sh push`). An existing `X.Y.Z` that names another digest stops the job; the tag is never overwritten. It has no OIDC token and runs no cargo.
+   - **Then `sign-image` runs, with no approval of its own.** A job that calls a reusable workflow can't name an environment, so the `ghcr` approval of the push is the approved step. It calls `sign.yml`, which signs the index digest with cosign (keyless), adds a build provenance attestation with `actions/attest`, checks that both are listed in the `sha256-<index hex>` tag, and verifies both.
+   - Only then does the image get its tags: `X.Y.Z`, then `latest` (`image-tags.sh tag` and `latest`). `latest` moves only past a release that carries the release signature, and never back to an older one (§3).
+   - `sign-image`'s last step fails while the package can't be pulled anonymously. That can happen only in the first release, before you make the package public (§2 D).
+   - Each job's OIDC token names its own environment, and each registry's trusted publisher accepts only its own, so no job can publish to another registry. `publish-image` has no OIDC token. `publish-crates`, `publish-npm` and `publish-pypi` can still get Sigstore certificates, but those name `release.yml`, and no verifier accepts that identity.
 8. **Approve the npm versions with 2FA, platform packages first.**
    - Approve the six `@agent-grimoire/*` versions, then `agent-grimoire`. Use `npm stage approve <stage-id>`, or the Staged Packages tab on npmjs.com.
    - Batch approval on npmjs.com takes up to 100 versions (one per package) with one 2FA challenge. Each approval is independent and isn't rolled back if another fails, so approve the platform packages before the launcher.
@@ -58,7 +70,7 @@ This file has five parts:
 
 ## 2. One-time bootstrap (maintainer)
 
-This checklist is the source for the Phase 5 bootstrap; `PLAN.md` §6 points here. Do the parts in order:
+This checklist is the source for the Phase 5 and Phase 6 bootstrap; `PLAN.md` §6 points here. Do the parts in order:
 - **A:** the first item before you merge the Phase 5 change, the rest at any time before the first release;
 - **B:** close to the first release, because PyPI's pending publisher expires after 30 days;
 - **C:** last, after the README rewrite;
@@ -73,13 +85,14 @@ Never store a token in GitHub at any step.
   - With the setting off, each run creates a `release-plz-<timestamp>` branch and then fails to open the PR. Delete any `release-plz-*` branch that has no PR.
   - Leave the release PR unmerged until the rest of this bootstrap is done. release-plz updates it on every push.
   - Keep the default `GITHUB_TOKEN` permissions read-only (`PLAN.md` §6).
-- [ ] **Create four environments** (Settings → Environments): `release`, `crates-io`, `npm` and `pypi`. Configure each one the same way:
+- [ ] **Create five environments** (Settings → Environments): `release`, `crates-io`, `npm`, `pypi` and `ghcr`. Configure each one the same way:
   - Required reviewer: you.
   - Leave **Prevent self-review** off while you are the only reviewer. With it on, you can't approve a run you started; only the administrator bypass could start it.
   - Deployment branches and tags: "Selected branches and tags", with one branch rule, `main`. Releases run only from `main`, never from a tag.
-  - No environment secrets.
+  - No environment secrets. `ghcr` needs none either: `publish-image` pushes with the job's `GITHUB_TOKEN`.
   - If an environment already exists, configure it the same way. A run that references a missing environment creates it without protection rules.
-  - Each release then needs two approval rounds: `release` for the tag and the GitHub Release, then `crates-io`, `npm` and `pypi` together.
+  - Each release then needs two approval rounds: `release` for the tag and the GitHub Release, then `crates-io`, `npm`, `pypi` and `ghcr` together.
+  - `ghcr` approves `publish-image`, the push. `sign-image` follows without an approval of its own, because a job that calls a reusable workflow can't name an environment. `sign-files` has no environment either, and runs before the `release` approval ([`security-model.md`](security-model.md) §6b, "Signing comes before approval").
 - [ ] **Enable immutable releases** (Settings → Releases → "Enable release immutability").
   - It applies only to releases published afterwards.
   - `GITHUB_TOKEN` can't read this setting, so the `publish` job only warns when a release comes out mutable. Check it with your own login: `gh api repos/jabbott-iii/Grimoire/immutable-releases` should show `"enabled": true`.
@@ -136,6 +149,11 @@ The READMEs next to the two templates ([tap](../packaging/homebrew-tap/README.md
 
 - [ ] Have a crates.io account with a verified email address, linked to your GitHub account. You need both to create trusted-publisher configurations.
 
+**GHCR.** There is nothing to create: the first release's `publish-image` job creates the package `ghcr.io/jabbott-iii/grimoire`.
+
+- [ ] **Never push to `ghcr.io/jabbott-iii/grimoire` by hand before the first release.** A package that a workflow first publishes with `GITHUB_TOKEN` is linked to that repository. But `GITHUB_TOKEN` can't push to a package in your namespace that was pushed earlier and isn't connected to the repository, so a manual first push would block `publish-image`.
+- [ ] Check that your account has no `grimoire` container package yet. Anonymous checks on 2026-11-17 found none, but they can't see a private package (UNVERIFIED). If one exists, open its package settings before the first release: connect it to `jabbott-iii/Grimoire`, and give that repository write access under "Manage Actions access". A package linked after its first push doesn't inherit the repository's access. This case hasn't been tried.
+
 ### C. Switch releases on (last)
 
 - [ ] **Land the Phase 7 README rewrite first.** The root `README.md` is still a one-line placeholder. It goes into every CLI archive, the six crates on crates.io and the npm packages, and it is the PyPI long description. A published version can't be changed.
@@ -145,11 +163,11 @@ The READMEs next to the two templates ([tap](../packaging/homebrew-tap/README.md
 
 ### D. During the first release run
 
-Trusted publishing can't create a crate, so you publish the first version of each crate yourself, from the commit the run tagged. npm's trusted publishing is set up here too, so that its 48-hour window starts as late as possible.
+Trusted publishing can't create a crate, so you publish the first version of each crate yourself, from the commit the run tagged. npm's trusted publishing is set up here too, so that its 48-hour window starts as late as possible. The container image's package is created by the run itself, and you make it public at the end.
 
 1. **Wait for the `release` approval.** Check that the run's commit (the `GITHUB_SHA` shown in the run) is the release PR's merge commit, and that every earlier job passed. If not, reject it.
 2. **Approve `release`.** The `publish` job tags `vX.Y.Z` and publishes the GitHub Release. Check that its log says the release is immutable (§3 if not).
-3. **The run now waits for `crates-io`, `npm` and `pypi`.** Don't approve yet.
+3. **The run now waits for `crates-io`, `npm`, `pypi` and `ghcr`.** Don't approve yet.
 4. **Check out the tag `vX.Y.Z`** in a clean clone, with the pinned toolchain from `rust-toolchain.toml`.
 5. **Create a crates.io API token** that expires soon and can only publish these crates. Which scopes crates.io offers was not re-checked in Phase 5.
 6. **Publish the six crates:** `cargo publish --workspace --locked`, with the token in `CARGO_REGISTRY_TOKEN` for that one command only.
@@ -165,8 +183,14 @@ Trusted publishing can't create a crate, so you publish the first version of eac
     - Every field is case-sensitive, so type `Grimoire` with the capital.
     - Leave direct publishing and dist-tag access off.
     - A new configuration must complete a successful publish within 48 hours, or it expires and must be deleted and created again. Whether a staged (not yet approved) version counts is UNVERIFIED, so do steps 11 and 12 within 48 hours of this one.
-11. **Approve `crates-io`, `npm` and `pypi`.** The crates.io job finds all six versions published and skips them. The npm job stages the seven packages, and the PyPI job uploads the wheels and creates the project.
+11. **Approve `crates-io`, `npm`, `pypi` and `ghcr`.** The crates.io job finds all six versions published and skips them. The npm job stages the seven packages, and the PyPI job uploads the wheels and creates the project. `publish-image` creates the GHCR package with its first push, and `sign-image` follows without another approval.
 12. **Approve the npm versions** (§1 step 8).
+13. **Check the new package before you make it public.** `sign-image` (not `publish-image`) signs, attests, tags `X.Y.Z` and moves `latest`, then fails at its last step if the package can't be pulled anonymously.
+    - GitHub's docs disagree on whether a package that a workflow creates starts private or takes the repository's visibility. If the last step passed, the package is already public: do the checks below and skip steps 14 and 15.
+    - On the package's page on GitHub, check that it is linked to `jabbott-iii/Grimoire`. The image's `org.opencontainers.image.source` label and annotations name the repository; which of them GHCR reads is UNVERIFIED.
+    - The package also shows `sha256-<hex>` tags, because GHCR has no referrers API. `sha256-<index hex>` lists the cosign signature and the provenance attestation, and each `sha256-<platform hex>` lists that platform's BuildKit attestation manifest. Never delete them (§3).
+14. **Make the package public, in its package settings.** **This can't be undone**: a public package can never be made private again. No API changes a package's visibility, so this step is manual.
+15. **Re-run `sign-image`** (Actions → the run → Re-run failed jobs). It has no environment, so it waits for no approval. The signature and the attestation are skipped because they are done, the tags already name this digest, and the last step now passes (§3).
 
 ## 3. Recovery
 
@@ -176,9 +200,24 @@ Trusted publishing can't create a crate, so you publish the first version of eac
     - `publish` accepts the tag at this commit, finishes a draft release, and checks that a published release holds exactly the files in `dist/`;
     - `publish-crates` skips crate versions already on crates.io;
     - `publish-npm` skips versions already published (staged ones are below);
-    - `publish-pypi` skips files already on PyPI (`skip-existing`).
-  - The registry jobs are separate, so a failure in one doesn't hold up the others. GitHub also re-runs the jobs that depend on a re-run job. Whether a re-run job waits for its environment's approval again isn't documented; expect it to.
+    - `publish-pypi` skips files already on PyPI (`skip-existing`);
+    - `publish-image` pushes the same digest again, untagged, which is harmless. It stops if `X.Y.Z` names another digest, and if a tag lookup fails for any reason other than the registry's "unknown" answer (`MANIFEST_UNKNOWN`, `NAME_UNKNOWN`);
+    - `sign-image` skips the signature when one already verifies with the release identity and the caller pins, and the attestation when `gh attestation verify --bundle-from-oci` finds one in GHCR. An attestation that reached GitHub's attestations API but not GHCR is made again, which only adds a second record to the API, so a re-run after a partial attestation still finishes. It then checks and verifies both again, leaves `X.Y.Z` alone when it already names this digest, and applies the `latest` rule below.
+  - The registry jobs are separate, so a failure in one doesn't hold up the others. GitHub also re-runs the jobs that depend on a re-run job, so a re-run `publish-image` is followed by `sign-image`. Whether a re-run job waits for its environment's approval again isn't documented; expect it to. `sign-image` has no environment, so it never waits.
+  - Use "Re-run failed jobs", not "Re-run all jobs". A new `image` run builds an index with another digest, because its SBOMs and provenance hold build times, and the published notes name the first one.
   - Don't wait for a new run instead. Once the tag exists, a run on `main` only skips.
+- **The `image` job failed.** It runs before the `release` approval, so nothing was published. Fix the cause as below, through a normal PR, as for "The run failed before the `release` approval".
+  - **A Grype finding, or a coverage failure.** Every platform is scanned before the step fails, so the `image-scan` artifact holds each platform's JSON and CycloneDX reports. A coverage failure (Grype detected no Debian 13 or no Debian packages, or a binary shows no Rust packages) means Grype couldn't see part of the image: investigate it, never ignore it. If a fix exists, take it: a base digest bump (§6) or a crate update. If none exists, add an ignore rule to `.grype.yaml` that names the vulnerability and the package and gives a reason, in a PR reviewed like the exceptions in `deny.toml`. Never lower the threshold or drop `--fail-on`.
+  - Grype's database is rebuilt daily, so a re-run can fail where the pull request passed.
+  - **A base signature, `context`, `check` or `coverage` failure.** Investigate; never skip or weaken the step. A base that doesn't verify, or an image whose layers aren't exactly the base's and the archived binaries, can mean a compromise.
+- **The image's tags.** Only `sign-image` sets them, and only after the signature and the attestation verify in GHCR. `X.Y.Z` is never overwritten. `latest` moves to this release unless it already names a newer release that verifies with the release identity, so it never moves back to an older signed release, and an image without the release signature never keeps it. `.github/scripts/image-tags.sh` makes these steps, and its errors mean:
+  - **`already points at <digest>, not at <digest>`** (`publish-image` or `sign-image`): `X.Y.Z` already names another digest. Stop and investigate. Never overwrite the tag and never delete it. Check whether that digest verifies with the release identity (§5).
+  - **`cannot tell whether <ref> exists`:** a tag lookup failed for a reason other than the registry's "unknown" answer, and crane's own error is printed just before it. The script never treats a tag it couldn't read as absent. Fix the cause, then re-run the failed job.
+  - **`crane pushed <ref>, not <image>@<digest>`:** the push didn't keep the digest of the checked layout. Stop and investigate before you re-run.
+  - **`latest is <version>, newer than X.Y.Z; leaving it`** is expected when you re-run an older release.
+  - **The warning `latest named <digest>, which doesn't carry the release signature; moving it`** means the image `latest` named didn't verify with the release identity. Someone with write access to the package moved `latest`, its signature was removed from its `sha256-<hex>` tag, or the check itself failed: the script can't tell these apart. Investigate, and check which release `latest` names afterwards.
+  - **`is not a sha256 digest`, `is not a release version`, a usage line, or `sign.yml`'s `unexpected version … or digest`:** the workflow passed bad input. That is a bug in the workflow, so a re-run can't fix it (below, "A re-run can't finish the release").
+- **The weekly image scan failed** (`security.yml`, job `image-scan`). Either the latest release's image isn't pushed, tagged, signed or public yet (finish its `publish-image` and `sign-image`, §2 D), which the job's error names, or a new advisory matches it. A released image is never changed, so if a fix exists, take it as for the `image` job and release a new patch version. If none exists, an ignore rule with a reason in `.grype.yaml` on `main` also clears the weekly scan.
 - **`publish-npm` failed after staging some versions.**
   - The job can't see versions that are staged but not approved, because `npm view` reads only published ones. npm refuses to stage the same version twice. So a re-run stops with an error that says to approve or reject the earlier stage first.
   - On npmjs.com (Staged Packages), approve or reject every staged X.Y.Z, platform packages first. A rejected version can be staged again.
@@ -193,7 +232,7 @@ Trusted publishing can't create a crate, so you publish the first version of eac
   - This path hasn't been tried.
 - **A re-run can't finish the release.** That happens when the run is more than 30 days old, or when the fix needs a change to the code or the workflow, because a re-run uses the run's commit.
   - Check `gh release view vX.Y.Z --repo jabbott-iii/Grimoire`.
-  - **If the release is missing or still a draft, and no registry has X.Y.Z** (crates.io; npm, published or staged; PyPI):
+  - **If the release is missing or still a draft, and no registry has X.Y.Z** (crates.io; npm, published or staged; PyPI; GHCR):
     1. Delete the draft release: `gh release delete vX.Y.Z --repo jabbott-iii/Grimoire`.
     2. Delete the tag: `gh api -X DELETE repos/jabbott-iii/Grimoire/git/refs/tags/vX.Y.Z`. Nothing locks a tag or a draft before the release is published.
     3. Fix the cause on `main` through a PR.
@@ -226,6 +265,7 @@ Install `agent-grimoire`, run `grimoire`. The only exception is winget, where th
 | Scoop | `scoop bucket add jabbott-iii https://github.com/jabbott-iii/scoop-bucket`, then `scoop install jabbott-iii/agent-grimoire` | Needs git |
 | winget | `winget install jabbott-iii.agent-grimoire` | **The command is `agent-grimoire`.** `grimoire` belongs to another winget package. Open a new shell after installing |
 | Install script | below | Linux, macOS and Windows |
+| Container image | `docker pull ghcr.io/jabbott-iii/grimoire@sha256:<digest>`, with the digest from the release notes | linux/amd64 and linux/arm64. How to run it is in [`container.md`](container.md) |
 
 To use the short name with Homebrew instead:
 ```sh
@@ -268,7 +308,7 @@ What the scripts do:
 
 The `releases/latest/download/` address is GitHub's redirect to the newest release. The redirect itself isn't covered by the Phase 5 research (UNVERIFIED). Only `release.yml` is meant to create releases here: release-plz is configured to create none, but its token could ([`security-model.md`](security-model.md) §6b).
 
-**Verify a script before you run it.** It is a release asset like any other. Download `install.sh` (or `install.ps1`) with its `.sigstore.json` bundle, and check it with cosign or `gh attestation verify` as in §5, which show that `release.yml` built it. `gh release verify-asset` alone shows only that the file belongs to a release. Then read it.
+**Verify a script before you run it.** It is a release asset like any other. Download `install.sh` (or `install.ps1`) with its `.sigstore.json` bundle, and check it with cosign or `gh attestation verify` as in §5, which show that a release run on `main` signed it. `gh release verify-asset` alone shows only that the file belongs to a release. Then read it.
 
 ## 5. Verifying a download
 
@@ -278,6 +318,8 @@ Each release has, for every file:
 - a cosign bundle, `<file>.sigstore.json`, on the release page.
 
 Each archive also has a CycloneDX SBOM (`<archive>.cdx.json`) and an SBOM attestation. Download the file you want, plus `SHA256SUMS` and the matching `.sigstore.json` bundles, from the release page.
+
+**Who signs.** Every signature and attestation is made by `.github/workflows/sign.yml`, Grimoire's signing workflow, when `release.yml` on `main` calls it. Any repository can call a public reusable workflow and get a certificate with the same name, so the commands below also pin the caller: the repository `jabbott-iii/Grimoire` and the ref `refs/heads/main`. No release exists yet, so every release is signed this way. Don't accept `…/release.yml@refs/heads/main`: other release jobs can still get certificates with that name, and no release is signed with it.
 
 **Checksums:**
 ```sh
@@ -291,10 +333,17 @@ sha256sum -c SHA256SUMS --ignore-missing
 ```sh
 gh attestation verify agent-grimoire-X.Y.Z-x86_64-unknown-linux-musl.tar.gz \
   --repo jabbott-iii/Grimoire \
-  --signer-workflow jabbott-iii/Grimoire/.github/workflows/release.yml \
+  --signer-workflow jabbott-iii/Grimoire/.github/workflows/sign.yml@refs/heads/main \
   --source-ref refs/heads/main \
   --deny-self-hosted-runners
 ```
+- `--signer-workflow` names `sign.yml` at `refs/heads/main`, the workflow that signs; without the ref, gh would also accept `sign.yml` at any tag or commit, which any repository can call. `--repo` and `--source-ref` pin the run that called it. `--repo` alone accepts any workflow and any ref of the repository, so don't drop the other flags.
+- **Pin what no flag does**, especially with `--bundle-from-oci`, where gh compares names only: add `--format json` and check the caller's workflow file and the repository and owner IDs. The release workflow runs this same check.
+  ```sh
+  … --format json | jq -e 'length > 0 and all(.[]; .verificationResult.signature.certificate
+    | .buildConfigURI == "https://github.com/jabbott-iii/Grimoire/.github/workflows/release.yml@refs/heads/main"
+      and .sourceRepositoryIdentifier == "1460666977" and .sourceRepositoryOwnerIdentifier == "84321953")'
+  ```
 - For the SBOM attestation, add `--predicate-type https://cyclonedx.org/bom`.
 - `--signer-workflow` and `--source-ref` are case-sensitive, so type `Grimoire` with the capital.
 - gh 2.102.0 fixed prefix matching in `--signer-workflow` (GHSA-wjmr-j3rp-mh2g) and case-insensitive `--source-ref` (GHSA-4mq3-hpgx-9cx8). Don't use an older gh.
@@ -309,10 +358,13 @@ gh attestation verify agent-grimoire-X.Y.Z-x86_64-unknown-linux-musl.tar.gz \
 ```sh
 cosign verify-blob agent-grimoire-X.Y.Z-x86_64-unknown-linux-musl.tar.gz \
   --bundle agent-grimoire-X.Y.Z-x86_64-unknown-linux-musl.tar.gz.sigstore.json \
-  --certificate-identity https://github.com/jabbott-iii/Grimoire/.github/workflows/release.yml@refs/heads/main \
-  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+  --certificate-identity https://github.com/jabbott-iii/Grimoire/.github/workflows/sign.yml@refs/heads/main \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-github-workflow-repository jabbott-iii/Grimoire \
+  --certificate-github-workflow-ref refs/heads/main
 ```
-- The identity is compared exactly, case included.
+- The identity names `sign.yml`. The last two flags pin the caller: a call from another repository gets the same identity, but names its own repository and ref there (SIGN-P6 in [`specs.md`](specs.md)). Keep all four flags.
+- The identity and both pins are compared exactly, case included.
 - The ref is `refs/heads/main` because releases run from `main`, not from a tag.
 - To tie the signature to the release commit, add `--certificate-github-workflow-sha <commit>`, the commit that tag `vX.Y.Z` points to.
 - cosign 3.1.3 fixed a verification bypass (GHSA-fx35-mq7g-6g98).
@@ -327,4 +379,75 @@ gh release verify-asset vX.Y.Z agent-grimoire-X.Y.Z-x86_64-unknown-linux-musl.ta
 - It is GitHub's own attestation (signer `https://dotcom.releases.github.com`), not Grimoire's build provenance, so use both.
 - It can't check the source archives GitHub generates automatically.
 
-What each package manager checks on your machine, and what it doesn't, is in [`security-model.md`](security-model.md) §6b.
+**The container image.** [`container.md`](container.md) has the details. Take the index digest from the release notes, then use the same identity and pins:
+```sh
+cosign verify ghcr.io/jabbott-iii/grimoire@sha256:<index digest> \
+  --certificate-identity https://github.com/jabbott-iii/Grimoire/.github/workflows/sign.yml@refs/heads/main \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-github-workflow-repository jabbott-iii/Grimoire \
+  --certificate-github-workflow-ref refs/heads/main
+gh attestation verify oci://ghcr.io/jabbott-iii/grimoire@sha256:<index digest> \
+  --bundle-from-oci \
+  --repo jabbott-iii/Grimoire \
+  --signer-workflow jabbott-iii/Grimoire/.github/workflows/sign.yml@refs/heads/main \
+  --source-ref refs/heads/main \
+  --deny-self-hosted-runners
+```
+- Verify the index digest. Only the index is signed, not each platform's manifest, so a platform manifest's digest doesn't verify on its own.
+- `--bundle-from-oci` reads the attestation's copy in GHCR, listed in the `sha256-<index hex>` tag. Without it, gh reads GitHub's attestations API instead.
+- The tags `X.Y.Z` and `latest` can move; a digest can't. Pin the digest.
+- The signature names a digest, not a version. The index's `org.opencontainers.image.version` annotation, which the signature covers, says which version it is.
+- `gh attestation verify` needs gh 2.102.0 or later, a gh login, and a registry login for the `oci://` lookup.
+
+What each package manager checks on your machine, and what it doesn't, is in [`security-model.md`](security-model.md) §6b; the image is in §6c.
+
+## 6. Maintaining the image pins (maintainer)
+
+**The 7-day rule.** Every pin is a release, or a digest, at least 7 days old when it is adopted (CI-PINS in [`specs.md`](specs.md)). Dependabot's cooldown enforces that for its other entries. For the base image it doesn't, so you check by hand.
+
+**The base image** (the one `FROM` line in `Dockerfile`):
+- Dependabot's `docker` entry opens a PR when distroless's `nonroot` tag moves to a new index. The PR changes only the digest on the `FROM` line. The `context` step derives everything else from it, such as the `base.digest` annotations.
+- Its cooldown has no effect here. Dependabot dates Docker updates only from Docker Hub, so for gcr.io it proposes the new digest at once, with a `cooldown_date_unavailable` warning.
+- **Before you merge, check the new digest's age:**
+  ```sh
+  curl -fsS https://gcr.io/v2/distroless/static-debian13/tags/list \
+    | jq -r '.manifest["sha256:<new digest>"].timeUploadedMs | tonumber / 1000 | todate'
+  ```
+  - It prints when GCR first stored that index, such as `2026-10-31T22:37:00Z` for `sha256:25ac8f0c…`. Merge only when that is at least 7 days ago. The error `null (null) cannot be parsed as a number` means the digest isn't in that repository. Checked with jq 1.7 on 2026-11-17.
+  - `timeUploadedMs` is undocumented. For the digests the Phase 6 research looked at, it matched the time of the digest's signature in Rekor.
+  - `.manifest["sha256:<new digest>"].tag` lists the index's tags. The newest index carries `nonroot`.
+- **Then let the PR's checks run.** The release dry-run verifies distroless's signature on the new index and both platform manifests, then builds, checks and scans the image. Merge only when they pass.
+- The PR has no release notes, because distroless sets no labels.
+- Dependabot opens no security updates for Docker images. The weekly `image-scan` job in `security.yml` scans the latest release's image instead (§3).
+- **Today's pin** is `sha256:25ac8f0c…` (first uploaded 2026-10-31). The current `nonroot`, `sha256:aafe9936…`, was first uploaded 2026-11-12, so it breaks the rule until 2026-11-19T21:16:35Z. The two differ only in the mode of `/usr/lib/os-release`, to which `/etc/os-release` links. Take Dependabot's PR for it after that time.
+
+**Where the other pins live.** Dependabot can't see values in a workflow's `env:`, so bump these by hand:
+
+| Pin | Where |
+|---|---|
+| `IMAGE` (`ghcr.io/jabbott-iii/grimoire`) | `release.yml` `env`, `sign.yml` `env`, `security.yml`'s `image-scan` job, and the `IMAGE` constant in `xtask/src/release/image.rs` |
+| `BUILDX_VERSION`, `BUILDX_SHA256` (the linux-amd64 binary) | `release.yml` `env` |
+| `CRANE_VERSION`, `CRANE_SHA256_X64` | `release.yml` `env`, `sign.yml` `env`, and `security.yml`'s `image-scan` job |
+| `CRANE_SHA256_ARM64` (`verify-image`'s arm64 runner) | `release.yml` `env` |
+| `GRYPE_VERSION`, `GRYPE_SHA256` (the linux_amd64 tarball) | `release.yml` `env`, and `security.yml`'s `image-scan` job |
+| `BUILDKIT_IMAGE`, `SBOM_SCANNER_IMAGE` (`name:tag@sha256:…`) | `release.yml` `env` |
+| `DISTROLESS_IDENTITY`, `DISTROLESS_ISSUER` (distroless's signer) | `release.yml` `env` |
+| `COSIGN_IDENTITY`, `COSIGN_REPOSITORY`, `COSIGN_REF` (the release signing identity and its caller pins) | `release.yml`'s `publish` job, `sign.yml` `env`, and `security.yml`'s `image-scan` job |
+| `SHELLCHECK_VERSION`, `SHELLCHECK_SHA256` | `release.yml`'s `verify-linux` job, and `security.yml`'s `workflows` job |
+| cosign (`sigstore/cosign-installer`) and `actions/attest` | `uses:` lines, which Dependabot and `actions.lock` cover |
+
+- **The three workflows must agree.** The xtask test `the_image_pins_agree_across_workflows` (run by `cargo test --workspace`) fails:
+  - when `IMAGE`, `CRANE_VERSION`, `CRANE_SHA256_X64`, `COSIGN_IDENTITY`, `COSIGN_REPOSITORY` or `COSIGN_REF` differ between `release.yml` and `security.yml` or `sign.yml`;
+  - when `GRYPE_VERSION`, `GRYPE_SHA256`, `SHELLCHECK_VERSION` or `SHELLCHECK_SHA256` differ between `release.yml` and `security.yml`;
+  - when a file sets one of these keys more than once, or not at all;
+  - when `sign.yml`'s identity isn't `…/sign.yml@refs/heads/main`, its repository `jabbott-iii/Grimoire` or its ref `refs/heads/main`;
+  - when `release.yml`'s `IMAGE` isn't the xtask constant, or `BUILDKIT_IMAGE` or `SBOM_SCANNER_IMAGE` isn't pinned by digest.
+
+  Change the files in one PR. The test passed locally on 2026-11-17.
+- **The identity is also written out in full** where the test doesn't look: `sign.yml`'s `SIGNER_WORKFLOW` and its job guards, the `publish` job's `gh attestation verify` flags and expected Build Config URI, and the tap and bucket sync templates. Change them with the pins.
+- **`.github/scripts/image-tags.sh`** is checked by ShellCheck (the pin above) in `security.yml`'s `workflows` job, and every PR dry-run runs its cases in `verify-image` against a local registry. The release runs the same script, in `publish-image` and `sign.yml`.
+- **Tools.** Date a tool by its GitHub release. Check each new SHA-256 against the release's own checksum file, as for the other CI pins.
+- **Images.** Date BuildKit and the SBOM scanner by their GitHub releases, and resolve the tag to its index digest, for example `crane digest moby/buildkit:v0.34.2` (it printed the pinned `sha256:c5f8862f…` on 2026-11-17). Keep `BUILDKIT_IMAGE` in the form `moby/buildkit:vX.Y.Z@sha256:…`: the builder step checks that the `BuildKit version:` line of `docker buildx inspect` reports the tag's version. The scanner's image tags have no `v`.
+- **Before a cosign upgrade**, check that it still verifies distroless's legacy `.sig` signatures. cosign's version comes with `sigstore/cosign-installer`, which Dependabot bumps. cosign says its new bundle format will become the only supported one, and distroless publishes only the legacy format.
+- **Grype.** `.grype.yaml` holds the gate. Grype ignores unknown keys silently, also inside an ignore rule, so the test `the_grype_config_has_only_known_keys_and_complete_rules` refuses any unknown key and any rule without a GHSA or CVE id, a package name (`package: name:`) and a reason, and the workflows repeat the threshold with `--fail-on medium`. A rule may use only `vulnerability`, `package` (`name`, `version`), `reason` and `include-aliases`; widen the test in the same PR if a rule needs more. Ignore rules have no expiry: review every rule when you bump the base image or Grype, and remove the ones that no longer match.
+- **Known follow-ups.** BuildKit v0.35.0 and buildx v0.39.0 (2026-11-11) become eligible on 2026-11-18. A CI check of the base digest's age doesn't exist yet.

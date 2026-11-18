@@ -2,9 +2,12 @@
 # from main once the maintainer turns it on (repository variable GRIMOIRE_RELEASES=enabled).
 #
 #   plan -> build (matrix) -> package -> verify-install (matrix) + verify-linux
+#                                     -> image -> verify-image (matrix; dry-run: offline cosign)
 #     dry-run: -> sign-dry-run (cosign, throwaway key, offline)
-#     release: -> attest + attest-sbom (matrix) -> publish (environment `release`)
+#     release: -> sign-files (sign.yml) -> publish (environment `release`)
 #              -> publish-crates (`crates-io`) + publish-npm (`npm`) + publish-pypi (`pypi`)
+#                 + publish-image (`ghcr`) -> sign-image (sign.yml)
+#   Every signature and attestation is made in sign.yml, whose certificates no job here can get.
 #   release-checks: one stable result for the ruleset to require.
 #
 # `cargo --locked xtask release` holds the logic (ADR-0009); this file is glue. Every channel ships
@@ -40,6 +43,25 @@ env:
   # publishes npm packages asserts that npm version: staged publishing needs npm >= 11.15.0.
   NODE_VERSION: "24.22.3"
   NPM_VERSION: "11.19.1"
+  # The container image (ADR-0011). The name is written out in lowercase: an OCI repository
+  # name must be, and github.repository (jabbott-iii/Grimoire) is not (REGISTRY-P6).
+  IMAGE: ghcr.io/jabbott-iii/grimoire
+  # Image tools, each a release at least 7 days old, checked against the SHA-256 its release
+  # publishes (BUILD-P6, REGISTRY-P6, SCAN-P6). Dependabot can't see these: bump them by hand.
+  BUILDX_VERSION: "0.38.2"
+  BUILDX_SHA256: "7992ec09413b80ff57ba4e081f56fc833d7bac1d5e71143c6c809e7e6065f6d6"
+  CRANE_VERSION: "0.22.1"
+  CRANE_SHA256_X64: "0ab7a1d6932a213aed964ce97666c3077fe691c8606413674a8b3e0b9ec4cda0"
+  CRANE_SHA256_ARM64: "898c0cff975f898a33e8c4580bdafb0e7c02c7faa33374e946762f97c4ab7110"
+  GRYPE_VERSION: "0.121.3"
+  GRYPE_SHA256: "e9da18cc1429e786722e32161288103600efffd8e483c90761f90485bd1bec85"
+  # The images BuildKit runs, pinned by digest (BUILD-P6): the builder, and the SBOM scanner,
+  # which BuildKit would otherwise pull by its `stable-1` tag on every build.
+  BUILDKIT_IMAGE: "moby/buildkit:v0.34.2@sha256:c5f8862f52499773af85bc07695b2379ef08e8002352b0df2c4864c91d78dabe"
+  SBOM_SCANNER_IMAGE: "docker/buildkit-syft-scanner:1.12.1@sha256:873a7458c3c8ac8e32c7b796c10e1600b07b963d2aa000a72a2d97aaaa2d6315"
+  # distroless's keyless signing identity (BASE-IMAGE-P6).
+  DISTROLESS_IDENTITY: keyless@distroless.iam.gserviceaccount.com
+  DISTROLESS_ISSUER: https://accounts.google.com
 
 jobs:
   plan:
@@ -644,20 +666,28 @@ jobs:
           fi
           echo "cosign rejected a tampered file"
 
-  attest:
-    name: attest and sign (release)
-    needs: [plan, package, verify-install, verify-linux]
-    if: needs.plan.outputs.mode == 'release'
+  # The container image (ADR-0011, docs/container.md), built once from the release archives,
+  # then checked and scanned before anything is published. publish-image later pushes exactly
+  # this OCI layout, so the registry holds the bytes that were scanned, under the digest the
+  # release notes name. No registry login and no token: every pull here is anonymous.
+  image:
+    name: container image (build, check, scan)
+    needs: [plan, package]
+    if: needs.plan.outputs.mode != 'skip'
     runs-on: ubuntu-24.04
     permissions:
-      id-token: write # actions/attest and cosign get their Sigstore signing certificates with the job's OIDC token
-      attestations: write # actions/attest stores the provenance attestation on this repository
+      contents: read # check out the Dockerfile and xtask
     outputs:
-      sigstore-artifact-id: ${{ steps.upload-sigstore.outputs.artifact-id }}
-    env:
-      COSIGN_IDENTITY: https://github.com/jabbott-iii/Grimoire/.github/workflows/release.yml@refs/heads/main
-      COSIGN_ISSUER: https://token.actions.githubusercontent.com
+      layout-artifact-id: ${{ steps.upload-layout.outputs.artifact-id }}
+      index-digest: ${{ steps.check.outputs.index-digest }}
     steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Rust
+        # Installs the toolchain and components pinned in rust-toolchain.toml.
+        run: rustup toolchain install
       - name: Download the release assets
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -679,72 +709,366 @@ jobs:
             diff <(echo "${expected}") <(echo "${actual}") || true
             exit 1
           fi
-      # One SLSA provenance attestation whose subjects are every file, SHA256SUMS included.
-      - name: Attest build provenance
-        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
-        with:
-          subject-path: dist/*
-      - name: Install cosign
-        uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
-      # Keyless: the certificate names this workflow on refs/heads/main. Each bundle is checked at once.
-      - name: Sign every file with cosign (keyless)
+      # Unpacked outside the checkout. The buildx plugin goes in a job-scoped DOCKER_CONFIG, which
+      # the image steps name, so it wins over the runner's copy (installed unverified, and from the
+      # 20261116 images on, newer than the 7-day rule allows; BUILD-P6).
+      - name: Install buildx, crane and Grype (checksum-verified)
         run: |
           set -euo pipefail
-          mkdir -p "${RUNNER_TEMP}/sigstore"
-          for file in dist/*; do
-            bundle="${RUNNER_TEMP}/sigstore/$(basename "${file}").sigstore.json"
-            cosign sign-blob --yes --bundle "${bundle}" "${file}"
-            cosign verify-blob --bundle "${bundle}" \
-              --certificate-identity "${COSIGN_IDENTITY}" \
-              --certificate-oidc-issuer "${COSIGN_ISSUER}" "${file}"
+          tools="${RUNNER_TEMP}/tools"
+          mkdir -p "${tools}/download" "${RUNNER_TEMP}/docker/cli-plugins"
+          cd "${tools}/download"
+          curl -fsSLo docker-buildx "https://github.com/docker/buildx/releases/download/v${BUILDX_VERSION}/buildx-v${BUILDX_VERSION}.linux-amd64"
+          echo "${BUILDX_SHA256}  docker-buildx" | sha256sum -c -
+          install -m 0755 docker-buildx "${RUNNER_TEMP}/docker/cli-plugins/docker-buildx"
+          curl -fsSLo crane.tar.gz "https://github.com/google/go-containerregistry/releases/download/v${CRANE_VERSION}/go-containerregistry_Linux_x86_64.tar.gz"
+          echo "${CRANE_SHA256_X64}  crane.tar.gz" | sha256sum -c -
+          tar -xzf crane.tar.gz -C "${tools}" crane
+          curl -fsSLo grype.tar.gz "https://github.com/anchore/grype/releases/download/v${GRYPE_VERSION}/grype_${GRYPE_VERSION}_linux_amd64.tar.gz"
+          echo "${GRYPE_SHA256}  grype.tar.gz" | sha256sum -c -
+          tar -xzf grype.tar.gz -C "${tools}" grype
+          echo "${tools}" >> "${GITHUB_PATH}"
+      - name: Install cosign
+        uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
+      # The Dockerfile pins the base by digest. Its index and both platform manifests must carry
+      # distroless's keyless signature. `check` later compares the image's lower layers, Env and
+      # diff_ids with the manifests and configs fetched here (BASE-IMAGE-P6).
+      - name: Prepare the build context and verify the base image
+        run: |
+          set -euo pipefail
+          base="$(cargo --locked xtask release image base)"
+          mkdir -p "${RUNNER_TEMP}/base"
+          crane manifest "${base}" > "${RUNNER_TEMP}/base/index.json"
+          cargo --locked xtask release image context --dist dist --base "${RUNNER_TEMP}/base" --out image
+          while read -r ref; do
+            cosign verify --certificate-identity "${DISTROLESS_IDENTITY}" \
+              --certificate-oidc-issuer "${DISTROLESS_ISSUER}" "${ref}" > /dev/null
+            echo "verified the signature of ${ref}"
+            manifest="${RUNNER_TEMP}/base/${ref##*@sha256:}.json"
+            crane manifest "${ref}" > "${manifest}"
+            # Platform manifests name their config; `check` verifies each blob's digest.
+            config="$(jq -r '.config.digest // empty' "${manifest}")"
+            if [ -n "${config}" ]; then
+              crane blob "${ref%@*}@${config}" > "${RUNNER_TEMP}/base/${config#sha256:}.json"
+            fi
+          done < image/base-refs
+      # A docker-container builder on the pinned BuildKit: the runner's own Docker is too old for
+      # attestations and multi-platform OCI output. provenance-add-gha=false keeps the GitHub
+      # event payload out of the public provenance. buildx lets every docker-container builder
+      # grant network.host (BUILD-P6); no build here asks for it: there is no --allow and no RUN.
+      - name: Create the builder
+        env:
+          DOCKER_CONFIG: ${{ runner.temp }}/docker
+        run: |
+          set -euo pipefail
+          if ! docker buildx version | grep -qF "v${BUILDX_VERSION} "; then
+            echo "::error::expected buildx ${BUILDX_VERSION}, found $(docker buildx version)"
+            exit 1
+          fi
+          docker buildx create --name grimoire --driver docker-container \
+            --driver-opt "image=${BUILDKIT_IMAGE}" --driver-opt provenance-add-gha=false --bootstrap
+          # The version BuildKit reports, not the image option (which names it too).
+          buildkit="${BUILDKIT_IMAGE#*:}"
+          if ! docker buildx inspect grimoire | grep -qE "^BuildKit version:[[:space:]]+${buildkit%@*}\$"; then
+            echo "::error::the builder does not run BuildKit ${buildkit%@*}"
+            exit 1
+          fi
+      - name: Check the Dockerfile (build checks)
+        env:
+          DOCKER_CONFIG: ${{ runner.temp }}/docker
+        run: docker buildx build --builder grimoire --check -f Dockerfile image/context
+      # COPY steps only, so one amd64 runner builds both platforms without emulation. Platform
+      # manifests are reproducible; the index is not, because the SBOMs and provenance hold
+      # build times. No build argument carries anything secret: mode=max records them all.
+      - name: Build the image (OCI layout, SBOM and provenance)
+        env:
+          DOCKER_CONFIG: ${{ runner.temp }}/docker
+          BUILDER_ID: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          mapfile -t args < image/buildx-args
+          SOURCE_DATE_EPOCH="$(cat image/source-date-epoch)"
+          export SOURCE_DATE_EPOCH
+          docker buildx build --builder grimoire "${args[@]}" \
+            --provenance "mode=max,builder-id=${BUILDER_ID}" \
+            --attest "type=sbom,generator=${SBOM_SCANNER_IMAGE}" \
+            --output "type=oci,dest=image/layout,tar=false,rewrite-timestamp=true" \
+            -f Dockerfile image/context
+      # One index with both platforms and their attestations, the annotations and configs, the
+      # verified base's layers, and on top exactly the archived binaries, byte for byte.
+      - name: Check the image
+        id: check
+        run: >-
+          cargo --locked xtask release image check --out image --layout image/layout
+          --base "${RUNNER_TEMP}/base" --github-output "${GITHUB_OUTPUT}"
+      # The gate (the maintainer's choice, ADR-0011): any medium, high or critical match fails,
+      # fixed or not. Grype exits 2 for a match and 1 for any other error; both fail the step.
+      # --fail-on repeats .grype.yaml's threshold, because Grype ignores a misspelt key silently.
+      # coverage fails when Grype saw no Debian packages or a binary shows no Rust packages,
+      # which Grype would report as clean. Every platform is scanned before the step fails, so
+      # the uploaded reports show every finding.
+      - name: Scan with Grype
+        env:
+          GRYPE_CHECK_FOR_APP_UPDATE: "false"
+        run: |
+          set -euo pipefail
+          failed=0
+          mapfile -t platforms < image/platforms
+          for platform in "${platforms[@]}"; do
+            name="${platform//\//-}"
+            status=0
+            grype -c .grype.yaml --fail-on medium "oci-dir:image/layout" --platform "${platform}" \
+              -o table -o "json=image/grype-${name}.json" -o "cyclonedx-json=image/grype-${name}.cdx.json" \
+              || status=$?
+            if [ "${status}" -eq 0 ] || [ "${status}" -eq 2 ]; then
+              cargo --locked xtask release image coverage --out image --report "image/grype-${name}.json" \
+                --cdx "image/grype-${name}.cdx.json" --platform "${platform}" || status=1
+            fi
+            if [ "${status}" -ne 0 ]; then
+              echo "::error::${platform}: the image gate failed (Grype exit ${status}; 2 means a finding)"
+              failed=1
+            fi
           done
-      - name: Upload the cosign bundles
-        id: upload-sigstore
+          grype db status
+          exit "${failed}"
+      - name: Upload the scan reports
+        if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: release-sigstore
-          path: ${{ runner.temp }}/sigstore/
+          name: image-scan
+          path: image/grype-*
+          if-no-files-found: ignore
+      - name: Upload the OCI layout
+        id: upload-layout
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: image-layout
+          path: image/layout/
           if-no-files-found: error
 
-  attest-sbom:
-    name: attest SBOM (${{ matrix.archive }})
-    needs: [plan, package, verify-install, verify-linux]
-    if: needs.plan.outputs.mode == 'release'
+  # Runs the image on each platform's own runner, exactly as it will be pushed: from a local
+  # registry (crane's, which like GHCR has no referrers API), on the runner's Docker. PR dry-runs
+  # also sign it with a throwaway key and verify it, offline.
+  verify-image:
+    name: verify image (${{ matrix.platform }})
+    needs: [plan, image]
     strategy:
       fail-fast: false
       matrix:
-        archive: ${{ fromJSON(needs.plan.outputs.archives) }}
-    runs-on: ubuntu-24.04
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    # Only this commit, artifacts of this run and a registry on localhost are used.
     permissions:
-      id-token: write # actions/attest gets its Sigstore signing certificate with the job's OIDC token
-      attestations: write # actions/attest stores the SBOM attestation on this repository
+      contents: read # check out .github/scripts/image-tags.sh
+    env:
+      MODE: ${{ needs.plan.outputs.mode }}
+      VERSION: ${{ needs.plan.outputs.version }}
+      PLATFORM: ${{ matrix.platform }}
+      INDEX_DIGEST: ${{ needs.image.outputs.index-digest }}
+      LOCAL_IMAGE: localhost:5000/grimoire@${{ needs.image.outputs.index-digest }}
     steps:
-      - name: Download the release assets
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Download the OCI layout
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          artifact-ids: ${{ needs.package.outputs.dist-artifact-id }}
+          artifact-ids: ${{ needs.image.outputs.layout-artifact-id }}
           merge-multiple: true
-          path: dist
-      # The artifact is the one the package job uploaded, unchanged, and holds nothing else.
-      - name: Check the release assets
-        env:
-          SUMS_SHA256: ${{ needs.package.outputs.sums-sha256 }}
+          path: layout
+      - name: Check that it is the layout the image job checked
         run: |
           set -euo pipefail
-          echo "${SUMS_SHA256}  dist/SHA256SUMS" | sha256sum --check --strict --quiet -
-          (cd dist && sha256sum --check --strict --quiet SHA256SUMS)
-          expected="$( (cut -c 67- dist/SHA256SUMS; echo SHA256SUMS) | sort)"
-          actual="$(cd dist && find . -maxdepth 1 -type f ! -name '*.sigstore.json' -printf '%f\n' | sort)"
-          if [ "${expected}" != "${actual}" ]; then
-            echo "::error::dist/ does not hold exactly the files SHA256SUMS lists"
-            diff <(echo "${expected}") <(echo "${actual}") || true
+          if [ "$(jq -r '[.manifests[].digest] | join(" ")' layout/index.json)" != "${INDEX_DIGEST}" ]; then
+            echo "::error::layout/index.json does not name exactly ${INDEX_DIGEST}"
             exit 1
           fi
-      - name: Attest the archive's CycloneDX SBOM
-        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
-        with:
-          subject-path: dist/${{ matrix.archive }}
-          sbom-path: dist/${{ matrix.archive }}.cdx.json
+          echo "${INDEX_DIGEST#sha256:}  layout/blobs/sha256/${INDEX_DIGEST#sha256:}" | sha256sum --check --strict -
+      - name: Install crane (checksum-verified)
+        run: |
+          set -euo pipefail
+          case "${RUNNER_ARCH}" in
+            X64) arch=x86_64 sum="${CRANE_SHA256_X64}" ;;
+            ARM64) arch=arm64 sum="${CRANE_SHA256_ARM64}" ;;
+            *) echo "::error::no crane for ${RUNNER_ARCH}"; exit 1 ;;
+          esac
+          mkdir -p "${RUNNER_TEMP}/crane"
+          cd "${RUNNER_TEMP}/crane"
+          curl -fsSLo crane.tar.gz "https://github.com/google/go-containerregistry/releases/download/v${CRANE_VERSION}/go-containerregistry_Linux_${arch}.tar.gz"
+          echo "${sum}  crane.tar.gz" | sha256sum -c -
+          tar -xzf crane.tar.gz crane
+          echo "${RUNNER_TEMP}/crane" >> "${GITHUB_PATH}"
+      # The registry keeps manifests in memory and lives until the job ends.
+      - name: Push to a local registry
+        run: |
+          set -euo pipefail
+          nohup crane registry serve --address 127.0.0.1:5000 > "${RUNNER_TEMP}/registry.log" 2>&1 &
+          for _ in $(seq 1 30); do
+            if curl -fs -o /dev/null http://127.0.0.1:5000/v2/; then break; fi
+            sleep 1
+          done
+          crane push --image-refs "${RUNNER_TEMP}/pushed" layout "localhost:5000/grimoire:${VERSION}"
+          if [ "$(cat "${RUNNER_TEMP}/pushed")" != "${LOCAL_IMAGE}" ]; then
+            echo "::error::crane pushed $(cat "${RUNNER_TEMP}/pushed"), not ${LOCAL_IMAGE}"
+            exit 1
+          fi
+          docker pull --quiet "${LOCAL_IMAGE}"
+      - name: Run every binary
+        run: |
+          set -euo pipefail
+          arch="$(docker image inspect --format '{{.Os}}/{{.Architecture}}' "${LOCAL_IMAGE}")"
+          if [ "${arch}" != "${PLATFORM}" ]; then
+            echo "::error::the runner pulled ${arch}, not ${PLATFORM}"
+            exit 1
+          fi
+          hardened=(--rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges)
+          out="$(docker run "${hardened[@]}" "${LOCAL_IMAGE}" --version)"
+          if [ "${out}" != "grimoire ${VERSION}" ]; then
+            echo "::error::grimoire --version printed '${out}'"
+            exit 1
+          fi
+          mapfile -t assets < <(crane export --platform "${PLATFORM}" "${LOCAL_IMAGE}" - | tar -t | sed -n 's|^opt/grimoire/bin/\([^/][^/]*\)$|\1|p')
+          if [ "${#assets[@]}" -eq 0 ]; then
+            echo "::error::the image holds no asset binaries"
+            exit 1
+          fi
+          for bin in "${assets[@]}"; do
+            out="$(docker run "${hardened[@]}" --entrypoint "/opt/grimoire/bin/${bin}" "${LOCAL_IMAGE}" --version)"
+            case "${out}" in "${bin} "*) echo "${out}" ;; *) echo "::error::${bin} --version printed '${out}'"; exit 1 ;; esac
+          done
+      # As docs/container.md shows it: the runner's Docker is rootful, so --user keeps the files
+      # the CLI writes owned by the runner's user.
+      - name: Use the CLI on a mounted repository
+        run: |
+          set -euo pipefail
+          repo="${RUNNER_TEMP}/repo"
+          mkdir -p "${repo}/docs/adr"
+          printf '# Guide\n' > "${repo}/docs/guide.md"
+          printf '# ADR-0001: Use Rust\n\n- **Status:** Accepted\n- **Date:** 2026-11-17\n' > "${repo}/docs/adr/0001-use-rust.md"
+          grimoire=(docker run --rm --init --network none --read-only --cap-drop ALL --security-opt no-new-privileges
+            --user "$(id -u):$(id -g)" --mount "type=bind,src=${repo},dst=/repo" "${LOCAL_IMAGE}")
+          "${grimoire[@]}" init --client claude-code --no-input
+          "${grimoire[@]}" add conventional-commits --apply --no-input
+          "${grimoire[@]}" verify
+          if [ "$(stat -c %u "${repo}/.claude/rules/conventional-commits.md")" != "$(id -u)" ]; then
+            echo "::error::the CLI's files are not owned by the runner's user"
+            exit 1
+          fi
+      # A stdio MCP session, as a client starts one: -i, a read-only mount, no network.
+      - name: Talk to the MCP server over stdio
+        run: |
+          set -euo pipefail
+          request='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"release-ci","version":"0"}}}'
+          response="$(printf '%s\n' "${request}" | docker run -i --rm --network none --read-only --cap-drop ALL \
+            --security-opt no-new-privileges --mount "type=bind,src=${RUNNER_TEMP}/repo,dst=/repo,readonly" \
+            --entrypoint /opt/grimoire/bin/grimoire-mcp-project-docs "${LOCAL_IMAGE}" --root /repo)"
+          if ! jq -e '.id == 1 and .result.serverInfo.name == "grimoire-mcp-project-docs"' <<<"${response}" > /dev/null; then
+            echo "::error::unexpected initialize response: ${response}"
+            exit 1
+          fi
+          echo "initialize answered by $(jq -r '.result.serverInfo | "\(.name) \(.version)"' <<<"${response}")"
+      - name: Install cosign
+        if: env.MODE == 'dry-run' && matrix.platform == 'linux/amd64'
+        uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
+      # As sign.yml signs, but with a throwaway key and a signing config that names no services,
+      # so nothing reaches Rekor. The signature must land in the referrers fallback tag. Then the
+      # release's registry steps run against this registry, refusals included.
+      - name: Sign, verify and tag with a throwaway key (dry-run, offline)
+        if: env.MODE == 'dry-run' && matrix.platform == 'linux/amd64'
+        run: |
+          set -euo pipefail
+          work="${RUNNER_TEMP}/cosign-dry-run"
+          mkdir -p "${work}"
+          cd "${work}"
+          # A random password for this job only; it is masked and never stored.
+          COSIGN_PASSWORD="$(openssl rand -hex 32)"
+          echo "::add-mask::${COSIGN_PASSWORD}"
+          export COSIGN_PASSWORD
+          cosign generate-key-pair --output-key-prefix dryrun
+          cosign signing-config create --out offline-signing-config.json
+          cosign sign --yes --key dryrun.key --signing-config offline-signing-config.json "${LOCAL_IMAGE}"
+          cosign verify --key dryrun.pub --insecure-ignore-tlog "${LOCAL_IMAGE}" > /dev/null
+          crane manifest "localhost:5000/grimoire:sha256-${INDEX_DIGEST#sha256:}" > referrers.json
+          if ! jq -e '[.manifests[] | select(.artifactType == "application/vnd.dev.sigstore.bundle.v0.3+json"
+                and .annotations["dev.sigstore.bundle.predicateType"] == "https://sigstore.dev/cosign/sign/v1")]
+                | length == 1' referrers.json > /dev/null; then
+            echo "::error::the signature is not in the referrers fallback tag"
+            exit 1
+          fi
+          # The signature names the index only: a platform manifest must not verify.
+          platform_digest="$(crane digest --platform linux/amd64 "${LOCAL_IMAGE}")"
+          if cosign verify --key dryrun.pub --insecure-ignore-tlog "localhost:5000/grimoire@${platform_digest}" > /dev/null 2>&1; then
+            echo "::error::cosign verified a manifest that was not signed"
+            exit 1
+          fi
+          echo "signed and verified ${LOCAL_IMAGE}; an unsigned digest was rejected"
+
+          # The release's registry steps (.github/scripts/image-tags.sh), on a fresh repository.
+          script="${GITHUB_WORKSPACE}/.github/scripts/image-tags.sh"
+          repo=localhost:5000/tags
+          verify=(cosign verify --key dryrun.pub --insecure-ignore-tlog)
+          refused() {
+            if "$@" > refused.log 2>&1; then
+              cat refused.log
+              echo "::error::expected to fail: $*"
+              exit 1
+            fi
+            echo "refused, as expected: $(tail -n 1 refused.log)"
+          }
+          # Push by digest and tag the version, each twice: the second time does nothing.
+          bash "${script}" push "${repo}" "${INDEX_DIGEST}" "${VERSION}" "${GITHUB_WORKSPACE}/layout"
+          bash "${script}" push "${repo}" "${INDEX_DIGEST}" "${VERSION}" "${GITHUB_WORKSPACE}/layout"
+          bash "${script}" tag "${repo}" "${INDEX_DIGEST}" "${VERSION}"
+          bash "${script}" tag "${repo}" "${INDEX_DIGEST}" "${VERSION}"
+          # A version tag that names another digest is never overwritten.
+          platform="$(crane digest --platform linux/amd64 "${repo}@${INDEX_DIGEST}")"
+          crane tag "${repo}@${platform}" 9.9.9
+          refused bash "${script}" push "${repo}" "${INDEX_DIGEST}" 9.9.9 "${GITHUB_WORKSPACE}/layout"
+          refused bash "${script}" tag "${repo}" "${INDEX_DIGEST}" 9.9.9
+          # A registry that can't be read is never taken for an absent tag.
+          refused bash "${script}" push localhost:5999/none "${INDEX_DIGEST}" "${VERSION}" "${GITHUB_WORKSPACE}/layout"
+          # latest moves forward from an image that claims no newer version...
+          crane tag "${repo}@${platform}" latest
+          bash "${script}" latest "${repo}" "${INDEX_DIGEST}" "${VERSION}" -- "${verify[@]}"
+          if [ "$(crane digest "${repo}:latest")" != "${INDEX_DIGEST}" ]; then
+            echo "::error::latest did not move forward"
+            exit 1
+          fi
+          # ...stops at an image that claims a newer version without the release signature...
+          newer="$(crane mutate "${repo}@${platform}" --annotation org.opencontainers.image.version=99.0.0 --tag "${repo}:newer")"
+          newer="${newer##*@}"
+          crane tag "${repo}@${newer}" latest
+          refused bash "${script}" latest "${repo}" "${INDEX_DIGEST}" "${VERSION}" -- "${verify[@]}"
+          # ...and stays on a newer signed release.
+          cosign sign --yes --key dryrun.key --signing-config offline-signing-config.json "${repo}@${newer}"
+          bash "${script}" latest "${repo}" "${INDEX_DIGEST}" "${VERSION}" -- "${verify[@]}"
+          if [ "$(crane digest "${repo}:latest")" != "${newer}" ]; then
+            echo "::error::latest moved back from a newer signed release"
+            exit 1
+          fi
+          echo "image-tags.sh: every case behaved"
+
+  # Every signature and attestation is made in sign.yml, whose certificates no job in this file
+  # can get: the publish jobs below (and the PyPI action's container) can't sign as the release
+  # (SIGN-P6, the maintainer's choice). Its jobs run only when release.yml on main calls them.
+  sign-files:
+    name: sign the release files (release)
+    needs: [plan, package, verify-install, verify-linux]
+    if: needs.plan.outputs.mode == 'release'
+    permissions:
+      id-token: write # actions/attest and cosign get their Sigstore signing certificates with the job's OIDC token
+      attestations: write # actions/attest stores the provenance and SBOM attestations on this repository
+    uses: ./.github/workflows/sign.yml # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the `$/` form
+    with:
+      target: files
+      dist-artifact-id: ${{ needs.package.outputs.dist-artifact-id }}
+      sums-sha256: ${{ needs.package.outputs.sums-sha256 }}
+      archives: ${{ needs.plan.outputs.archives }}
 
   # Publishing, in four jobs with four environments (the maintainer's choice, ADR-0009): each
   # registry's trusted publisher accepts only its own environment, so code in one job (the PyPI
@@ -758,7 +1082,7 @@ jobs:
   # without protection rules.
   publish:
     name: publish GitHub Release (release)
-    needs: [plan, package, attest, attest-sbom]
+    needs: [plan, package, sign-files, image, verify-image]
     if: needs.plan.outputs.mode == 'release'
     runs-on: ubuntu-24.04
     environment:
@@ -769,10 +1093,15 @@ jobs:
     env:
       VERSION: ${{ needs.plan.outputs.version }}
       TAG: ${{ needs.plan.outputs.tag }}
+      # The container image's index digest, which the notes name and publish-image pushes.
+      IMAGE_DIGEST: ${{ needs.image.outputs.index-digest }}
       # The repository every `gh release` command acts on.
       GH_REPO: ${{ github.repository }}
-      COSIGN_IDENTITY: https://github.com/jabbott-iii/Grimoire/.github/workflows/release.yml@refs/heads/main
+      # sign.yml, called from jabbott-iii/Grimoire on main (SIGN-P6).
+      COSIGN_IDENTITY: https://github.com/jabbott-iii/Grimoire/.github/workflows/sign.yml@refs/heads/main
       COSIGN_ISSUER: https://token.actions.githubusercontent.com
+      COSIGN_REPOSITORY: jabbott-iii/Grimoire
+      COSIGN_REF: refs/heads/main
     steps:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -790,7 +1119,7 @@ jobs:
       - name: Download the cosign bundles
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          artifact-ids: ${{ needs.attest.outputs.sigstore-artifact-id }}
+          artifact-ids: ${{ needs.sign-files.outputs.sigstore-artifact-id }}
           merge-multiple: true
           path: dist
       # The artifact is the one the package job uploaded, unchanged, and holds nothing else.
@@ -830,7 +1159,9 @@ jobs:
             fi
             cosign verify-blob --bundle "${file}.sigstore.json" \
               --certificate-identity "${COSIGN_IDENTITY}" \
-              --certificate-oidc-issuer "${COSIGN_ISSUER}" "${file}"
+              --certificate-oidc-issuer "${COSIGN_ISSUER}" \
+              --certificate-github-workflow-repository "${COSIGN_REPOSITORY}" \
+              --certificate-github-workflow-ref "${COSIGN_REF}" "${file}"
           done
           for bundle in dist/*.sigstore.json; do
             if [ ! -f "${bundle%.sigstore.json}" ]; then
@@ -848,11 +1179,22 @@ jobs:
             echo "::error::gh ${gh_version} is older than 2.102.0"
             exit 1
           fi
+          # sign.yml made it, called from release.yml (Build Config URI, which no gh flag pins).
           gh attestation verify dist/SHA256SUMS \
             --repo jabbott-iii/Grimoire \
-            --signer-workflow jabbott-iii/Grimoire/.github/workflows/release.yml \
+            --signer-workflow jabbott-iii/Grimoire/.github/workflows/sign.yml@refs/heads/main \
             --source-ref refs/heads/main \
-            --deny-self-hosted-runners
+            --deny-self-hosted-runners \
+            --format json > "${RUNNER_TEMP}/attestation.json"
+          # What no gh flag pins: the caller workflow file, and the repository and owner IDs.
+          caller="https://github.com/jabbott-iii/Grimoire/.github/workflows/release.yml@refs/heads/main"
+          if ! jq -e --arg caller "${caller}" 'length > 0 and all(.[]; .verificationResult.signature.certificate
+                | .buildConfigURI == $caller and .sourceRepositoryIdentifier == "1460666977"
+                  and .sourceRepositoryOwnerIdentifier == "84321953")' \
+              "${RUNNER_TEMP}/attestation.json" > /dev/null; then
+            echo "::error::the provenance of SHA256SUMS wasn't made by sign.yml called from ${caller} in this repository"
+            exit 1
+          fi
       - name: Create the tag
         env:
           GH_TOKEN: ${{ github.token }}
@@ -879,7 +1221,9 @@ jobs:
             exit 1
           fi
       - name: Write the release notes
-        run: cargo --locked xtask release notes --version "${VERSION}" --out "${RUNNER_TEMP}/release-notes.md"
+        run: >-
+          cargo --locked xtask release notes --version "${VERSION}" --image-digest "${IMAGE_DIGEST}"
+          --out "${RUNNER_TEMP}/release-notes.md"
       - name: Publish the GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -1125,12 +1469,87 @@ jobs:
           packages-dir: pypi-dist/
           skip-existing: true
 
+  # The container image, pushed from environment `ghcr` after the GitHub Release (ADR-0011):
+  # exactly the OCI layout the image job checked and scanned, by digest and untagged, so its
+  # digest is the one the release notes name. No OIDC token here; sign-image signs, attests and
+  # only then tags it. Every step skips what is already done, so "Re-run failed jobs" finishes.
+  publish-image:
+    name: push the container image (release)
+    needs: [plan, image, verify-image, publish]
+    if: needs.plan.outputs.mode == 'release'
+    runs-on: ubuntu-24.04
+    environment:
+      name: ${{ needs.plan.outputs.mode == 'release' && 'ghcr' || '' }}
+    permissions:
+      contents: read # check out .github/scripts/image-tags.sh
+      packages: write # push to ghcr.io/jabbott-iii/grimoire
+    env:
+      VERSION: ${{ needs.plan.outputs.version }}
+      INDEX_DIGEST: ${{ needs.image.outputs.index-digest }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Download the OCI layout
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ needs.image.outputs.layout-artifact-id }}
+          merge-multiple: true
+          path: layout
+      - name: Check that it is the layout the image job checked
+        run: |
+          set -euo pipefail
+          if [ "$(jq -r '[.manifests[].digest] | join(" ")' layout/index.json)" != "${INDEX_DIGEST}" ]; then
+            echo "::error::layout/index.json does not name exactly ${INDEX_DIGEST}"
+            exit 1
+          fi
+          echo "${INDEX_DIGEST#sha256:}  layout/blobs/sha256/${INDEX_DIGEST#sha256:}" | sha256sum --check --strict -
+      - name: Install crane (checksum-verified)
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/crane"
+          cd "${RUNNER_TEMP}/crane"
+          curl -fsSLo crane.tar.gz "https://github.com/google/go-containerregistry/releases/download/v${CRANE_VERSION}/go-containerregistry_Linux_x86_64.tar.gz"
+          echo "${CRANE_SHA256_X64}  crane.tar.gz" | sha256sum -c -
+          tar -xzf crane.tar.gz crane
+          echo "${RUNNER_TEMP}/crane" >> "${GITHUB_PATH}"
+      - name: Log in to GHCR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: printf '%s' "${GH_TOKEN}" | crane auth login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin
+      # By digest, untagged: an existing X.Y.Z that names another digest stops the job, and so
+      # does a lookup that fails for any reason other than the registry's "unknown" answer.
+      - name: Push the image by digest
+        run: bash .github/scripts/image-tags.sh push "${IMAGE}" "${INDEX_DIGEST}" "${VERSION}" layout
+      - name: Log out of GHCR
+        if: always()
+        run: crane auth logout ghcr.io || true
+
+  # Signs and attests the pushed image in sign.yml, whose certificates no job in this file can
+  # get, then tags X.Y.Z and moves latest (SIGN-P6). A job that calls a reusable workflow can't
+  # name an environment; the push above was the approved step.
+  sign-image:
+    name: sign the container image (release)
+    needs: [plan, image, publish-image]
+    if: needs.plan.outputs.mode == 'release'
+    permissions:
+      contents: read # sign.yml checks out .github/scripts/image-tags.sh; actions/attest reads the repository
+      packages: write # store the signature and the attestation next to the image, and tag it
+      id-token: write # cosign and actions/attest get their Sigstore signing certificates
+      attestations: write # actions/attest stores the provenance attestation on this repository
+    uses: ./.github/workflows/sign.yml # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the `$/` form
+    with:
+      target: image
+      version: ${{ needs.plan.outputs.version }}
+      index-digest: ${{ needs.image.outputs.index-digest }}
+
   # One stable check for the ruleset to require: it fails when any check above failed or was
   # cancelled, and on pull requests also when one was skipped. A required check whose job is
   # skipped would otherwise count as passed.
   release-checks:
     name: release checks
-    needs: [plan, build, package, verify-install, verify-linux, sign-dry-run]
+    needs: [plan, build, package, verify-install, verify-linux, sign-dry-run, image, verify-image]
     if: always()
     runs-on: ubuntu-24.04
     permissions: {}

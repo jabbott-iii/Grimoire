@@ -30,6 +30,9 @@ Grimoire is a catalog of AI-agent assets (rules, skills, agents, tools, MCP serv
 | `crates/agent-grimoire-testkit` | Fixture catalogs and projects for tests (never published) |
 | `xtask/` | `cargo xtask schema`, `validate`, `pack-catalog`, `gen-marketplace`, `new`, `release`; scaffolding templates in `xtask/templates/` |
 | `packaging/` | Hand-written release inputs that aren't Rust ([ADR-0010](docs/adr/0010-language-policy-exceptions.md)): the `install.sh`/`install.ps1` templates, the npm launcher, and the tap and bucket sync workflow templates. Release assets are generated from them at release time and never checked in ([`docs/release.md`](docs/release.md)) |
+| `.github/scripts/` | Workflow scripts that are language-policy exceptions ([ADR-0010](docs/adr/0010-language-policy-exceptions.md), [ADR-0011](docs/adr/0011-container-image.md)): `image-tags.sh`, the image's push, tag and `latest` steps. ShellCheck checks them in CI |
+| `Dockerfile` | The container image ([ADR-0011](docs/adr/0011-container-image.md), [`docs/container.md`](docs/container.md)): the release's static musl binaries on distroless static, COPY only. Only `release.yml` builds it, from the context that `cargo xtask release image context` writes |
+| `.grype.yaml` | The image's Grype gate ([ADR-0011](docs/adr/0011-container-image.md)): any medium, high or critical match fails, fixed or not. A finding without a fix needs an ignore rule with a reason, reviewed like `deny.toml`'s exceptions |
 | `catalog/<kind>/<id>/` | One directory per asset (data only). See [`catalog/README.md`](catalog/README.md) |
 | `.claude-plugin/`, `plugins/claude-code/` | The Claude Code plugin marketplace, generated from `catalog/`. Never edit by hand |
 | `schemas/` | Generated JSON Schemas. Never edit by hand |
@@ -57,8 +60,15 @@ cargo xtask release sbom --dist dist                   # a CycloneDX 1.6 SBOM pe
 cargo xtask release channels --dist dist --work work   # npm packages, wheels, Homebrew formula, Scoop and winget manifests, install scripts
 cargo xtask release checksums --dist dist [--check]    # write or check dist/SHA256SUMS
 cargo xtask release verify --dist dist                 # the expected assets, SHA256SUMS, and the same binary in every channel
-cargo xtask release notes --version <V> --out <file>   # the GitHub Release text, from the version's CHANGELOG.md section (fails without one)
+cargo xtask release notes --version <V> --image-digest <sha256:…> --out <file>   # the GitHub Release text, from the version's CHANGELOG.md section (fails without one); names the image digest
 # Pass --partial to `channels` and `verify` when dist/ holds only some of the six targets.
+# Container image (ADR-0011). The Dockerfile is COPY only. Change its base only by digest, to one at least 7 days old:
+# Dependabot can't date gcr.io digests, so check the age by hand. Run as release.yml runs them, these steps need Docker
+# with a docker-container buildx builder, crane, cosign and Grype; the steps themselves call none of them.
+cargo xtask release image base                         # print the base index reference the Dockerfile pins
+cargo xtask release image context --dist dist --base base --out image   # check the base index (from `crane manifest`) against the pin, unpack both Linux musl targets' binaries into a build context, write the buildx arguments
+cargo xtask release image check --out image --layout image/layout --base base   # check buildx's OCI layout against the plan, binaries byte for byte; print the digests
+cargo xtask release image coverage --out image --report <json> --cdx <file> --platform <p>   # fail unless Grype saw Debian, its packages and every binary's Rust packages
 cargo +1.96 check --workspace --all-targets --locked   # MSRV
 cargo deny check
 cargo shear

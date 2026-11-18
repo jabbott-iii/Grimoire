@@ -1,6 +1,6 @@
 # Grimoire: implementation plan
 
-- **Status:** Phases 0 to 4 approved and committed (Phase 4 on 2026-11-17). **Phase 5 implemented and reviewed, awaiting review** (2026-11-17).
+- **Status:** Phases 0 to 5 approved and committed (Phase 5 on 2026-11-17). **Phase 6 implemented and reviewed, awaiting review** (2026-11-17).
 - **Date:** 2026-11-17
 
 ## Decisions recorded (2026-11-16)
@@ -38,8 +38,19 @@
   - release-plz opens the release PR only; the release workflow tags the commit it built and signed, and publishes.
 - **Phase 5, after the review** (the maintainer's choices when asked, 2026-11-17):
   - publishing runs in four jobs with four environments (`release`, `crates-io`, `npm`, `pypi`), so one registry's job can't publish to another;
-  - each binary is built on its own (`cargo auditable build -p <pkg>`), so its features and SBOM match a `cargo install` build.
+  - each binary is built on its own (`cargo auditable build -p <pkg>`), so its features and SBOM match a `cargo install` build;
+  - the first release approves `release` (tag and GitHub Release) before the six crates are published by hand from that tag, and only then the registry jobs (`docs/release.md` §2 D), so crates.io never holds a version without its tag.
 - **Local tooling approved for Phase 5** (scratchpad only): ShellCheck, PowerShell with PSScriptAnalyzer, twine, release-plz, cosign, cargo-auditable, cargo-cyclonedx, and the Homebrew Docker image (which couldn't run: Docker isn't reachable for this user).
+- **Phase 5 approved** (2026-11-17), and Phase 6 started.
+- **Local tooling approved for Phase 6** (the maintainer's choices when asked, 2026-11-17): rootless Docker from the installed `dockerd-rootless.sh`, run as the maintainer's user and stopped at the end; Grype, cosign and an OCI copy tool (crane or regctl) in the scratchpad, each checked against its published SHA-256; and the `aarch64-unknown-linux-musl` Rust target (`rustup target add`, 154 MB in `~/.rustup`), to build real arm64 binaries locally.
+- **Disk space** (the maintainer's choice when asked, 2026-11-17): an earlier Grimoire session's 20 GB scratchpad was deleted, because the disk had 3.1 GB free.
+- **Phase 6, after the research** (the maintainer's choices when asked, 2026-11-17):
+  - `runtime = "docker"` is deferred past v1. Phase 6 documents hand-written, digest-pinned `docker run` entries instead, and `grimoire.toml` keeps rejecting the field;
+  - the Grype gate fails on any medium, high or critical match, fixed or not. A finding without a fix needs an ignore rule with a reason in `.grype.yaml`;
+  - a release pushes the tags `X.Y.Z` and `latest`;
+  - pull request dry-runs also build `aarch64-unknown-linux-musl`, so every PR builds, scans and runs the two-platform image.
+- **Phase 6, after the review** (the maintainer's choice when asked, 2026-11-17): every cosign signature and attestation, for the Phase 5 release files and the image, moves into a reusable workflow, `.github/workflows/sign.yml`, that only the signing jobs call. Every job in `release.yml` that can mint OIDC tokens got the same certificate identity, including `publish-pypi`'s tag-pinned container. Certificates now name `sign.yml`, and verifiers also pin the calling repository and `refs/heads/main`.
+- **Phase 6, the image tag steps** (the maintainer's choice when asked, 2026-11-17): `.github/scripts/image-tags.sh` (push by digest, tag the version, move `latest`) is a seventh language-policy exception (ADR-0010, recorded in ADR-0011). The release jobs and the PR dry-run run the same script, so the code that guards the release tags is tested on every pull request. A Rust version would put cargo, or every xtask dependency, into the job that holds the signing identity.
 
 ## Where things are
 
@@ -61,7 +72,7 @@
      - **Server-side auth exists only in examples.**
 2. **Clients read each other's files.** For example, `.agents/skills/` is read by Codex, Cursor, Gemini CLI and Copilot. Cursor and Copilot read `CLAUDE.md`, `.claude/skills/` and Claude Code hooks. Cursor reads `.claude/agents/` without enforcing tools. Adapters therefore can't be independent. The planner works over the *selected client set* to reach each client exactly once (`architecture.md` §8.2), and `plan` warns about cross-client permission leaks.
 3. **Claude Code has native path-scoped rules** (`.claude/rules/*.md` with `paths`, `CC-MEM`). Rules don't need to be blocks inside `CLAUDE.md`. A `CLAUDE.md` block is still useful as an `@AGENTS.md` import when both `claude-code` and `agents-md` are selected.
-4. **Trivy and `trivy-action` were compromised in March 2026** (CVE-2026-33634, verified). The container gate will use **Grype** (`anchore/scan-action`), pinned by SHA.
+4. **Trivy and `trivy-action` were compromised in March 2026** (CVE-2026-33634, verified). The container gate will use **Grype** (`anchore/scan-action`), pinned by SHA. *(Phase 6: Grype runs from its checksum-pinned release tarball instead, because `anchore/scan-action` pipes an install script to `sh`; SCAN-P6, ADR-0011.)*
 5. **GitHub now has workflow lockfiles** (`.github/workflows/actions.lock`, GA 2026-10-28). We will SHA-pin as required *and* adopt the lockfile, which covers transitive actions.
 6. **`pull_request_target` is blocked by default in public repos from 2026-12-02.** We never use it anyway.
 7. **dist doesn't fit two requirements.** Its npm installer downloads binaries at install time instead of using per-platform packages, and its npm and Homebrew publishing depend on long-lived tokens (ADR-0003).
@@ -351,6 +362,30 @@ Deviations from the plan below, each recorded in ADR-0009:
 
 ### Phase 6: Docker image and its CI gates
 
+**Outcome (2026-11-17):** implemented and reviewed. Every gate that runs locally passes on Linux (454 tests), and the two-platform image was built, checked, scanned, pushed to a local registry, signed offline and run, with rootless Docker. Nothing has run on GitHub: the image jobs, keyless image signing, attestations to GHCR, the `ghcr` environment and the arm64 runner still need a push and, for a release, the bootstrap.
+
+What was built:
+- **Specs first.** Five research topics (base image, BuildKit, GHCR and signing, Grype, running the image), each re-checked by a skeptic: 333 facts, 308 confirmed, 25 corrected, none refuted. After the review, a sixth (SIGN-P6: signing from a reusable workflow). They are in `docs/specs.md` (Phase 6 additions).
+- **`Dockerfile`** (COPY only, on distroless `static-debian13:nonroot` pinned by a digest at least 7 days old) and **`.grype.yaml`** (the gate). The CLI is the entrypoint; asset binaries sit in `/opt/grimoire/bin`, off `PATH`.
+- **`cargo xtask release image`** (`base`, `context`, `check`, `coverage`): the build context and buildx arguments from the release archives, and a strict check of the OCI layout BuildKit writes: the verified base's layers and config first, then exactly the archived binaries, read as strictly as Docker reads layers.
+- **`release.yml`:** `image` (base signatures, a docker-container builder on pinned BuildKit, SBOM and max provenance, `check`, the Grype gate on both platforms), `verify-image` (each platform on its own runner, from a local registry: every binary, the CLI on a mounted repository, MCP over stdio; on PRs also offline signing and the tag script's cases), `publish-image` (environment `ghcr`: push by digest) and `sign-image`. Pull requests now also build arm64 Linux.
+- **`.github/workflows/sign.yml`**: every signature and attestation, for the release files and the image, after the review. **`.github/scripts/image-tags.sh`**: push by digest, tag, move `latest`, run by the release and by every PR.
+- **`security.yml`:** a weekly Grype rescan of the latest release's image, and ShellCheck for the script. **Dependabot** watches the Dockerfile.
+- **Docs:** [`docs/container.md`](docs/container.md) (verifying and running the image, MCP clients, HTTP with authorization), [ADR-0011](docs/adr/0011-container-image.md), and Phase 6 parts in `docs/release.md` and `docs/security-model.md`.
+
+Deviations from the plan below, each recorded in ADR-0011:
+- `runtime = "docker"` is deferred past v1 (the maintainer's choice).
+- The OCI layout is built once and pushed byte for byte with crane, rather than rebuilt in the push job, so the registry holds exactly the bytes that were scanned.
+- Grype runs from its checksum-pinned tarball, not `anchore/scan-action`, which pipes an install script to `sh`.
+- Signing moved into `sign.yml`, and the tag steps into a shell script that is a language-policy exception (both the maintainer's choices, after the review).
+
+**Review (2026-11-17).** A five-area review (workflows, the xtask code, the image and its supply chain, docs, specs) raised 39 findings. An independent skeptic checked each one: 37 were confirmed (1 high, 8 medium, 28 low) and 2 refuted. All 37 are addressed. The main ones:
+- **High: `check` read layers more loosely than Docker.** A second gzip member, or a directory entry with a size, could install another binary unseen; the skeptic ran one. `check` now reads layers strictly, compares the config and directories exactly, and refused all seven of the review's tampered layouts.
+- **Medium: one signing identity for every OIDC job.** Every job in `release.yml` could get the release's certificate identity, including `publish-pypi`'s tag-pinned container. Signing moved into `sign.yml` (the maintainer's choice), whose jobs refuse any caller but `release.yml` on `main`; verifiers pin the caller too.
+- **Medium: a misspelt key in a `.grype.yaml` ignore rule** silently widened it to a whole package. A test now refuses unknown keys and incomplete rules.
+- **Medium:** `actions.lock` lacked an entry the new scan job used; a re-run of the image push could deadlock after a partial attestation; the image config and directory metadata were only partly checked.
+- **Smaller fixes:** tags only after signing, and `latest` only past a signed release; the Dockerfile allow-list; coverage of the Debian packages; every platform scanned before the gate fails; the weekly scan can't be cancelled by a push; docs that overstated what ran.
+
 - **Image:** multi-arch (amd64, arm64) from the static musl binaries on `gcr.io/distroless/static-debian13:nonroot`, pinned by digest, with the base signature verified via cosign. Non-root, no shell, OCI annotations.
 - **Supply chain:** BuildKit SBOM + max provenance, cosign signature, and a Grype gate.
 - **Docs:** usage for the CLI against a mounted repo, and for MCP servers on stdio and HTTP.
@@ -368,7 +403,7 @@ Deviations from the plan below, each recorded in ADR-0009:
 | Before Phase 1 CI | Enable the repo setting "Require actions to be pinned to a full-length commit SHA"; set `GITHUB_TOKEN` default permissions to read-only; enable secret-scanning push protection. |
 | After the first green CI run | Add a branch ruleset on `main` that requires the CI and Security jobs to pass (and requires pull requests). Without it, failing gates do not block merges. Optionally enable "Require lockfile" for `actions.lock`. |
 | Before merging Phase 5 | Turn on "Allow GitHub Actions to create and approve pull requests": `release-plz.yml` opens the release PR on the next push to `main`. Leave that PR unmerged until the bootstrap is done. |
-| Phase 5 bootstrap | The checklist in [`docs/release.md`](docs/release.md) §2: the four environments (`release`, `crates-io`, `npm`, `pypi`), immutable releases, the ruleset (CI, Security and `release checks`), the npm org and packages, the crates.io first publish and trusted publishers, the PyPI pending publisher, the tap and bucket repos, the Phase 7 README, and finally `GRIMOIRE_RELEASES=enabled`. |
+| Phase 5 and 6 bootstrap | The checklist in [`docs/release.md`](docs/release.md) §2: the five environments (`release`, `crates-io`, `npm`, `pypi`, `ghcr`), immutable releases, the ruleset (CI, Security and `release checks`), the npm org and packages, the crates.io first publish and trusted publishers, the PyPI pending publisher, the tap and bucket repos, the GHCR checks (never push to `ghcr.io/jabbott-iii/grimoire` by hand; after the first push, make the package public, which can't be undone: §2 B and D), the Phase 7 README, and finally `GRIMOIRE_RELEASES=enabled`. |
 | Before the first release | Enable private vulnerability reporting (currently `enabled: false` on this repo); it is part of the [`docs/release.md`](docs/release.md) §2 checklist. |
 
 ## 7. Risks

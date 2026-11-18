@@ -1,5 +1,6 @@
 # Syntax verified against docs.github.com on 2026-11-16 (DEPENDABOT in docs/specs.md).
 # Every entry sets a cooldown of at least 7 days for version updates; security updates are never delayed.
+# The docker entry's cooldown has no effect for gcr.io (see below), so its updates are checked by hand.
 version: 2
 updates:
   - package-ecosystem: "cargo"
@@ -68,4 +69,16 @@ updates:
         applies-to: security-updates
         patterns: ["*"]
 
-  # docker: added in Phase 6 together with the Dockerfile.
+  # The Dockerfile's base image, pinned by digest (ADR-0011). Dependabot dates Docker updates
+  # only from Docker Hub; for gcr.io it can't, and proposes a new digest at once instead of
+  # waiting (BASE-IMAGE-P6). Before merging, check that the digest is at least 7 days old:
+  # docs/release.md §6 shows how. Docker images get no Dependabot security updates; the
+  # weekly image scan in security.yml covers them.
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+    cooldown:
+      default-days: 7

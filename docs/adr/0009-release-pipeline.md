@@ -1,6 +1,6 @@
 # ADR-0009: Release pipeline and distribution channels
 
-- **Status:** Accepted (the maintainer's decisions when asked, 2026-11-17, during Phase 5, revised the same day after the Phase 5 review)
+- **Status:** Accepted (the maintainer's decisions when asked, 2026-11-17, during Phase 5, revised the same day after the Phase 5 review). Amended by [ADR-0011](0011-container-image.md) (2026-11-17): a fifth environment, `ghcr`; the `image`, `verify-image`, `publish-image` and `sign-image` jobs; every signature and attestation moves into the reusable workflow `sign.yml`, under a new identity, and `sign-files` replaces `attest` and `attest-sbom`; and PR dry-runs also build `aarch64-unknown-linux-musl`.
 - **Date:** 2026-11-17
 - **Specs:** `RUST-REGISTRY-P5`, `NPM-P5`, `PYPI-P5`, `BREW-SCOOP-P5`, `WINGET-P5`, `SUPPLY-CHAIN-P5`, `ACTIONS-P5`, `INSTALLERS-P5` in [`../specs.md`](../specs.md)
 - **Amends:** [ADR-0002](0002-mcp-server-and-tool-packaging.md) (how asset binaries are found), [ADR-0003](0003-release-tooling.md) (who tags and publishes, release-PR CI, installers, PyPI, Homebrew and Scoop, dry-runs) and [ADR-0004](0004-package-and-binary-names.md) (the winget identifier and command name)
@@ -58,7 +58,7 @@ An adversarial review of the Phase 5 change then found, among other things, that
 ### Forced by the review
 
 - **Release mode needs the version's `CHANGELOG.md` section.** Otherwise any push to `main` after the switch is on would release the untagged version, release PR or not. Without the section, `plan` prints a warning and runs a dry-run, and `cargo xtask release notes` fails rather than writing fallback text.
-- **`plan` fails early at GitHub's limits:** 256 jobs in the `attest-sbom` matrix, and 1000 assets in one release. With today's channels the asset limit comes first, at 39 asset binaries. Growing past it needs a new ADR on how to split the release.
+- **`plan` fails early at GitHub's limits:** 256 jobs in the `attest-sbom` matrix, and 1000 assets in one release. With today's channels the asset limit comes first, at 39 asset binaries. Growing past it needs a new ADR on how to split the release. *(Phase 6, [ADR-0011](0011-container-image.md): the SBOM attestation matrix now lives in `sign.yml`, as its `sboms` job, and `plan` checks the same 256-job limit. Whether a matrix inside a called workflow also counts toward the caller run's limit is UNVERIFIED (`SIGN-P6`).)*
 - **Signed files are bound to the package job.** Every release-mode job downloads `release-dist` by artifact ID, from the package job's outputs. Before it attests, signs or publishes, it checks `SHA256SUMS` against the hash the package job recorded, and that `dist/` holds exactly the files `SHA256SUMS` lists.
 - **One required check for the release workflow.** The `release checks` job sums up the workflow's checks, and the ruleset requires it next to CI and Security. On a pull request it fails unless every dry-run job passed, because a required check whose job is skipped would count as passed.
 - **The npm dry-run on pull requests runs offline.** It points npm at an unreachable local registry (`http://127.0.0.1:9/`), so npm sees no published versions. A PR between releases, whose version is already on npm, still exercises npm's checks. Release mode checks against the real registry. `--force` isn't used, because it also skips the prerelease-tag check.
@@ -158,6 +158,7 @@ Every file name is ASCII `[A-Za-z0-9._-]`, because GitHub renames anything else,
 - The ref is `refs/heads/main` because releases run on a push to `main`, not on a tag. Fulcio builds the identity from `job_workflow_ref` and keeps its case. The immutable `sub` doesn't change it.
 - `actions/attest` v4.2.2 writes SLSA provenance for every file, and one CycloneDX SBOM attestation per archive.
 - Users check downloads with `sha256sum -c`, `gh attestation verify` (gh 2.102.0 or later), `cosign verify-blob`, and `gh release verify-asset` for GitHub's own release attestation. The exact commands are in `docs/release.md`.
+- *(Phase 6, [ADR-0011](0011-container-image.md) decision 6: every signature and attestation moved into the reusable workflow `.github/workflows/sign.yml`, which the `sign-files` job calls, because every job in `release.yml` with `id-token` got the identity above. The identity is now `https://github.com/jabbott-iii/Grimoire/.github/workflows/sign.yml@refs/heads/main`. Any repository can call a public reusable workflow and get a certificate with that same name, so verifiers also pin the caller: cosign with `--certificate-github-workflow-repository jabbott-iii/Grimoire --certificate-github-workflow-ref refs/heads/main`, and gh with `--repo jabbott-iii/Grimoire --signer-workflow jabbott-iii/Grimoire/.github/workflows/sign.yml --source-ref refs/heads/main --deny-self-hosted-runners`. No release exists yet, so no release was signed with the identity above: every release is signed by `sign.yml`.)*
 
 ### What PR dry-runs check, and what they can't
 

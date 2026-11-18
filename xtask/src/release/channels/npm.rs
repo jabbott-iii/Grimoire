@@ -199,6 +199,7 @@ mod tests {
             [
                 "agent-grimoire-1.2.3.tgz",
                 "agent-grimoire-linux-x64-1.2.3.tgz",
+                "agent-grimoire-linux-arm64-1.2.3.tgz",
                 "agent-grimoire-darwin-arm64-1.2.3.tgz",
                 "agent-grimoire-win32-x64-1.2.3.tgz"
             ]

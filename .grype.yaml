@@ -1,0 +1,26 @@
+# Grype configuration for the container image gate (ADR-0011, SCAN-P6). The workflows
+# always pass this file with -c, so no other Grype config on a runner is read.
+#
+# The gate fails on any medium, high or critical match, fixed or not (the maintainer's
+# choice, 2026-11-17). Grype exits 2 when the gate fails and 1 on any other error; the
+# workflows fail on both.
+#
+# A finding with no fix blocks until it has an ignore rule here, reviewed like the
+# exceptions in deny.toml. Every rule names the vulnerability and the package and gives
+# a reason. Rust matches use GHSA IDs, so key a rule on the GHSA ID, or set
+# `include-aliases: true` to key it on a CVE. Grype has no expiry date for rules:
+# review every rule when the base image or Grype is bumped, and remove the ones that no
+# longer match. For example:
+#
+#   ignore:
+#     - vulnerability: CVE-2026-00000
+#       package:
+#         name: tzdata
+#       reason: "No fix in Debian 13 yet; tzdata holds data, not code (#123)."
+fail-on-severity: medium
+only-fixed: false
+check-for-app-update: false
+db:
+  validate-age: true
+  max-allowed-built-age: 120h
+ignore: []

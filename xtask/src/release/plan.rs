@@ -94,7 +94,7 @@ pub(crate) fn check_limits(release: &Release) -> Result<(), String> {
     let assets = (2 * archives + others) * 2;
     if archives > 256 {
         return Err(format!(
-            "{archives} release archives exceed GitHub's 256-job matrix limit (attest-sbom); see ADR-0009"
+            "{archives} release archives exceed GitHub's 256-job matrix limit (sign.yml's sboms job); see ADR-0009"
         ));
     }
     if assets > 1000 {
@@ -211,7 +211,7 @@ mod tests {
             ),
             "{dry}"
         );
-        assert_eq!(archives(&release(), Mode::DryRun).len(), 6);
+        assert_eq!(archives(&release(), Mode::DryRun).len(), 8);
         assert_eq!(archives(&release(), Mode::Release).len(), 12);
         assert!(
             archives(&release(), Mode::Release)

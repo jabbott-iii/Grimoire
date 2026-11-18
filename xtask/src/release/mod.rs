@@ -9,11 +9,13 @@
 //! - `checksums`: `SHA256SUMS`.
 //! - `verify`: the finished `dist/` is exactly what the release needs.
 //! - `notes`: the GitHub Release text from `CHANGELOG.md`.
+//! - `image`: the container image's build context, checks and gates (ADR-0011).
 
 mod archive;
 mod build;
 mod channels;
 mod checksums;
+mod image;
 mod meta;
 mod notes;
 mod plan;
@@ -90,9 +92,25 @@ pub(crate) enum Command {
     Notes {
         #[arg(long = "version", value_name = "VERSION")]
         release_version: String,
+        /// The container image's index digest (`sha256:…`), which the notes name.
+        #[arg(long, value_name = "DIGEST")]
+        image_digest: String,
         #[arg(long, value_name = "FILE")]
         out: PathBuf,
     },
+    /// Container image steps (ADR-0011).
+    #[command(subcommand)]
+    Image(image::Command),
+}
+
+/// Appends `text` to `path` (`$GITHUB_OUTPUT`).
+fn append_output(path: &Path, text: &str) -> Result<(), String> {
+    OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open(path)
+        .and_then(|mut f| f.write_all(text.as_bytes()))
+        .map_err(|e| format!("cannot write {}: {e}", path.display()))
 }
 
 /// Resolves a user-given path against the repository root (`cargo xtask` runs there).
@@ -133,12 +151,7 @@ pub(crate) fn run(root: &Path, command: Command) -> Result<ExitCode, String> {
             let text = plan::outputs(&release, mode);
             print!("{text}");
             if let Some(path) = github_output {
-                OpenOptions::new()
-                    .append(true)
-                    .create(true)
-                    .open(&path)
-                    .and_then(|mut f| f.write_all(text.as_bytes()))
-                    .map_err(|e| format!("cannot write {}: {e}", path.display()))?;
+                append_output(&path, &text)?;
             }
         }
         Command::Build { target, out } => build::run(root, &target, &at(root, &out))?,
@@ -156,8 +169,10 @@ pub(crate) fn run(root: &Path, command: Command) -> Result<ExitCode, String> {
         Command::Verify { dist, partial } => channels::verify(root, &at(root, &dist), partial)?,
         Command::Notes {
             release_version,
+            image_digest,
             out,
-        } => notes::run(root, &release_version, &at(root, &out))?,
+        } => notes::run(root, &release_version, &image_digest, &at(root, &out))?,
+        Command::Image(command) => image::run(root, |p| at(root, p), command)?,
     }
     Ok(ExitCode::SUCCESS)
 }

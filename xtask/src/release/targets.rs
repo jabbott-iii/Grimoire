@@ -41,8 +41,11 @@ pub(crate) struct Target {
     pub(crate) wheel_platforms: &'static [&'static str],
     /// The format of its archives.
     pub(crate) format: Format,
-    /// Built on pull requests too (one target per OS).
+    /// Built on pull requests too: one target per OS, plus arm64 Linux so every pull
+    /// request builds the two-platform container image (the maintainer's choice, ADR-0011).
     pub(crate) dry_run: bool,
+    /// The container image architecture it provides (`linux/<arch>`), if any.
+    pub(crate) image_arch: Option<&'static str>,
 }
 
 impl Target {
@@ -96,6 +99,7 @@ pub(crate) const TARGETS: &[Target] = &[
         ],
         format: Format::TarGz,
         dry_run: true,
+        image_arch: Some("amd64"),
     },
     Target {
         triple: "aarch64-unknown-linux-musl",
@@ -108,7 +112,8 @@ pub(crate) const TARGETS: &[Target] = &[
             "musllinux_1_2_aarch64",
         ],
         format: Format::TarGz,
-        dry_run: false,
+        dry_run: true,
+        image_arch: Some("arm64"),
     },
     Target {
         triple: "x86_64-apple-darwin",
@@ -118,6 +123,7 @@ pub(crate) const TARGETS: &[Target] = &[
         wheel_platforms: &["macosx_10_12_x86_64"],
         format: Format::TarGz,
         dry_run: false,
+        image_arch: None,
     },
     Target {
         triple: "aarch64-apple-darwin",
@@ -127,6 +133,7 @@ pub(crate) const TARGETS: &[Target] = &[
         wheel_platforms: &["macosx_11_0_arm64"],
         format: Format::TarGz,
         dry_run: true,
+        image_arch: None,
     },
     Target {
         triple: "x86_64-pc-windows-msvc",
@@ -136,6 +143,7 @@ pub(crate) const TARGETS: &[Target] = &[
         wheel_platforms: &["win_amd64"],
         format: Format::Zip,
         dry_run: true,
+        image_arch: None,
     },
     Target {
         triple: "aarch64-pc-windows-msvc",
@@ -145,6 +153,7 @@ pub(crate) const TARGETS: &[Target] = &[
         wheel_platforms: &["win_arm64"],
         format: Format::Zip,
         dry_run: false,
+        image_arch: None,
     },
 ];
 
@@ -199,9 +208,25 @@ mod tests {
     }
 
     #[test]
-    fn one_dry_run_target_per_os_and_unique_npm_packages() {
-        let dry: Vec<&str> = for_mode(true).map(|t| t.npm_os).collect();
-        assert_eq!(dry, ["linux", "darwin", "win32"]);
+    fn dry_run_targets_and_unique_npm_packages() {
+        // One target per OS, plus arm64 Linux for the two-platform image.
+        let dry: Vec<&str> = for_mode(true).map(|t| t.triple).collect();
+        assert_eq!(
+            dry,
+            [
+                "x86_64-unknown-linux-musl",
+                "aarch64-unknown-linux-musl",
+                "aarch64-apple-darwin",
+                "x86_64-pc-windows-msvc"
+            ]
+        );
+        let images: Vec<&str> = TARGETS.iter().filter_map(|t| t.image_arch).collect();
+        assert_eq!(images, ["amd64", "arm64"]);
+        assert!(
+            TARGETS
+                .iter()
+                .all(|t| t.image_arch.is_none() || (t.dry_run && t.triple.ends_with("-linux-musl")))
+        );
         assert_eq!(for_mode(false).count(), 6);
         let mut npm: Vec<String> = TARGETS.iter().map(Target::npm_package).collect();
         npm.sort();
