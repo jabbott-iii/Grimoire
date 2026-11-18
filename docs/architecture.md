@@ -1,6 +1,6 @@
 # Grimoire architecture
 
-- **Status:** Every Phase 0 proposal was approved (2026-11-16). Sections marked "Phase 2" or "Phase 3" record what implementation settled or refined.
+- **Status:** Every Phase 0 proposal was approved (2026-11-16). Notes marked with a phase ("Phase 2" to "Phase 7") record what implementation settled, refined or added. Phase 7 (2026-11-17) removed the proposal labels. The user reference for the CLI is [`cli.md`](cli.md) and [`diagnostics.md`](diagnostics.md) (§9).
 - **Date:** 2026-11-16
 
 Spec facts are cited by their IDs in [`specs.md`](specs.md), e.g. `CC-MEM`. Decisions with lasting consequences are in [`adr/`](adr/).
@@ -26,7 +26,7 @@ Grimoire has three parts:
 | **Source** | Where catalog data comes from. v1 has only `builtin`, the catalog embedded in the binary ([ADR-0001](adr/0001-catalog-delivery.md)). |
 | **Project root** | The directory containing `grimoire.toml`. Grimoire never writes outside it. |
 
-## 3. Asset kinds (Proposal: please confirm these definitions)
+## 3. Asset kinds
 
 The kinds are separated by **how the content reaches the model** and **what it can do**. That separation is also what the security model reasons about.
 
@@ -78,10 +78,10 @@ An **agent** is a subagent definition, a named and delegated specialist with:
 - **Source:** `catalog/agents/<id>/agent.md`, plus `[agent] tools = [...]`. `tools` is **required**; `[]` is legal.
   - Reason: several clients grant *all* tools when the list is omitted (Claude Code, Gemini CLI, Copilot: `CC-AGENT`, `GEMINI-AGENTS`, `COPILOT-AGENTS`). Grimoire always writes the list out.
 - **Rendering:** each adapter maps capabilities to the client's tool names.
-  - **If a client can't enforce the declared restriction, the adapter refuses.** It never silently widens. Examples: Cursor offers only `readonly`; Codex agents can't override the parent sandbox (`CURSOR-AGENTS`, `CODEX-SUBAGENTS`). See §8.3.
+  - **Grimoire never silently widens the declared tools.** Where a client can't express the restriction at all, no agent is written for it: Codex has no `agents` anchor, because its agents can't override the parent sandbox (`manifest/anchor-client`, and `resolve/client-not-covered` in a project that selects it), and the `cursor` adapter refuses an agent whose tools aren't exactly `read` and `search`, because Cursor offers only `readonly` (`adapter/unsupported`). Where a client enforces the restriction only partly, the adapter writes the agent and warns: `adapter/agent-readonly` for Cursor, `adapter/agent-strict-tools` for Copilot in VS Code (`CURSOR-AGENTS`, `CODEX-SUBAGENTS`). See §8.3 and [`security-model.md`](security-model.md) §6.
 - **Quality bar:** minimal tools, explicit scope, no secrets.
 
-### 3.4 Tool (Proposal: definition needs your approval)
+### 3.4 Tool
 
 A **tool** is a standalone, non-interactive **Rust executable** built from this workspace, with its source in its asset directory. An agent invokes it through its shell tool, a skill's instructions or a hook binding, or a human invokes it, to perform **one local task to completion**.
 
@@ -97,7 +97,7 @@ A **tool** is a standalone, non-interactive **Rust executable** built from this 
 
   Binaries arrive through the release channels ([ADR-0002](adr/0002-mcp-server-and-tool-packaging.md)).
 
-**Hooks (Proposal): hooks are not a separate kind.** A hook is a **binding declared by a tool asset**: client event + matcher + argv. Adapters render it into the client's hook configuration as owned entries (§7.2). The command is always that tool's binary in exec form; it is never a shell string.
+**Hooks are not a separate kind.** A hook is a **binding declared by a tool asset**: client event + matcher + argv. Adapters render it into the client's hook configuration as owned entries (§7.2). The command is always that tool's binary in exec form; it is never a shell string.
 
 Rationale:
 1. Hooks run automatically on matching events with the user's privileges, and some clients run them without a trust prompt in non-interactive modes (`CC-SET`). Restricting them to reviewed, tested, CI-built, signed Rust binaries removes the "arbitrary shell one-liner in a JSON file" risk class.
@@ -106,7 +106,7 @@ Rationale:
 
 Alternatives considered:
 - A `hook` kind with inline commands: rejected for v1.
-- Excluding hooks entirely: viable fallback if you prefer.
+- Excluding hooks entirely: the fallback, not chosen.
 
 **Phase 3: failure behaviour.** A binding may set `on-failure = "block"`: when the hook cannot run (the binary is missing, crashes, times out or prints invalid output), the client blocks the event instead of letting it through. Guards such as `secret-guard` use it so that they fail closed. Claude Code renders it as `onFailure: "block"` (2.1.295 or later, `CC-P3`). The default, `continue`, is every client's own default. Because a missing binary then blocks the session, `plan` and `apply` warn when a fail-closed hook's binary is not on `PATH` (`plan/hook-binary-missing`).
 
@@ -135,19 +135,21 @@ An **MCP server** is a Rust program built on `rmcp` (`RMCP`), with its source in
 
 A **bundle**, `catalog/bundles/<id>.toml`, is a named, versioned list of asset references with version requirements. Selecting a bundle expands to its members at resolve time. The lock records which bundle brought in which asset, so removing the bundle removes only assets nothing else selected.
 
-## 4. Repository layout (Proposal: refines the brief)
+## 4. Repository layout
 
 ```text
 Cargo.toml                 workspace; members = ["crates/*", "xtask", "catalog/tools/*", "catalog/mcp-servers/*"]
 Cargo.lock
 deny.toml                  cargo-deny policy
-crates/
-  grimoire-model/          types for asset.toml, bundles, grimoire.toml, grimoire.lock; strict serde + schemars
-  grimoire-catalog/        Source trait, builtin (embedded) source, catalog-wide lints
-  grimoire-resolve/        selection (assets/bundles/tags), dependency/conflict/client/CLI-version resolution
-  grimoire-install/        root-confined fs, atomic writes, outputs/ownership, planner, applier, drift, lockfile I/O
-  grimoire-adapters/       Adapter trait + one module per client; insta snapshot tests
-  grimoire-cli/            the `grimoire` binary (published package name: see ADR-0004)
+crates/                    the five library crates each have a README.md for crates.io (Phase 7)
+  agent-grimoire-model/    types for asset.toml, bundles, grimoire.toml, grimoire.lock; strict serde + schemars
+  agent-grimoire-catalog/  Source (the catalog index), the builtin (embedded) pack, catalog-wide lints
+  agent-grimoire-resolve/  selection (assets/bundles/tags), dependency/conflict/client/CLI-version resolution
+  agent-grimoire-install/  root-confined fs, atomic writes, outputs/ownership, planner, applier, drift, lockfile I/O
+  agent-grimoire-adapters/ one module per client; insta snapshot tests
+  agent-grimoire/          the `grimoire` CLI: a library (`run`) plus the binary
+  agent-grimoire-mcp/      shared hardening for MCP server assets (Phase 3, publish = false)
+  agent-grimoire-testkit/  fixture catalogs and projects for tests (Phase 2, publish = false)
 xtask/                     `cargo xtask …`: new, validate, schema, pack-catalog, gen-marketplace, release (publish = false)
 release-plz.toml           release-plz config: it opens the release PR only (Phase 5, ADR-0009)
 packaging/                 hand-written release inputs that aren't Rust (Phase 5, ADR-0010):
@@ -164,14 +166,19 @@ catalog/
   bundles/<id>.toml
 schemas/                   generated JSON Schemas (checked in; CI fails if stale)
 .claude-plugin/marketplace.json + plugins/claude-code/…   generated (Phase 4; checked in; CI fails if stale)
-docs/  docs/adr/
-.github/                   workflows, scripts/ (image-tags.sh, Phase 6, ADR-0011), templates, CODEOWNERS, dependabot.yml
+docs/  docs/adr/           design, specs, ADRs and runbooks, and the user reference (Phase 7):
+                           cli.md, diagnostics.md, configuration.md, versioning.md
+.github/                   workflows, scripts/ (image-tags.sh, Phase 6, ADR-0011), dependabot.yml;
+                           ISSUE_TEMPLATE/ (issue forms), pull_request_template.md and CODEOWNERS (Phase 7)
 Dockerfile                 the container image: COPY only, base pinned by digest (Phase 6, ADR-0011)
 .grype.yaml                Grype config for the image scan gate (Phase 6, ADR-0011)
+README.md                  also published on crates.io (agent-grimoire), on PyPI and in every CLI archive (Phase 7)
+CONTRIBUTING.md  SECURITY.md  CODE_OF_CONDUCT.md   community files, at the root only (Phase 7)
+LICENSE-MIT  LICENSE-APACHE
 CLAUDE.md  AGENTS.md       conventions for this repo's own contributors and agents
 ```
 
-Crate directory names above are placeholders. Final package names, and the matching directory names, follow [ADR-0004](adr/0004-package-and-binary-names.md), which proposes `agent-grimoire-*`.
+Package and directory names follow [ADR-0004](adr/0004-package-and-binary-names.md).
 
 **Refinement 1: code-bearing assets live under `catalog/`, not under `crates/`.**
 
@@ -202,7 +209,7 @@ A shared hardening library for servers (transport setup, Origin validation, auth
 - **Asset versions are SemVer, one per asset.** CI requires a version bump and a CHANGELOG entry whenever an asset's files change. The asset version is independent of the CLI version.
 - **Manifests carry `min-cli-version`.** Resolution fails clearly if the running CLI is older.
 
-## 6. Manifests and configuration (Proposal)
+## 6. Manifests and configuration
 
 All three files are TOML, parsed with unknown fields as errors. JSON Schemas for them are generated from the Rust types into `schemas/`.
 
@@ -249,13 +256,13 @@ outputs = [{ src = "rule.md", to = "instructions", strategy = "block" }]
   - `[tool] binary = "…"` plus optional `hooks = [...]` bindings: `event`, `tools`, `args`, `timeout-secs` and (Phase 3) `on-failure`. `on-failure = "block"` is allowed only on `pre-tool-use` and `user-prompt-submit`, the events whose failure can stop something (`manifest/hook-on-failure`);
   - `[mcp-server] binary = "…", transports = ["stdio","streamable-http"], env = [...]`, plus the declared tool list with annotations, which tests compare against the live server.
   - **Phase 3, environment variables:** `permissions.env` lists *every* variable the asset reads, and each one needs consent (§6.3). `[mcp-server] env` lists the subset the client configuration forwards from the user's environment. A variable the client sets itself, such as Claude Code's `CLAUDE_PROJECT_DIR` for stdio servers (`CC-P3`), is in `permissions.env` only, so nothing is forwarded for it.
-- **Explicit output map per client (Proposal: refines "explicit file map").** Every client an asset supports lists its outputs explicitly: source file → destination → strategy. A reviewer can see exactly what each asset writes for each client.
+- **Explicit output map per client (refines the brief's "explicit file map").** Every client an asset supports lists its outputs explicitly: source file → destination → strategy. A reviewer can see exactly what each asset writes for each client.
   - The destination is written as an **anchor** (`rules:`, `skills:`, `agents:`, `instructions`, `mcp`, `hooks`) plus a relative name, rather than a literal path. Each adapter resolves its anchors.
   - Reason 1: a client changing its layout becomes one adapter change instead of an edit to every manifest.
   - Reason 2: the planner can choose a location that several selected clients share (§8.2).
   - The resolved literal paths are shown by `plan` and recorded in the lock.
   - Validation rejects any destination outside the adapter's declared anchor set. An asset therefore *cannot* write, for example, `.github/workflows/x.yml`.
-  - `cargo xtask new` scaffolds these tables. If you prefer literal paths, the cost is that layout changes become catalog-wide edits.
+  - `cargo xtask new` scaffolds these tables. The alternative, literal paths, would make every layout change a catalog-wide edit.
 - **Strategies:**
   - `copy`: a whole file, byte-for-byte.
   - `render`: a whole file generated by the adapter, e.g. with client frontmatter.
@@ -369,7 +376,7 @@ allow = []
 The lock is sorted deterministically and uses normalized `/` paths, so it diffs cleanly and is identical across operating systems.
 
 **Phase 2 additions to the lock:**
-- A top-level `[[output]]` list holds content Grimoire itself owns rather than an asset. Today that is only the `CLAUDE.md` block that imports `AGENTS.md` (§8.2). Its block markers use the reserved name `grimoire`. The asset id `grimoire` and the prefix `grimoire-` are reserved so that no asset can collide with it.
+- A top-level `[[output]]` list holds content Grimoire itself owns rather than an asset. Today that is the `CLAUDE.md` block that imports `AGENTS.md` (§8.2), and, since Phase 4, the `GEMINI.md` block that imports it for Gemini CLI. Its block markers use the reserved name `grimoire`. The asset id `grimoire` and the prefix `grimoire-` are reserved so that no asset can collide with it.
 - `created-file = true` records that adding an output created its (shared) file. `created-keys = ["/mcpServers"]` records the JSON containers it created. Removal deletes exactly those, once empty. A file or container that existed before Grimoire is never deleted. When the creating output is removed while others remain, the record moves to one of them.
 
 ## 7. Install model
@@ -399,7 +406,7 @@ The lock is sorted deterministically and uses normalized `/` paths, so it diffs 
 Details:
 - **Blocks** sit in a deterministic order. User text outside blocks is never touched. HTML comments are stripped by Claude Code before injection, so markers cost no context there (`CC-MEM`).
 - **Entries** use format-preserving editing: `toml_edit` for TOML, and a comment- and order-preserving JSON/JSONC editor for JSON (choice in Phase 2). Unrelated keys and the user's formatting are preserved. Property tests cover merge, unmerge, and round-trips with arbitrary surrounding content.
-- **Removal** deletes only owned units. Grimoire deletes a file it created only when the file is now empty of anything Grimoire didn't write. Otherwise it removes its blocks or entries and leaves the file. Directories Grimoire created are removed if empty.
+- **Removal** deletes only owned units. Grimoire deletes a shared file it created only when the file is now empty of anything Grimoire didn't write. Adopting content that already matches, or overwriting it with `--force`, makes it Grimoire's: a whole file in a managed folder is then deleted with its asset, and a shared file that held only Grimoire's content when it was adopted is recorded as created (Phase 7 check of `plan.rs`). Otherwise it removes its blocks or entries and leaves the file. Directories Grimoire created are removed if empty.
   - Phase 2 implementation:
     - Creation is recorded in the lock (`created-file`, `created-keys`; §6.5).
     - After deleting a file, Grimoire removes the directories above it that are now empty, whether or not it created them. Creating directories is not recorded, and an empty directory holds no content (git does not track one).
@@ -466,7 +473,7 @@ Each of these is a distinct, actionable diagnostic (exit 3):
 - a pinned version unavailable in this CLI's catalog when content is needed (ADR-0001).
 
 **Phase 2 refinement of the last item.** With one embedded version per asset, `plan`, `apply` and `update --no-apply` stop whenever a selected asset's locked version (or manifest digest) differs from the catalog's. That includes cases where no file would change, because telling whether content is needed would mean rendering the pinned version, which is not available. The error names `grimoire update <id>`.
-- `verify`, `remove` + `apply`, and `uninstall` still work, because they need only the lock.
+- `verify` and `uninstall` still work, because they need only the lock. So does `remove` + `apply`, but only when the removed assets include every asset whose pin differs: `apply` still stops for any selected asset that keeps a differing pin (checked in Phase 7).
 - Assets not yet in the lock resolve to the catalog version.
 
 ## 8. Client adapters
@@ -496,7 +503,7 @@ Clients read each other's files (re-checked 2026-11-17 in the `*-P4` entries of 
 | `.github/instructions/*.instructions.md` | – | – | – | – | ✓ |
 | `.claude/skills/` | ✓ | – | ✓ | – | ✓ |
 | `.agents/skills/` | – | ✓ | ✓ | ✓ trusted folders only | ✓ (the CLI loads a name found in both skill folders once, from here) |
-| `.claude/agents/` | ✓ | – | ✓ (with all of the parent's tools) | – | ✓ CLI (after `.github/agents/`), VS Code |
+| `.claude/agents/` | ✓ | – | ✓ (no per-tool allow-list; how it treats `tools` is undocumented) | – | ✓ CLI (after `.github/agents/`), VS Code |
 | `.mcp.json` | ✓ | – | – | – | ✓ CLI, VS Code |
 | `.claude/settings.json` hooks | ✓ | – | ✓ (on by default) | – | ✓ CLI, VS Code |
 
@@ -578,7 +585,9 @@ Project-scoped content often loads only in a trusted project: Codex `.codex/conf
 | `copilot` | Agent | `name`, `description`, `tools` (`read`, `search`, `edit`, `execute`, `web`, `<server>/*`, `<server>/<tool>`), `strict-tools-list: true`. A prompt over 30,000 characters is refused. |
 | `copilot` | MCP server | The `claude-code` `.mcp.json` entry. |
 
-## 9. CLI (Proposal)
+## 9. CLI
+
+This section is the design. The user reference is [`cli.md`](cli.md), for the commands, flags, exit codes, `--json` output and environment, and [`diagnostics.md`](diagnostics.md), for every user-facing diagnostic code. Tests compare both with the code; nothing compares this section with it.
 
 ### 9.1 Commands
 
@@ -630,7 +639,7 @@ As implemented in Phase 2:
 | 4 | Conflict: drift or an unmanaged file is in the way. Nothing was written, except when a file changed or failed partway through an `apply` (the message says so, and the lock records what was written) |
 | 5 | Check failed: `plan --check` found changes, `verify` found mismatches, or `doctor` found problems |
 | 6 | Refused for safety (path escape, symlink at a managed path) |
-| 130 | Interrupted |
+| 130 | Not returned by Grimoire. It installs no signal handler, so Ctrl-C (`SIGINT`) kills the process, and a POSIX shell reports that as 130 (128 + the signal number). What other callers and Windows see is unverified. A rerun converges (§7.1) |
 
 ## 10. Generated artifacts
 

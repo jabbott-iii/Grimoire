@@ -19,6 +19,8 @@ mod git;
 mod marketplace;
 mod new;
 mod pack;
+#[cfg(test)]
+mod readme_links;
 mod release;
 mod render;
 mod schema;

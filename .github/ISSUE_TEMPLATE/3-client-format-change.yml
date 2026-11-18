@@ -1,0 +1,69 @@
+name: Client format change
+description: A supported client changed a file format or location that Grimoire writes.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Client formats change often. Each Grimoire adapter is written against a format recorded in [docs/specs.md](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md), with its version, source and the date it was checked. Use this form when a client's official docs, changelog or source show a change to one of those formats, so that the adapter and its specs.md entry can be checked again.
+
+        Link the client's own docs, changelog or source. Adapters change only against a primary source.
+  - type: dropdown
+    id: client
+    attributes:
+      label: Client
+      options:
+        - claude-code
+        - agents-md
+        - codex
+        - cursor
+        - gemini-cli
+        - copilot
+    validations:
+      required: true
+  - type: input
+    id: client-version
+    attributes:
+      label: Client version
+      description: The first client version with the change, or the version where you saw it. Write unknown if you can't tell.
+      placeholder: "1.2.3"
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Official source
+      description: A URL of the client's official docs, changelog, release notes or source code that shows the change.
+      placeholder: https://
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: What changed
+      description: The old and the new format or location. Quote only the lines that matter.
+    validations:
+      required: true
+  - type: dropdown
+    id: outputs
+    attributes:
+      label: Affected Grimoire output
+      multiple: true
+      options:
+        - Rules
+        - Skills
+        - Agents
+        - MCP server configuration
+        - Hooks
+        - Instruction files such as AGENTS.md or GEMINI.md
+        - Client detection by grimoire init and grimoire doctor
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Files and details
+      description: The files Grimoire writes that the change affects, and anything you saw go wrong, such as a client ignoring or rejecting them.
+    validations:
+      required: false

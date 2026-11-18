@@ -26,6 +26,8 @@ toml.workspace = true
 [dev-dependencies]
 agent-grimoire-testkit.workspace = true
 insta.workspace = true
+# The README link test (src/readme_links.rs) parses Markdown as the catalog does.
+pulldown-cmark.workspace = true
 
 [lints]
 workspace = true

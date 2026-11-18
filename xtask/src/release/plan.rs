@@ -6,6 +6,10 @@
 //!   `enabled` (a workflow that names a missing environment creates it unprotected).
 //! - `release` on a push or manual run on `main` when `v{version}` isn't tagged yet.
 //! - `skip` on `main` when it is.
+//!
+//! A run that would release, or that tests the release PR, fails while a public file
+//! still has a `<!-- before-first-release` or `<!-- /before-first-release -->` marker
+//! ([`check_markers`]).
 
 use std::fmt::Write as _;
 use std::path::Path;
@@ -129,6 +133,70 @@ pub(crate) fn outputs(release: &Release, mode: Mode) -> String {
     out
 }
 
+/// The public files that may hold text to change before the first release: the
+/// README's "not released yet" note, the code of conduct's contact placeholder and
+/// SECURITY.md's "No release exists yet" sentence. The README is published with
+/// every release and can't change afterwards.
+pub(crate) const MARKED_FILES: [&str; 4] = [
+    "README.md",
+    "CODE_OF_CONDUCT.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+];
+
+/// Such text sits between an opening marker line, `<!-- before-first-release: … -->`,
+/// and a closing one, `<!-- /before-first-release -->`. Both must go: deleting only the
+/// opening line leaves the closing one, which still fails the check.
+pub(crate) const BEFORE_FIRST_RELEASE: &str = "<!-- before-first-release";
+
+/// The closing marker.
+pub(crate) const BEFORE_FIRST_RELEASE_END: &str = "<!-- /before-first-release -->";
+
+/// Whether `line` is an opening or closing marker. The match is loose (any spacing
+/// after `<!--`, any case), so a marker typed slightly differently still counts.
+pub(crate) fn is_marker(line: &str) -> bool {
+    let Some(rest) = line.trim_start().strip_prefix("<!--") else {
+        return false;
+    };
+    let rest = rest.trim_start().to_ascii_lowercase();
+    rest.starts_with("before-first-release") || rest.starts_with("/before-first-release")
+}
+
+/// Every `file:line` in `files` (name, text) that still carries a marker.
+pub(crate) fn before_first_release(files: &[(&str, String)]) -> Vec<String> {
+    files
+        .iter()
+        .flat_map(|(name, text)| {
+            text.lines()
+                .enumerate()
+                .filter(|(_, line)| is_marker(line))
+                .map(move |(i, _)| format!("{name}:{}", i + 1))
+        })
+        .collect()
+}
+
+/// Refuses a run that would release, or that tests the release PR, while a marker
+/// remains. Both have a `CHANGELOG.md` section for the version: release-plz adds it
+/// in the release PR, and release mode needs it.
+pub(crate) fn check_markers(
+    mode: Mode,
+    has_changelog_section: bool,
+    files: &[(&str, String)],
+) -> Result<(), String> {
+    if mode == Mode::Skip || !has_changelog_section {
+        return Ok(());
+    }
+    let marked = before_first_release(files);
+    if marked.is_empty() {
+        return Ok(());
+    }
+    Err(format!(
+        "{} still {} a `{BEFORE_FIRST_RELEASE}` or `{BEFORE_FIRST_RELEASE_END}` marker. Do what each opening marker says, and delete everything from it to its closing `{BEFORE_FIRST_RELEASE_END}` line, in a pull request merged to main before the release PR (docs/release.md §2 C): the README is published with the release and can't change afterwards",
+        marked.join(", "),
+        if marked.len() == 1 { "has" } else { "have" },
+    ))
+}
+
 /// Whether `origin` has `refs/tags/{tag}`.
 pub(crate) fn remote_tag_exists(root: &Path, tag: &str) -> Result<bool, String> {
     let out = crate::git::run(
@@ -196,6 +264,62 @@ mod tests {
             })
             .collect();
         assert!(check_limits(&r).is_err());
+    }
+
+    #[test]
+    fn markers_block_the_release_pr_and_the_release() {
+        let marked = vec![
+            ("README.md", "# Grimoire\n\n<!-- before-first-release: delete this note -->\n> Not released yet.\n".to_owned()),
+            ("CODE_OF_CONDUCT.md", "Report to:\n  <!-- before-first-release: fill in the contact -->\n".to_owned()),
+        ];
+        assert_eq!(
+            before_first_release(&marked),
+            ["README.md:3", "CODE_OF_CONDUCT.md:2"]
+        );
+        let err = check_markers(Mode::Release, true, &marked).unwrap_err();
+        assert!(
+            err.contains("README.md:3, CODE_OF_CONDUCT.md:2 still have"),
+            "{err}"
+        );
+        // The release PR is a dry-run with the version's CHANGELOG section.
+        assert!(check_markers(Mode::DryRun, true, &marked).is_err());
+        // Other pull requests, and runs with nothing to release, are not affected.
+        assert!(check_markers(Mode::DryRun, false, &marked).is_ok());
+        assert!(check_markers(Mode::Skip, true, &marked).is_ok());
+
+        // Only a line that starts with a marker counts.
+        let prose = vec![(
+            "README.md",
+            "Mention `<!-- before-first-release` in prose.\n".to_owned(),
+        )];
+        assert!(check_markers(Mode::Release, true, &prose).is_ok());
+        assert!(check_markers(Mode::Release, true, &[]).is_ok());
+    }
+
+    #[test]
+    fn a_marked_span_fails_until_both_markers_are_gone() {
+        let span = |text: &str| vec![("README.md", text.to_owned())];
+        let whole = "<!-- before-first-release: delete to the closing line -->\n> Not released yet.\n<!-- /before-first-release -->\n";
+        assert_eq!(
+            before_first_release(&span(whole)),
+            ["README.md:1", "README.md:3"]
+        );
+        // Deleting only the opening line leaves the closing one, and the note.
+        let half = "> Not released yet.\n<!-- /before-first-release -->\n";
+        assert_eq!(before_first_release(&span(half)), ["README.md:2"]);
+        assert!(check_markers(Mode::Release, true, &span(half)).is_err());
+        assert!(check_markers(Mode::Release, true, &span("> Released.\n")).is_ok());
+        // Spacing and case don't hide a marker.
+        for typo in [
+            "<!--before-first-release: x -->",
+            "  <!--   Before-First-Release -->",
+            "<!--/before-first-release-->",
+            "<!-- /BEFORE-FIRST-RELEASE -->",
+        ] {
+            assert!(is_marker(typo), "{typo}");
+        }
+        assert!(!is_marker("<!-- released -->"));
+        assert!(!is_marker("before-first-release"));
     }
 
     #[test]

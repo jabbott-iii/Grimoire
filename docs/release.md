@@ -1,6 +1,6 @@
 # Releasing and installing Grimoire
 
-- **Status:** written in Phase 5 (2026-11-17), before the first release, revised after the Phase 5 review, revised in Phase 6 (2026-11-17) for the container image, and revised after the Phase 6 review, which moved every signature and attestation into `.github/workflows/sign.yml`. **No release exists yet**, so no command in this file has been run against a real release. The image's build, checks, scan, push to a local registry and the tag script's cases were run only locally, with rootless Docker, never on GitHub or against GHCR.
+- **Status:** written in Phase 5 (2026-11-17), before the first release, revised after the Phase 5 review, revised in Phase 6 (2026-11-17) for the container image, revised after the Phase 6 review, which moved every signature and attestation into `.github/workflows/sign.yml`, revised in Phase 7 (2026-11-17) for the before-first-release markers, the README's channels and vulnerability reporting, and revised after the Phase 7 review (2026-11-18), when release-plz's first run on GitHub was refused by the ruleset (§2 A). **No release exists yet**, so no command in this file has been run against a real release. The image's build, checks, scan, push to a local registry and the tag script's cases were run only locally, with rootless Docker, never on GitHub or against GHCR.
 - **Decisions:** [ADR-0009](adr/0009-release-pipeline.md) (the pipeline and channels), [ADR-0010](adr/0010-language-policy-exceptions.md) (the code that isn't Rust) and [ADR-0011](adr/0011-container-image.md) (the container image).
 - **Facts:** the `*-P5` and `*-P6` entries in [`specs.md`](specs.md); SIGN-P6 for the signing identity.
 
@@ -19,11 +19,15 @@ This file has six parts:
    - `.github/workflows/release-plz.yml` runs `release-plz release-pr` on every push to `main`. A manual run works only on `main`: on another branch, release-plz would rebuild the release PR from that branch. Runs queue one at a time and are never cancelled.
    - The PR bumps the shared workspace version and adds a section for the new version to `CHANGELOG.md`, from the Conventional Commits since the last release. It is labelled `release`.
    - release-plz is configured never to tag, create releases or publish ([ADR-0009](adr/0009-release-pipeline.md)). Its token could do the first two; [`security-model.md`](security-model.md) §6b says what still protects users.
+   - **Today it can't open the PR.** The ruleset on every branch refused its commit to its `release-plz-*` branch (run 44198210657), so no release PR exists until you change the ruleset (§2 A).
 3. **Approve the release PR's CI runs.**
    - The PR is opened with `GITHUB_TOKEN`, so its `pull_request` runs (CI, Security and the release dry-run) wait for approval. Open the PR's checks and approve the workflows to run, or push a commit to the branch yourself.
    - Do the same after every update release-plz makes to the PR.
    - Running the checks with `workflow_dispatch` doesn't help: those checks don't count toward the ruleset's required status checks.
 4. **Review and merge the release PR.**
+   - **Check the version.** If the new `CHANGELOG.md` section has a breaking entry, or `rust-version` in the root `Cargo.toml` rose since the last release's tag, the PR's version must be the next 0.y, such as 0.1.4 → 0.2.0 ([`versioning.md`](versioning.md) §2 and §3). If it isn't, correct the version before you merge, through a pull request to `main`, not on the PR's branch (§2 C says why). How release-plz bumps the shared version in Grimoire's setup is UNVERIFIED (VERSIONING-P7 in [`specs.md`](specs.md)), so this review is the only check on it.
+   - **Check that every advisory is named.** A security fix merged from an advisory's temporary private fork names the advisory's GHSA ID in the first line of its commit message ([`SECURITY.md`](../SECURITY.md), "What happens to a report"). release-plz carries that line into the `CHANGELOG.md` section, and the release notes come from the section. Check that the section names each such advisory. If one is missing, add it to the GitHub Release's notes once the release is published: an immutable release's notes stay editable.
+   - Until pull requests receive the code-scanning and code-quality results the ruleset requires, the merge needs the administrator bypass (§2 A).
 5. **The release run starts.**
    - The merge's push to `main` starts `.github/workflows/release.yml`.
    - `plan` chooses release mode only when `GRIMOIRE_RELEASES` is `enabled`, `vX.Y.Z` isn't tagged, and `CHANGELOG.md` has a section for X.Y.Z. Only the merged release PR adds that section. Any other push to `main` stays a dry-run, and `plan` prints a warning that release mode waits for the release PR.
@@ -61,6 +65,7 @@ This file has six parts:
    - Open one PR per version. A first submission is titled `New package: jabbott-iii.agent-grimoire version X.Y.Z`.
    - Sign the Microsoft CLA yourself the first time.
    - On a Windows machine, run `winget validate --manifest <dir>`, without `--ignore-warnings`, which would hide unknown fields. Validation needs no extra setting.
+     - `winget --version` must be v1.28.190 or newer. Older clients don't know schema 1.28.0, so they warn on every manifest's schema header and exit with -1978335192 (`MANIFEST_VALIDATION_WARNING`).
    - Then test the install. Windows Sandbox is the simplest place: run `Tools\SandboxTest.ps1 <dir>` from your winget-pkgs fork. Otherwise, `winget install --manifest <dir>` needs local manifests turned on first: run `winget settings --enable LocalManifestFiles` in an elevated shell, and turn the setting off again afterwards. Group Policy can block that setting on a managed machine; use the Sandbox there.
    - winget-pkgs then runs its 10-step validation, and a moderator approves.
 10. **Merge the tap and bucket sync PRs.**
@@ -70,21 +75,37 @@ This file has six parts:
 
 ## 2. One-time bootstrap (maintainer)
 
-This checklist is the source for the Phase 5 and Phase 6 bootstrap; `PLAN.md` §6 points here. Do the parts in order:
-- **A:** the first item before you merge the Phase 5 change, the rest at any time before the first release;
+This checklist is the source for the bootstrap of Phases 5 to 7; `PLAN.md` §6 points here. Do the parts in order:
+- **A:** the items marked "now", "before you merge the Phase 7 change" or "after you merge the Phase 7 change" at that time, the rest at any time before the first release;
 - **B:** close to the first release, because PyPI's pending publisher expires after 30 days;
-- **C:** last, after the README rewrite;
+- **C:** last;
 - **D:** during the first release run.
 
 Never store a token in GitHub at any step.
 
 ### A. Repository settings
 
-- [ ] **Before you merge the Phase 5 change, allow GitHub Actions to create and approve pull requests** (Settings → Actions → General).
+- [ ] **Now: let release-plz commit to its branch.** Until you do, release-plz can't open the release PR, so no release can start (§1).
+  - **What happened.** The Release PR workflow's run 44198210657 failed in both attempts, on 2026-11-17 and 2026-11-18 (RELEASE-PLZ in [`specs.md`](specs.md)). Each attempt created a `release-plz-<timestamp>` branch, and then GitHub refused its commit there: "Repository rule violations found … Changes must be made through a pull request … Waiting for Code Scanning results. Code Scanning may not be configured for the target branch."
+  - **Why.** The ruleset `BestBranch` covers every branch (`~ALL`), the `release-plz-*` branches included. Its pull-request rule and its code-scanning rule both refuse the commit, so lifting only one of them isn't enough.
+  - **Your decision.** Either target the ruleset at the default branch only (`~DEFAULT_BRANCH`), or keep `~ALL` and exclude `refs/heads/release-plz-*`. With the first, other branches also lose the deletion and force-push rules. With either, pull requests into `main`, the release PR included, keep every rule.
+  - **Don't add GitHub Actions as a bypass actor** instead. Any workflow job whose token has `contents: write` could then change `main` without a pull request.
+  - **Then delete the two orphan branches,** `release-plz-2026-11-17T23-18-49Z` and `release-plz-2026-11-18T05-09-04Z`. While the ruleset still covers them, its deletion rule allows that only through the administrator bypass.
+  - Then run `release-plz.yml` on `main` (Actions → Release PR → Run workflow), or push to `main`, and check that the release PR opens. Opening it also needs the Actions setting below.
+- [ ] **Now: give the code-scanning rules their results, or drop them.** `BestBranch` also requires CodeQL code-scanning results and code-quality results. No workflow in this repository runs CodeQL, the repository's workflow list has no code-scanning workflow, and whether CodeQL default setup or Code Quality is on couldn't be read (UNVERIFIED, COMMUNITY-P7). While nothing produces those results, no pull request into `main`, a contributor's or the release PR, can be merged without the administrator bypass.
+  - **Your decision.** Enable CodeQL default setup and Code Quality in the repository's settings, or remove the ruleset's `code_scanning` and `code_quality` rules. Which languages default setup offers for this repository wasn't checked.
+  - Then confirm that a pull request receives the results, and that the rules can pass.
+- [ ] **Allow GitHub Actions to create and approve pull requests** (Settings → Actions → General). This was due before the Phase 5 merge. Whether it is on couldn't be read: the API answered 403 to the token used.
   - `release-plz.yml` runs on the next push to `main` and opens the release PR (`chore: release`).
-  - With the setting off, each run creates a `release-plz-<timestamp>` branch and then fails to open the PR. Delete any `release-plz-*` branch that has no PR.
+  - With the setting off, each run creates a `release-plz-<timestamp>` branch and then fails to open the PR. The ruleset leaves such branches too (the first item). Delete any `release-plz-*` branch that has no PR.
   - Leave the release PR unmerged until the rest of this bootstrap is done. release-plz updates it on every push.
   - Keep the default `GITHUB_TOKEN` permissions read-only (`PLAN.md` §6).
+- [ ] **Before you merge the Phase 7 change, watch the repository for security alerts.** It is needed as soon as [`SECURITY.md`](../SECURITY.md) is on `main`, because it promises an acknowledgement within 7 days from then. On the repository page, choose Watch → Custom → Security alerts, or All Activity, and keep notifications on; for email, also select Email under Subscriptions → Watching in your notification settings. Otherwise GitHub may not tell you about a private report ([GitHub's docs](https://docs.github.com/en/code-security/how-tos/report-and-fix-vulnerabilities/configure-vulnerability-reporting/configure-for-a-repository), checked 2026-11-17). You are the only collaborator, so nobody else can act on a report.
+- [ ] **Confirm that private vulnerability reporting is still on,** before you merge the Phase 7 change and again before the first release. It was on when read on 2026-11-17, and [`SECURITY.md`](../SECURITY.md) sends reports to its form, `https://github.com/jabbott-iii/Grimoire/security/advisories/new`. `gh api repos/jabbott-iii/Grimoire/private-vulnerability-reporting` should show `{"enabled":true}`.
+- [ ] **After you merge the Phase 7 change, check the new GitHub files.** GitHub skips a CODEOWNERS line that has an error (COMMUNITY-P7) and doesn't show some invalid issue forms (ISSUE-FORMS-P7). Blank issues are off, so a missing form leaves no way to file that kind of issue.
+  - `gh api repos/jabbott-iii/Grimoire/codeowners/errors` should return an empty `errors` list.
+  - Open <https://github.com/jabbott-iii/Grimoire/issues/new/choose>, signed in as an account other than yours. It should show the five forms, "Bug report", "Asset request", "Client format change", "Ask for a private contact" and "Propose a change", and the two links, "Report a security vulnerability" and "Documentation", with no second security entry. Whether GitHub adds its own security link to the chooser is UNVERIFIED (ISSUE-FORMS-P7).
+  - Record what you saw in `specs.md`, under COMMUNITY-P7 and ISSUE-FORMS-P7.
 - [ ] **Create five environments** (Settings → Environments): `release`, `crates-io`, `npm`, `pypi` and `ghcr`. Configure each one the same way:
   - Required reviewer: you.
   - Leave **Prevent self-review** off while you are the only reviewer. With it on, you can't approve a run you started; only the administrator bypass could start it.
@@ -97,8 +118,8 @@ Never store a token in GitHub at any step.
   - It applies only to releases published afterwards.
   - `GITHUB_TOKEN` can't read this setting, so the `publish` job only warns when a release comes out mutable. Check it with your own login: `gh api repos/jabbott-iii/Grimoire/immutable-releases` should show `"enabled": true`.
   - A mutable release gets no release attestation, so the tap and bucket syncs can't take it (§3).
-- [ ] **The CI ruleset on `main`** (`PLAN.md` §6): require pull requests and the CI, Security and `release checks` checks. `release checks` is the release workflow's summary job. On a pull request it fails unless every dry-run job passed; a skipped job counts as a failure, because a required check whose job is skipped would otherwise count as passed. The release PR's checks then come from the runs you approve.
-- [ ] **Enable private vulnerability reporting** before the first release ([`security-model.md`](security-model.md) §8).
+- [ ] **The CI ruleset on `main`** (`PLAN.md` §6): require the CI, Security and `release checks` checks. `release checks` is the release workflow's summary job. On a pull request it fails unless every dry-run job passed; a skipped job counts as a failure, because a required check whose job is skipped would otherwise count as passed. The release PR's checks then come from the runs you approve.
+  - A ruleset on every branch already requires pull requests, with one approval and code-owner review ([`.github/CODEOWNERS`](../.github/CODEOWNERS)), but no status checks (read on 2026-11-17). The administrator role, Dependabot and two other GitHub Apps can bypass it; GitHub Actions can't.
 
 ### B. Registries and repositories, close to the first release
 
@@ -156,7 +177,10 @@ The READMEs next to the two templates ([tap](../packaging/homebrew-tap/README.md
 
 ### C. Switch releases on (last)
 
-- [ ] **Land the Phase 7 README rewrite first.** The root `README.md` is still a one-line placeholder. It goes into every CLI archive, the six crates on crates.io and the npm packages, and it is the PyPI long description. A published version can't be changed.
+- [ ] **Clear the before-first-release markers.** Text to change before the first release sits between an opening line, `<!-- before-first-release: … -->`, which says what to do, and a closing line, `<!-- /before-first-release -->`. The marked texts are the README's "not released yet" note, the placeholder for the conduct contact in `CODE_OF_CONDUCT.md`, and the "No release exists yet" sentence in `SECURITY.md`. `grep -n -i -E '^[[:space:]]*<!--[[:space:]]*/?before-first-release' README.md CODE_OF_CONDUCT.md CONTRIBUTING.md SECURITY.md` lists the marker lines. In a pull request of its own, merged to `main` before the release PR, do what each opening line says: in the README and `SECURITY.md`, delete everything from the opening line to the closing one; in `CODE_OF_CONDUCT.md`, fill in the contact and delete both marker lines.
+  - `cargo xtask release plan` fails while an opening or a closing line remains in `README.md`, `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md` or `SECURITY.md`, in every run that has a `CHANGELOG.md` section for the version: the release PR's checks and the release itself. It matches the lines loosely, in any case and with any spacing around `<!--`, so deleting only the opening line still fails. Other pull requests aren't affected.
+  - Make the change on `main`, not on the release PR's branch. release-plz manages that branch and updates it on each push to `main`; whether it keeps a commit you push there is UNVERIFIED.
+  - The README goes into every CLI archive, it is the PyPI long description and the `agent-grimoire` crate's page on crates.io, and a published version can't be changed. The npm packages don't carry it: `xtask/src/release/channels/npm.rs` writes their short READMEs.
 - [ ] Set the repository variable `GRIMOIRE_RELEASES` to `enabled` (Settings → Secrets and variables → Actions → Variables).
 - From then on, a push to `main` runs in release mode when its version isn't tagged and `CHANGELOG.md` has a section for it. Other pushes, Dependabot merges included, stay dry-runs.
 - The first release starts when you merge the release PR. Before you merge it, check that it is current (release-plz updates it on each push) and that its checks passed.
@@ -252,7 +276,7 @@ Trusted publishing can't create a crate, so you publish the first version of eac
 
 ## 4. Installing (users)
 
-Install `agent-grimoire`, run `grimoire`. The only exception is winget, where the command is `agent-grimoire` (below). Every channel installs the same binary.
+Install `agent-grimoire`, run `grimoire`. The only exception is winget, where the command is `agent-grimoire` (below). Every prebuilt channel installs the same binary; `cargo install` builds it from source. [`cli.md`](cli.md) has the commands.
 
 | Channel | Install | Notes |
 |---|---|---|
@@ -312,12 +336,11 @@ The `releases/latest/download/` address is GitHub's redirect to the newest relea
 
 ## 5. Verifying a download
 
-Each release has, for every file:
-- a line in `SHA256SUMS`;
+Every file in a release, except the `.sigstore.json` bundles themselves, has:
 - a build provenance attestation, stored on the repository rather than on the release page;
 - a cosign bundle, `<file>.sigstore.json`, on the release page.
 
-Each archive also has a CycloneDX SBOM (`<archive>.cdx.json`) and an SBOM attestation. Download the file you want, plus `SHA256SUMS` and the matching `.sigstore.json` bundles, from the release page.
+`SHA256SUMS` lists every one of those files except itself. Each archive also has a CycloneDX SBOM (`<archive>.cdx.json`) and an SBOM attestation. Download the file you want, plus `SHA256SUMS` and the matching `.sigstore.json` bundles, from the release page.
 
 **Who signs.** Every signature and attestation is made by `.github/workflows/sign.yml`, Grimoire's signing workflow, when `release.yml` on `main` calls it. Any repository can call a public reusable workflow and get a certificate with the same name, so the commands below also pin the caller: the repository `jabbott-iii/Grimoire` and the ref `refs/heads/main`. No release exists yet, so every release is signed this way. Don't accept `…/release.yml@refs/heads/main`: other release jobs can still get certificates with that name, and no release is signed with it.
 

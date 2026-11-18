@@ -65,7 +65,7 @@
           }
         },
         "allow": {
-          "description": "Permissions accepted at resolution time.",
+          "description": "The permissions this version needs, every one of which `grimoire.toml`\naccepts. A broader grant there is not copied.",
           "type": "array",
           "uniqueItems": true,
           "items": {

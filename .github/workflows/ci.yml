@@ -79,8 +79,9 @@ jobs:
       - name: Install Rust
         # Installs the toolchain and components pinned in rust-toolchain.toml.
         run: rustup toolchain install
+      # --no-fail-fast runs every test binary, so one failing binary can't hide failures in the rest.
       - name: Run tests
-        run: cargo test --workspace --locked
+        run: cargo test --workspace --locked --no-fail-fast
 
   msrv:
     name: MSRV build
@@ -113,14 +114,15 @@ jobs:
       - name: Install Rust
         # Installs the toolchain and components pinned in rust-toolchain.toml.
         run: rustup toolchain install
+      # `cargo --locked xtask`, as in release.yml: a stale Cargo.lock fails instead of being rewritten.
       - name: Check that generated schemas are up to date
-        run: cargo xtask schema --check
+        run: cargo --locked xtask schema --check
       - name: Validate the catalog
-        run: cargo xtask validate
+        run: cargo --locked xtask validate
       - name: Check that the embedded catalog pack is up to date
-        run: cargo xtask pack-catalog --check
+        run: cargo --locked xtask pack-catalog --check
       - name: Check that the generated plugin marketplace is up to date
-        run: cargo xtask gen-marketplace --check
+        run: cargo --locked xtask gen-marketplace --check
       # Pull requests compare with the target branch; pushes with the previous tip;
       # manual runs with the parent commit.
       - name: Require version bumps for changed assets
@@ -139,7 +141,7 @@ jobs:
             echo "::notice::no base commit to compare with (${base}); skipping the version-bump check"
             exit 0
           fi
-          cargo xtask validate --base "${base}"
+          cargo --locked xtask validate --base "${base}"
 
   scaffold:
     name: scaffold templates build
@@ -163,7 +165,8 @@ jobs:
           cargo xtask new mcp-server scaffold-probe-mcp --maintainer ci-probe
       - name: Check the generated crates' formatting
         run: cargo fmt --all --check
-      # Not --locked: the probe crates are new workspace members.
+      # Not --locked, here or in the other cargo steps of this job: the probe crates are new
+      # workspace members, so Cargo.lock has to change.
       - name: Lint the generated crates
         run: cargo clippy -p grimoire-tool-scaffold-probe -p grimoire-mcp-scaffold-probe-mcp --all-targets -- -D warnings
       - name: Test the generated crates

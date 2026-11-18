@@ -5,9 +5,10 @@
 //! time with no-follow opens. Confinement is enforced by cap-std itself:
 //! `openat2(RESOLVE_BENEATH)` on Linux and a handle-relative resolver elsewhere,
 //! so a path can never leave the root, even if the tree changes underneath.
-//! On top of that, Grimoire refuses any symlink, or any special file, at or
-//! above a path it manages, because following one would write somewhere the
-//! user did not expect.
+//! On top of that, Grimoire refuses any symlink at or above a path it manages,
+//! and any special file at the path itself, because following one would write
+//! somewhere the user did not expect. A special file above a path is in the way,
+//! like any other file where a directory is needed.
 //!
 //! Writes go to a temporary file in the destination directory, which is synced
 //! and then renamed over the target. An existing file's permissions are kept.
@@ -27,8 +28,8 @@ pub const MAX_READ_BYTES: u64 = 8 * 1024 * 1024;
 /// A filesystem operation that failed.
 #[derive(Debug)]
 pub enum FsError {
-    /// Refused for safety: a symlink, special file or oversized file at or above
-    /// a managed path, or a path that would leave the root (exit 6).
+    /// Refused for safety: a symlink at or above a managed path, a special or
+    /// oversized file at it, or a path that would leave the root (exit 6).
     Refused {
         /// The path involved.
         path: String,
@@ -311,6 +312,10 @@ impl Root {
         }
         dir.remove_file(name).map_err(|e| io_err(shown, e))?;
         sync_dir(&dir);
+        // Close the directory before pruning it. On Windows cap-std opens
+        // directories without FILE_SHARE_DELETE, so an open handle makes
+        // removing that directory fail, and pruning would stop there.
+        drop(dir);
         self.prune(path);
         Ok(())
     }

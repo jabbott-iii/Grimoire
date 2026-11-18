@@ -7,6 +7,8 @@
 
 mod cli;
 mod commands;
+#[cfg(test)]
+mod docs_check;
 mod out;
 mod pipeline;
 mod project;

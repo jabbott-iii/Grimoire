@@ -18,7 +18,7 @@ mod checksums;
 mod image;
 mod meta;
 mod notes;
-mod plan;
+pub(crate) mod plan;
 mod sbom;
 mod targets;
 mod zip;
@@ -140,8 +140,17 @@ pub(crate) fn run(root: &Path, command: Command) -> Result<ExitCode, String> {
             // A release needs its CHANGELOG.md section, which the merged release PR adds.
             // Without it, any other push to main would release the version early.
             let changelog = std::fs::read_to_string(root.join("CHANGELOG.md")).unwrap_or_default();
-            if mode == plan::Mode::Release && notes::section(&changelog, &release.version).is_none()
-            {
+            let has_section = notes::section(&changelog, &release.version).is_some();
+            let mut marked = Vec::new();
+            for name in plan::MARKED_FILES {
+                match std::fs::read_to_string(root.join(name)) {
+                    Ok(text) => marked.push((name, text)),
+                    Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+                    Err(e) => return Err(format!("cannot read {name}: {e}")),
+                }
+            }
+            plan::check_markers(mode, has_section, &marked)?;
+            if mode == plan::Mode::Release && !has_section {
                 println!(
                     "::warning::CHANGELOG.md has no section for {}; release mode waits for the release PR, so this run is a dry-run",
                     release.version

@@ -1,0 +1,126 @@
+name: Bug report
+description: The grimoire CLI, the catalog or an installed asset doesn't do what its docs say.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug.
+
+        - **Don't paste secrets.** Remove tokens, keys and other credentials from everything you paste below, and anything else you don't want public, such as private URLs. This issue is public.
+        - **Security problems don't go here.** Report a vulnerability privately with the [advisory form](https://github.com/jabbott-iii/Grimoire/security/advisories/new), as [SECURITY.md](https://github.com/jabbott-iii/Grimoire/blob/main/SECURITY.md) explains. If you can't use it, use the "Ask for a private contact" form, and don't describe the problem there.
+        - If a client changed a file format that Grimoire writes, use the "Client format change" form instead. For a new feature or a large change, use "Propose a change".
+  - type: input
+    id: version
+    attributes:
+      label: Grimoire version
+      description: The output of grimoire --version.
+      placeholder: grimoire 0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: channel
+    attributes:
+      label: Install channel
+      description: How you installed Grimoire.
+      options:
+        - cargo install
+        - cargo binstall
+        - npm or npx
+        - PyPI (pipx, uv or pip)
+        - Homebrew
+        - Scoop
+        - winget
+        - Install script (install.sh or install.ps1)
+        - Container image
+        - Release archive, unpacked by hand
+        - Built from a checkout of this repository
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      description: Its name, version and CPU architecture.
+      placeholder: Ubuntu 24.04 on x86_64
+    validations:
+      required: true
+  - type: dropdown
+    id: clients
+    attributes:
+      label: Clients
+      description: The clients in your grimoire.toml that the bug involves.
+      multiple: true
+      options:
+        - claude-code
+        - agents-md
+        - codex
+        - cursor
+        - gemini-cli
+        - copilot
+        - Not specific to a client
+    validations:
+      required: true
+  - type: input
+    id: asset
+    attributes:
+      label: Asset and version
+      description: For a bug in an installed asset, its id and the version that grimoire.lock records for it. Leave it empty for a bug in the CLI itself.
+      placeholder: secret-guard 0.1.0
+    validations:
+      required: false
+  - type: input
+    id: command
+    attributes:
+      label: Command
+      description: The exact command you ran, with every option. Write n/a if an installed asset misbehaves inside a client and no grimoire command is involved.
+      placeholder: grimoire apply --no-input
+    validations:
+      required: true
+  - type: input
+    id: exit-code
+    attributes:
+      label: Exit code
+      description: Run echo $? (or $LASTEXITCODE in PowerShell) straight after the command. Grimoire's exit codes are listed in docs/cli.md. Write n/a if no grimoire command is involved.
+      placeholder: "4"
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output
+      description: Everything the command printed, on stdout and stderr. If you can, run it again with --json and paste that too. It prints one JSON document with the exit code, the result and every diagnostic. For an asset that misbehaves inside a client, paste what the client showed instead.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: grimoire.toml
+      description: The project's grimoire.toml, if the bug involves a project.
+      render: toml
+    validations:
+      required: false
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: What you expected to happen, and where the docs say so if they do.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: What happened instead, including any files that were or weren't written.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you submit
+      options:
+        - label: I removed tokens, keys and other credentials from everything I pasted.
+          required: true
+        - label: This is not a security vulnerability.
+          required: true

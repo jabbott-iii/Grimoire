@@ -1,0 +1,41 @@
+# Code owners. GitHub requests a review from the owners of every file a pull request
+# changes, and the ruleset on every branch requires a code owner's approval.
+#
+# The maintainer owns everything.
+* @jabbott-iii
+
+# Security-sensitive paths, listed on their own so that adding a co-maintainer to the
+# line above doesn't also hand them these by accident. The last matching pattern wins,
+# so these lines must stay below `*`. Give someone one of these paths only on purpose.
+#
+# - .github/: the workflows, their lockfile and scripts, Dependabot, the issue forms and this file
+# - Dockerfile and .grype.yaml: the container image and its vulnerability gate (ADR-0011)
+# - deny.toml: the advisory, ban, licence and source policy for dependencies
+# - packaging/: install scripts, the npm launcher and the tap and bucket workflows (ADR-0010)
+# - xtask/ and .cargo/: the release logic (builds, archives, checksums, channel files and
+#   release notes) and the `cargo xtask` alias that CI and the release workflow call (ADR-0009)
+# - crates/agent-grimoire-install/: the code that writes to a user's project (ADR-0006)
+# - crates/agent-grimoire-resolve/: version resolution and permission consent
+# - crates/agent-grimoire-adapters/: what each client is given, such as an agent's tool list,
+#   an MCP server's command and environment, and hooks
+# - crates/agent-grimoire-mcp/: MCP server transport, limit and authorization defaults (ADR-0007)
+# - catalog/skills/, catalog/tools/ and catalog/mcp-servers/: code that runs on users'
+#   machines (a skill can bundle scripts)
+# - plugins/ and .claude-plugin/: the Claude Code marketplace, which users add from this
+#   repository, not from a release
+/.github/ @jabbott-iii
+/Dockerfile @jabbott-iii
+/.grype.yaml @jabbott-iii
+/deny.toml @jabbott-iii
+/packaging/ @jabbott-iii
+/xtask/ @jabbott-iii
+/.cargo/ @jabbott-iii
+/crates/agent-grimoire-install/ @jabbott-iii
+/crates/agent-grimoire-resolve/ @jabbott-iii
+/crates/agent-grimoire-adapters/ @jabbott-iii
+/crates/agent-grimoire-mcp/ @jabbott-iii
+/catalog/skills/ @jabbott-iii
+/catalog/tools/ @jabbott-iii
+/catalog/mcp-servers/ @jabbott-iii
+/plugins/ @jabbott-iii
+/.claude-plugin/ @jabbott-iii

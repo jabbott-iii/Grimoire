@@ -12,8 +12,9 @@
 [workspace]
 git_release_enable = false
 git_tag_enable = false
-# Library APIs are internal to the CLI for now, and the 0.x series has no
-# compatibility promise; cargo-semver-checks would be one more unverified download.
+# Library APIs are internal to the CLI, but a change that breaks one must be marked
+# breaking (`!`), so it ships as the next 0.y (docs/versioning.md). Nothing checks
+# that automatically: cargo-semver-checks would be one more unverified download.
 semver_check = false
 # `cargo update --workspace` only: dependency bumps arrive through Dependabot.
 dependencies_update = false

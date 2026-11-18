@@ -196,7 +196,7 @@ jobs:
           path: dist
       - name: Write the SBOMs
         run: cargo --locked xtask release sbom --dist dist
-      # Pull request dry-runs build one target per OS, so the channels are generated --partial.
+      # Pull request dry-runs build only some of the six targets (targets.rs), so the channels are generated --partial.
       - name: Generate the channel files
         run: |
           set -euo pipefail
@@ -249,6 +249,8 @@ jobs:
     env:
       TARGET: ${{ matrix.target }}
       VERSION: ${{ needs.plan.outputs.version }}
+      # The winget-cli release installed on Windows, below.
+      WINGET_CLI_VERSION: "v1.29.380"
     steps:
       - name: Download the release assets
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -421,16 +423,48 @@ jobs:
             echo "::error::the wheel's grimoire printed '${actual}', expected '${expected}'"
             exit 1
           fi
-      # winget is not part of the runner images (it is absent on windows-11-arm), so this runs
-      # only where it happens to exist. Warnings fail it, as they fail winget-pkgs validation.
-      - name: Validate the winget manifests (when winget is available)
+      # The runner's own winget predates schema 1.28.0 (first in winget-cli v1.28.190). It checks
+      # the manifests against its older built-in schema and warns on every 1.28.0 header, so install
+      # the winget-cli release whose schemas verify-linux pins (WINGET_CLI_COMMIT is its tag's
+      # commit). Bump them and the job's WINGET_CLI_VERSION by hand, together with WINGET_CLI_COMMIT:
+      # Dependabot can't see them.
+      # Windows PowerShell, not pwsh: Add-AppxPackage comes from its Appx module.
+      - name: Install the pinned winget
+        if: matrix.target == 'x86_64-pc-windows-msvc'
+        shell: powershell
+        env:
+          WINGET_BUNDLE_SHA256: "65dea9c01ce08ee7b763366b27c0e651f97db857c11ca9b9c301826c10092f2e"
+          WINGET_DEPENDENCIES_SHA256: "ba875afe9d190f61218985ac0292a99d1db710bf93e13c68944ca9d89f0d82d1"
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ProgressPreference = 'SilentlyContinue'
+          $dir = Join-Path $env:RUNNER_TEMP 'winget-cli'
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          $base = "https://github.com/microsoft/winget-cli/releases/download/$env:WINGET_CLI_VERSION"
+          $files = [ordered]@{
+            'Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle' = $env:WINGET_BUNDLE_SHA256
+            'DesktopAppInstaller_Dependencies.zip' = $env:WINGET_DEPENDENCIES_SHA256
+          }
+          foreach ($name in $files.Keys) {
+            $path = Join-Path $dir $name
+            Invoke-WebRequest -UseBasicParsing -Uri "$base/$name" -OutFile $path
+            $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $path).Hash
+            if ($actual -ne $files[$name]) { throw "SHA-256 mismatch for ${name}: expected $($files[$name]), got $actual" }
+          }
+          $bundle = Join-Path $dir 'Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle'
+          Expand-Archive -LiteralPath (Join-Path $dir 'DesktopAppInstaller_Dependencies.zip') -DestinationPath (Join-Path $dir 'deps')
+          $appx = @(Get-ChildItem -LiteralPath (Join-Path $dir 'deps\x64') -Filter '*.appx' | ForEach-Object { $_.FullName })
+          if ($appx.Count -ne 3) { throw "expected 3 x64 dependency packages, found $($appx.Count)" }
+          Add-AppxPackage -Path $bundle -DependencyPath $appx -ForceApplicationShutdown
+      # Warnings fail it, as they fail winget-pkgs validation.
+      - name: Validate the winget manifests
         if: matrix.target == 'x86_64-pc-windows-msvc'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-            Write-Output '::notice::winget is not installed on this runner; skipped winget validate'
-            exit 0
+          $version = (winget --version | Out-String).Trim()
+          if ($version -ne $env:WINGET_CLI_VERSION) {
+            throw "winget reports '$version', expected '$env:WINGET_CLI_VERSION'"
           }
           $dir = Join-Path $env:RUNNER_TEMP 'winget-manifest'
           New-Item -ItemType Directory -Force -Path $dir | Out-Null

@@ -1,0 +1,90 @@
+name: Asset request
+description: Propose a new rule, skill, agent, tool, MCP server or bundle for the catalog.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form to ask for an asset, or to check that one fits before you write it. [catalog/README.md](https://github.com/jabbott-iii/Grimoire/blob/main/catalog/README.md) lists what every asset needs, and [CONTRIBUTING.md](https://github.com/jabbott-iii/Grimoire/blob/main/CONTRIBUTING.md) explains how to add one.
+
+        A tool or an MCP server is a Rust crate that ships as its own binary in every release, so it adds to the work of every release. Say why it can't be a rule, a skill or an agent.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options:
+        - rule
+        - skill
+        - agent
+        - tool
+        - mcp-server
+        - bundle
+    validations:
+      required: true
+  - type: input
+    id: asset-id
+    attributes:
+      label: Proposed id
+      description: 1 to 64 characters of a-z, 0-9 and single hyphens, with no hyphen at either end. It can't start with claude-, anthropic-, anthropics-, cc-plugin- or grimoire-, and catalog/README.md has the other naming rules.
+      placeholder: rust-errors
+    validations:
+      required: true
+  - type: textarea
+    id: purpose
+    attributes:
+      label: What it does and why
+      description: What the asset makes an agent do, who needs it, and why the catalog should carry it.
+    validations:
+      required: true
+  - type: dropdown
+    id: clients
+    attributes:
+      label: Clients
+      description: The clients it should support. Not every kind works with every client; catalog/README.md has the table.
+      multiple: true
+      options:
+        - claude-code
+        - agents-md
+        - codex
+        - cursor
+        - gemini-cli
+        - copilot
+    validations:
+      required: true
+  - type: checkboxes
+    id: permissions
+    attributes:
+      label: Permissions it would need
+      description: Tick each one the asset needs at runtime. Leave them all unticked if it needs none. Rules can't declare any, and only tools can register hooks.
+      options:
+        - label: Read files (filesystem-read)
+        - label: Write files (filesystem-write)
+        - label: Use the network (network)
+        - label: Run shell commands or other programs (shell)
+        - label: Register automatic client hooks (hooks; tools only)
+        - label: Read environment variables (env:NAME, one grant per variable)
+  - type: textarea
+    id: permission-details
+    attributes:
+      label: Why it needs them
+      description: For each permission you ticked, what the asset does with it. Name any environment variables it reads, but never paste their values.
+    validations:
+      required: false
+  - type: dropdown
+    id: maintain
+    attributes:
+      label: Would you maintain it?
+      description: Every asset names its maintainers in asset.toml.
+      options:
+        - I'll write it and maintain it
+        - I'll write it, but someone else would need to maintain it
+        - I'm asking someone else to write it
+    validations:
+      required: true
+  - type: textarea
+    id: prior-art
+    attributes:
+      label: Prior art
+      description: Similar assets in this catalog or elsewhere, and the client docs it relies on.
+    validations:
+      required: false

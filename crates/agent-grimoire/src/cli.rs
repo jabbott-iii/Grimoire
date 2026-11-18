@@ -13,7 +13,7 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
     about,
     long_about = None,
     after_help = "Exit status: 0 success, 1 unexpected failure, 2 usage error, 3 invalid configuration \
-or resolution failure, 4 conflict (nothing written), 5 check failed, 6 refused for safety."
+or resolution failure, 4 conflict, 5 check failed, 6 refused for safety. docs/cli.md explains each one."
 )]
 pub(crate) struct Cli {
     #[command(flatten)]
@@ -28,7 +28,7 @@ pub(crate) struct Global {
     /// Print exactly one JSON document on stdout instead of human output.
     #[arg(long, global = true)]
     pub(crate) json: bool,
-    /// Never prompt. Implied when stdin is not a terminal or CI is set.
+    /// Never prompt. Implied by --json, when stdin is not a terminal, and when CI is set.
     #[arg(long, global = true)]
     pub(crate) no_input: bool,
     /// Run as if started in DIR (the project root).

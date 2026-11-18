@@ -5,6 +5,7 @@ Every asset lives in its own directory, `catalog/<kind>/<id>/`. Bundles live in 
 - Adding an asset is a **data-only change** under this directory.
 - `cargo xtask validate` checks everything described here, and CI runs it.
 - The design is in [`docs/architecture.md`](../docs/architecture.md) §3–§6.
+- How to open the pull request is in [`CONTRIBUTING.md`](../CONTRIBUTING.md). Asset versions and deprecation follow [`docs/versioning.md`](../docs/versioning.md).
 
 | Kind | Directory | Content |
 |---|---|---|
@@ -71,7 +72,7 @@ Start a new asset with `cargo xtask new <kind> <id> --maintainer <login>` (or `c
   - A script counts as documented when `SKILL.md` names its path, for example `scripts/x.sh`, in prose, inline code or a code block. Mentioning the `scripts/` directory alone does not count.
 - **Rules declare no permissions**, and must not duplicate another rule.
 - **Version bumps.** Any change to an installed or built file needs a version bump and a CHANGELOG entry. `README.md`, `CHANGELOG.md`, `evals/` and `tests/` are exempt.
-- **Removing an asset** is allowed only if it was already `maturity = "deprecated"` (with a named `replacement`) at the comparison base: on `main` for a pull request, or at the previous tip for a push. Deprecate it in an earlier change first.
+- **Removing an asset** is allowed only if it was already `maturity = "deprecated"` (with a named `replacement`) at the comparison base: on `main` for a pull request, or at the previous tip for a push. Deprecate it in an earlier change first. The policy in [`docs/versioning.md`](../docs/versioning.md) also keeps a deprecated asset, with its replacement, in at least one CLI release before removal. `cargo xtask validate` can't check that, so review does.
 - **Versions** are SemVer without build metadata (`1.2.3`, `1.2.3-rc.1`). The ids `synced` and `grimoire` are reserved, as are the prefixes above. MCP servers can't be named `workspace` or `computer-use`, which Claude Code reserves for built-in servers.
 - **An MCP server started with no arguments speaks stdio.** That is how clients are configured to start it.
 - **MCP servers serve through `agent-grimoire-mcp`**, which holds the transport, limit and authorization defaults ([ADR-0007](../docs/adr/0007-mcp-server-authorization.md)).

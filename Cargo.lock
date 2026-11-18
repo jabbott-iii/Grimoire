@@ -2524,6 +2524,7 @@ dependencies = [
  "clap",
  "flate2",
  "insta",
+ "pulldown-cmark",
  "schemars",
  "serde",
  "serde_json",

@@ -1,7 +1,7 @@
 # Grimoire: implementation plan
 
-- **Status:** Phases 0 to 5 approved and committed (Phase 5 on 2026-11-17). **Phase 6 implemented and reviewed, awaiting review** (2026-11-17).
-- **Date:** 2026-11-17
+- **Status:** Phases 0 to 6 approved and committed (Phase 6 on 2026-11-17). **Phase 7 implemented and reviewed, awaiting review** (2026-11-18).
+- **Date:** 2026-11-18
 
 ## Decisions recorded (2026-11-16)
 
@@ -51,13 +51,30 @@
   - pull request dry-runs also build `aarch64-unknown-linux-musl`, so every PR builds, scans and runs the two-platform image.
 - **Phase 6, after the review** (the maintainer's choice when asked, 2026-11-17): every cosign signature and attestation, for the Phase 5 release files and the image, moves into a reusable workflow, `.github/workflows/sign.yml`, that only the signing jobs call. Every job in `release.yml` that can mint OIDC tokens got the same certificate identity, including `publish-pypi`'s tag-pinned container. Certificates now name `sign.yml`, and verifiers also pin the calling repository and `refs/heads/main`.
 - **Phase 6, the image tag steps** (the maintainer's choice when asked, 2026-11-17): `.github/scripts/image-tags.sh` (push by digest, tag the version, move `latest`) is a seventh language-policy exception (ADR-0010, recorded in ADR-0011). The release jobs and the PR dry-run run the same script, so the code that guards the release tags is tested on every pull request. A Rust version would put cargo, or every xtask dependency, into the job that holds the signing identity.
+- **Phase 6 approved** (2026-11-17), and Phase 7 started.
+- **Phase 7, before implementation** (the maintainer's choices when asked, 2026-11-17):
+  - `CODE_OF_CONDUCT.md` adopts the Contributor Covenant by reference: a short file that links the exact version and adds scope, reporting and enforcement. The agent doesn't copy the Covenant's text;
+  - the conduct contact is a marked placeholder that the maintainer fills in before the first release (a `docs/release.md` checklist item);
+  - the README carries a marked "not released yet" note. `cargo xtask release plan` refuses release mode while it is there, and the release PR deletes it;
+  - **local tooling approved** (scratchpad only): lychee v0.24.2, checked against the SHA-256 that `ci.yml` pins, and check-jsonschema through `uvx`, to check the issue forms once;
+  - `docs/cli.md` is hand-written, and a unit test in the CLI crate fails when a command, flag or exit code is in the code but not in the doc, or the other way round. No new dependency;
+  - the user docs list every diagnostic code the CLI can print, and a test compares that list with the code literals in the crates. Catalog-author codes (`manifest/…`, `catalog/…`) stay out;
+  - **deprecation window: one release.** A deprecated asset ships, with its replacement, in at least one CLI release before removal; a deprecated flag or command warns for at least one minor release; a file format changes only with a new `format` number, and the CLI reads the previous one for at least one more minor release;
+  - no DCO sign-off: submitting a contribution licenses it as `MIT OR Apache-2.0` (Apache-2.0 §5);
+  - each of the five library crates gets its own short README on crates.io.
+- **Phase 7, after the research** (the maintainer's choices when asked, 2026-11-17):
+  - a change that breaks any library crate's public Rust API is marked breaking (`!` or `BREAKING CHANGE`), so release-plz ships it as the next 0.y. The six crates depend on each other with `^0.1.0`, so Cargo would otherwise build an older CLI against it;
+  - an MSRV bump is marked breaking too, so in 0.x it lands in the next 0.y (Q6: never in a patch release). After 1.0 it is a minor release;
+  - `SECURITY.md` promises an acknowledgement within 7 days, updates in the advisory, and publication when the fix is released. It sets no deadline for the fix.
+- **Phase 7, deviation (2026-11-18, forced by the review; for the maintainer's approval):** the release PR doesn't delete the `before-first-release` markers. A pull request merged to `main` ahead of it does, because release-plz manages the release PR's branch and whether it keeps a commit pushed there is UNVERIFIED. The guard also fails the release PR's own checks while a marker remains, so it can't be merged early. Markers are paired (an opening and a closing line around the text), and deleting only the opening line still fails: the review showed that a single marker line let the note it marked ship.
+- **CI fixes after Phase 7** (the maintainer's choice when asked, 2026-11-18): the Release dry-run installs winget-cli v1.29.380, pinned by SHA-256, and runs `winget validate` with it. The runner's own winget is older than schema 1.28.0, and accepting its warnings would weaken the check.
 
 ## Where things are
 
 | Document | Purpose |
 |---|---|
 | [`docs/specs.md`](docs/specs.md) | Register of every external spec, with version, URL, date checked and status. IDs such as `CC-MEM` are cited everywhere else |
-| [`docs/architecture.md`](docs/architecture.md) | Asset-kind definitions (for confirmation), repo layout, manifest, config and lock formats, install model, adapters, CLI |
+| [`docs/architecture.md`](docs/architecture.md) | Asset-kind definitions, repo layout, manifest, config and lock formats, install model, adapters, CLI |
 | [`docs/adr/0001-catalog-delivery.md`](docs/adr/0001-catalog-delivery.md) | Embedded catalog behind a `Source` abstraction |
 | [`docs/adr/0002-mcp-server-and-tool-packaging.md`](docs/adr/0002-mcp-server-and-tool-packaging.md) | Separate binaries vs subcommands, with trade-offs |
 | [`docs/adr/0003-release-tooling.md`](docs/adr/0003-release-tooling.md) | dist vs release-plz vs hand-written |
@@ -392,8 +409,55 @@ Deviations from the plan below, each recorded in ADR-0011:
 
 ### Phase 7: Documentation pass and contributor tooling
 
+**Outcome (2026-11-18):** implemented and reviewed. Every gate that runs locally passes on Linux (472 tests). Nothing has run on GitHub: the community files, the issue forms, CODEOWNERS and the README's rendering on GitHub, crates.io and PyPI still need a push to be seen.
+
+What was built:
+- **Specs first.** Five research topics (community files and CODEOWNERS, issue forms, the security policy and the Contributor Covenant, README rendering on each registry, versioning), each re-checked by a skeptic: 264 facts, 242 confirmed, 19 corrected, 3 left UNVERIFIED, none refuted, and 77 added by the skeptics. They are in `docs/specs.md` (Phase 7 additions), with the stale private-reporting entry corrected.
+- **User docs:** a new `README.md`; `docs/cli.md` (every command, global option, exit code, the `--json` envelope and the environment); `docs/diagnostics.md` (all 92 user-facing diagnostic codes); `docs/configuration.md` (`grimoire.toml`, `grimoire.lock`, permissions and the six clients).
+- **Policies:** `docs/versioning.md` (the public API, versions, assets, deprecation, MSRV), `SECURITY.md` and `CODE_OF_CONDUCT.md` (the Contributor Covenant 3.0 by reference).
+- **Contributor files:** `CONTRIBUTING.md`, `.github/pull_request_template.md`, `.github/CODEOWNERS`, and five issue forms with a chooser config, checked with check-jsonschema 0.39.0.
+- **Checks that keep the docs true**, all in `cargo test --workspace`:
+  - `crates/agent-grimoire/src/docs_check.rs`: `docs/cli.md` against clap's command tree and the `Exit` enum;
+  - `crates/agent-grimoire/tests/diagnostics_doc.rs`: `docs/diagnostics.md` against the code literals in the five crates;
+  - `xtask/src/readme_links.rs`: the root README links only to `https://`, `mailto:` and its own headings, because crates.io and PyPI break relative links;
+  - `cargo xtask release plan` fails the release PR and the release while a `before-first-release` marker remains in `README.md`, `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md` or `SECURITY.md`.
+  Each was shown to fail on a broken copy of its file.
+- **The final `docs/security-model.md`**: cross-client leaks in full (§3a), the repository and contribution process as it really is (§6d), reporting through `SECURITY.md`, and new residual risks.
+- **Smaller changes:** the five library crates have their own READMEs; `AGENTS.md`, `architecture.md`, `release.md`, `catalog/README.md` and `packaging/README.md` follow the new docs; the lock's `allow` description is corrected, and the schema regenerated; two help texts in `cli.rs` are corrected; `ci.yml`'s catalog job runs `cargo --locked xtask`.
+
+Deviations from the plan below:
+- The markers are cleared in a pull request merged ahead of the release PR, not by the release PR itself, and they are paired (recorded above, for the maintainer's approval).
+- The README guard parses Markdown with pulldown-cmark, already a workspace dependency, as an xtask dev-dependency (one line in `Cargo.lock`), instead of a hand-written scanner.
+
+**Review (2026-11-18).** A five-area review (user docs, the diagnostics reference and the drift checks, the policies, the contributor files, the security model and cross-document consistency) raised 63 findings. An independent skeptic checked each one: 62 were confirmed (18 medium, 44 low) and 1 refuted. All 62 are addressed. The main ones:
+- **Medium: the release guard checked only the marker line.** Deleting that line alone would have published the "not released yet" note to crates.io, PyPI and every archive, where it can't be changed. Markers are now paired and matched loosely, and deleting only the opening line still fails.
+- **Medium: release-plz can't open the release PR** (seen on GitHub, run 44198210657): the ruleset on every branch refuses its commit. This is a settings decision for the maintainer (§6 below; `release.md` §2 A).
+- **Medium: docs that promised more than the code does.** Content that existed before Grimoire can become Grimoire's (when it's adopted, or overwritten with `--force`) and is then deleted with its asset. The drift tests check names, not descriptions. A deprecated asset selected only by a tag gets no warning period. Assets selected by a tag or a bundle move to breaking versions on `update`. Without `--locked`, an older CLI can carry a newer catalog crate. An asset binary can change without a version bump. Each statement now says what is true.
+- **Medium: dead ends for reporters and contributors.** Someone without a GitHub account, or a contributor proposing a large change, had no issue form that fit, so there are now forms for a private contact and a change proposal. `SECURITY.md` named only Dependabot alerts, which few users get; it now tells users to watch releases. `release.md` now has the steps that `SECURITY.md`'s promises depend on.
+- **Smaller fixes:** exit-code details, prompt answers, CODEOWNERS paths, the MSRV toolchain (1.96.0, as CI), `Cargo.lock` for new asset crates, stale design-doc lines, and specs entries.
+
+Found but not fixed (code, outside a docs phase; each is documented as it behaves today):
+- `uninstall --json` drops the files it removed from its result, and `uninstall --purge` reports removing a `grimoire.toml` that didn't exist.
+- `doctor` prints a broken lock's diagnostics twice.
+- `list` doesn't pad its columns.
+- In an empty project, `plan --check` reports no change, but `apply` then writes a lock holding only `format = 1`.
+- `init` and `doctor` check whether client files exist through a plain path, which follows a symbolic link in a parent directory. They read no content.
+- `init/client-unavailable` and `resolve/client-unavailable` can't be reached in this build.
+- Nothing checks that `min-cli-version` is at most the CLI version that ships the asset.
+
+Seen on GitHub, before Phase 7 (read-only, 2026-11-18). CI has failed on each of the last three pushed commits:
+- `test (macos-15)` fails `oversized_and_malformed_requests_are_refused` in `crates/agent-grimoire-mcp/tests/http.rs`;
+- `test (windows-2025)` fails `every_exemplar_installs_for_every_client` and `every_exemplar_installs_verifies_and_uninstalls` in `crates/agent-grimoire/tests/builtin.rs`;
+- the Release dry-run fails at `winget validate`, which rejects the manifests' schema header comment (exit code -1978335192).
+
+Fixed in the working tree on 2026-11-18, and not yet run on GitHub:
+- **Windows:** `Root::remove` held a handle to the file's directory while pruning it. cap-std opens Windows directories without `FILE_SHARE_DELETE`, so removing that directory failed and uninstall left every empty directory behind. It now closes the handle first.
+- **macOS:** the test wrote a 1 MiB body after the server had already answered 413 and closed, so the write hit a broken pipe or the read a reset. It now sends only the head, and the server must refuse on the declared length alone. With that check disabled, the test still fails (503 after the 60-second request timeout).
+- **winget:** exit code -1978335192 is `MANIFEST_VALIDATION_WARNING`. winget compares each header with the `$id` of its own built-in schema for that manifest version, and the runner's winget predates schema 1.28.0 (first in v1.28.190). The dry-run now installs v1.29.380 (`WINGET-P5` in `docs/specs.md`).
+- **CI** runs `cargo test --no-fail-fast`. Cargo had stopped at the first failing test binary, so most of the Windows suite and part of the macOS suite had never run. A read-only audit of those tests found no other platform hazard; only a run on GitHub settles it.
+
 - **Docs:** README rewrite (the current README is a one-line placeholder), plus user docs for every command and exit code.
-- **Contributor files:** CONTRIBUTING, a PR template with an asset checklist, CODEOWNERS, issue templates, the deprecation and versioning policy, SECURITY.md (private vulnerability reporting), CODE_OF_CONDUCT.md, and the final license files per Q1.
+- **Contributor files:** CONTRIBUTING, a PR template with an asset checklist, CODEOWNERS, issue templates, the deprecation and versioning policy, SECURITY.md (private vulnerability reporting), CODE_OF_CONDUCT.md. The licence files were already done in Phase 1 (Q1).
 - **Docs:** `docs/security-model.md` final version.
 
 ## 6. Actions only you can take (none done by the agent)
@@ -403,8 +467,11 @@ Deviations from the plan below, each recorded in ADR-0011:
 | Before Phase 1 CI | Enable the repo setting "Require actions to be pinned to a full-length commit SHA"; set `GITHUB_TOKEN` default permissions to read-only; enable secret-scanning push protection. |
 | After the first green CI run | Add a branch ruleset on `main` that requires the CI and Security jobs to pass (and requires pull requests). Without it, failing gates do not block merges. Optionally enable "Require lockfile" for `actions.lock`. |
 | Before merging Phase 5 | Turn on "Allow GitHub Actions to create and approve pull requests": `release-plz.yml` opens the release PR on the next push to `main`. Leave that PR unmerged until the bootstrap is done. |
-| Phase 5 and 6 bootstrap | The checklist in [`docs/release.md`](docs/release.md) §2: the five environments (`release`, `crates-io`, `npm`, `pypi`, `ghcr`), immutable releases, the ruleset (CI, Security and `release checks`), the npm org and packages, the crates.io first publish and trusted publishers, the PyPI pending publisher, the tap and bucket repos, the GHCR checks (never push to `ghcr.io/jabbott-iii/grimoire` by hand; after the first push, make the package public, which can't be undone: §2 B and D), the Phase 7 README, and finally `GRIMOIRE_RELEASES=enabled`. |
-| Before the first release | Enable private vulnerability reporting (currently `enabled: false` on this repo); it is part of the [`docs/release.md`](docs/release.md) §2 checklist. |
+| Phase 5 and 6 bootstrap | The checklist in [`docs/release.md`](docs/release.md) §2: the five environments (`release`, `crates-io`, `npm`, `pypi`, `ghcr`), immutable releases, the ruleset (CI, Security and `release checks`), the npm org and packages, the crates.io first publish and trusted publishers, the PyPI pending publisher, the tap and bucket repos, the GHCR checks (never push to `ghcr.io/jabbott-iii/grimoire` by hand; after the first push, make the package public, which can't be undone: §2 B and D), clearing the Phase 7 `before-first-release` markers (the README's note, the conduct contact and SECURITY.md's "No release exists yet"), and finally `GRIMOIRE_RELEASES=enabled`. |
+| Before merging Phase 7 | Watch the repository's security alerts (Watch → Custom → Security alerts), because `SECURITY.md` promises a 7-day acknowledgement from the day it is on `main`. Keep private vulnerability reporting on (it read `enabled: true` on 2026-11-17). |
+| Now: release-plz is blocked | The `BestBranch` ruleset covers every branch, so release-plz can't commit to its `release-plz-*` branch (run 44198210657: "Changes must be made through a pull request", "Waiting for Code Scanning results"). Choose: target the ruleset at the default branch only, or exclude `refs/heads/release-plz-*`. Don't make GitHub Actions a bypass actor: any workflow token with `contents: write` could then change `main`. Delete the two orphan `release-plz-*` branches (the deletion rule needs the admin bypass). [`docs/release.md`](docs/release.md) §2 A has the details. |
+| Now: code scanning | The ruleset requires CodeQL and code-quality results, but no workflow here produces them and the default-setup state couldn't be read. Turn on CodeQL default setup and Code Quality, or drop those two rules, then confirm a pull request gets the results. Until then, every merge needs the bypass. |
+| After merging Phase 7 | `gh api repos/jabbott-iii/Grimoire/codeowners/errors` should list no errors, and `/issues/new/choose`, opened as someone other than the owner, should show the five forms and the two links, with no duplicate security entry. |
 
 ## 7. Risks
 
@@ -428,7 +495,7 @@ Commands run by me:
 - The Rust stable channel manifest (1.100.0).
 - crates.io API version lookups for 33 crates.
 - Name availability queries against crates.io, npm, PyPI, Homebrew, Scoop and winget.
-- `gh api` reads of repo metadata: public, MIT, created 2026-11-16, no environments, private vulnerability reporting disabled.
+- `gh api` reads of repo metadata: public, MIT, created 2026-11-16, no environments, private vulnerability reporting disabled (enabled since; re-checked 2026-11-17 in Phase 7).
 - Spot re-checks against primary sources, all matching the research reports: MCP releases, rmcp protocol constants and Origin default at `rmcp-v3.10.0`, the Trivy advisory, and the crates.io first-publish rule.
 
 Delegated: spec research was done by six read-only research subagents in this session. Each fact in `specs.md` carries the URL its agent fetched. I re-checked only the items listed above myself.

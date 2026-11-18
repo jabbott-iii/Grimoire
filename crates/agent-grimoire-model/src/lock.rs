@@ -95,7 +95,8 @@ pub struct LockedAsset {
     pub manifest: Sha256Digest,
     /// Why the asset is installed.
     pub selected_by: Vec<Selector>,
-    /// Permissions accepted at resolution time.
+    /// The permissions this version needs, every one of which `grimoire.toml`
+    /// accepts. A broader grant there is not copied.
     #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
     pub allow: BTreeSet<Permission>,
     /// Content Grimoire owns on disk for this asset.

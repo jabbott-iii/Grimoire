@@ -1,0 +1,54 @@
+name: Propose a change
+description: Propose a new feature, a docs improvement, or a large change before you start it, such as a new client, command, format change or dependency.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        [CONTRIBUTING.md](https://github.com/jabbott-iii/Grimoire/blob/main/CONTRIBUTING.md) asks for an issue before a large change, so that nobody spends time on something that can't be merged. Large changes include a new client, asset kind or command; a change to the format of grimoire.toml, grimoire.lock, asset.toml or a bundle; a new dependency, or code that isn't Rust; and anything that needs an ADR. Use this form for a new feature or a docs improvement too. A small fix can go straight to a pull request.
+
+        - For a new asset, including a tool or an MCP server, use the "Asset request" form. For a bug, use "Bug report", and for a change in a client's file format, "Client format change".
+        - **Security problems don't go here.** [SECURITY.md](https://github.com/jabbott-iii/Grimoire/blob/main/SECURITY.md) says how to report one privately.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is missing or doesn't work well today, and who it affects.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: What you would change, and how users or contributors would notice it. Name the commands, files, formats or crates involved.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other ways to solve the problem, including leaving things as they are, and why you prefer this one.
+    validations:
+      required: false
+  - type: dropdown
+    id: adr
+    attributes:
+      label: Does it need an ADR?
+      description: A significant or hard-to-reverse decision needs an ADR in docs/adr/.
+      options:
+        - It needs an ADR
+        - It doesn't need an ADR
+        - Not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: specs
+    attributes:
+      label: Does it need a docs/specs.md re-check?
+      description: Code written against an external format, such as a client's files, MCP, Agent Skills, a registry or a CI tool, needs that format re-read at its primary source and its docs/specs.md entry updated in the same change. If it does, name the format in the proposal and link its source.
+      options:
+        - It relies on an external format that needs a re-check
+        - It relies on no external format
+        - Not sure
+    validations:
+      required: true

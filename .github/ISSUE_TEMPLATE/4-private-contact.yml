@@ -1,0 +1,19 @@
+name: Ask for a private contact
+description: Ask the maintainer for a private way to send a security or conduct report, without describing it here.
+title: Request for a private contact
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **This issue is public, so don't describe the problem here.** Don't give the affected version, the steps to reproduce it or a proof of concept, and don't name anyone involved. Keep the title as it is. The maintainer replies in this issue with a private way to send the details.
+
+        - **For a security problem, use the [private advisory form](https://github.com/jabbott-iii/Grimoire/security/advisories/new) if you can.** It needs a GitHub account, and [SECURITY.md](https://github.com/jabbott-iii/Grimoire/blob/main/SECURITY.md) explains it. Use this form only when the person with the report can't use that form, for example because they have no GitHub account.
+        - For a conduct problem, [CODE_OF_CONDUCT.md](https://github.com/jabbott-iii/Grimoire/blob/main/CODE_OF_CONDUCT.md) says how to report it.
+  - type: textarea
+    id: contact
+    attributes:
+      label: How should the maintainer reach you?
+      description: Optional. Leave it empty and the maintainer replies in this issue. Everyone can read what you write here, so don't post a private address, such as an email address or a phone number, unless you accept that it is public.
+    validations:
+      required: false

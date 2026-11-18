@@ -1,6 +1,6 @@
 # ADR-0009: Release pipeline and distribution channels
 
-- **Status:** Accepted (the maintainer's decisions when asked, 2026-11-17, during Phase 5, revised the same day after the Phase 5 review). Amended by [ADR-0011](0011-container-image.md) (2026-11-17): a fifth environment, `ghcr`; the `image`, `verify-image`, `publish-image` and `sign-image` jobs; every signature and attestation moves into the reusable workflow `sign.yml`, under a new identity, and `sign-files` replaces `attest` and `attest-sbom`; and PR dry-runs also build `aarch64-unknown-linux-musl`.
+- **Status:** Accepted (the maintainer's decisions when asked, 2026-11-17, during Phase 5, revised the same day after the Phase 5 review). Amended by [ADR-0011](0011-container-image.md) (2026-11-17): a fifth environment, `ghcr`; the `image`, `verify-image`, `publish-image` and `sign-image` jobs; every signature and attestation moves into the reusable workflow `sign.yml`, under a new identity, and `sign-files` replaces `attest` and `attest-sbom`; and PR dry-runs also build `aarch64-unknown-linux-musl`. Amended on 2026-11-18, at the maintainer's choice: the Windows dry-run installs a pinned winget-cli for `winget validate`, because the runner's own winget is too old for schema 1.28.0 (`WINGET-P5`).
 - **Date:** 2026-11-17
 - **Specs:** `RUST-REGISTRY-P5`, `NPM-P5`, `PYPI-P5`, `BREW-SCOOP-P5`, `WINGET-P5`, `SUPPLY-CHAIN-P5`, `ACTIONS-P5`, `INSTALLERS-P5` in [`../specs.md`](../specs.md)
 - **Amends:** [ADR-0002](0002-mcp-server-and-tool-packaging.md) (how asset binaries are found), [ADR-0003](0003-release-tooling.md) (who tags and publishes, release-PR CI, installers, PyPI, Homebrew and Scoop, dry-runs) and [ADR-0004](0004-package-and-binary-names.md) (the winget identifier and command name)
@@ -169,7 +169,7 @@ On every PR, the dry-run:
 - installs the npm launcher with its platform tarball, and the wheel into a venv, and runs `grimoire --version` from each;
 - runs `cargo publish --workspace --dry-run --locked`, `twine check --strict`, ShellCheck, PSScriptAnalyzer, `Test-Json` against the pinned Scoop and winget schemas, `brew style` and `brew audit` in a local tap, and `npm stage publish --dry-run` against an unreachable local registry;
 - signs and verifies every file with cosign, offline;
-- runs `winget validate` only if `winget` happens to exist on the runner;
+- installs winget-cli v1.29.380 on the Windows x64 runner, checked against pinned SHA-256s, and runs `winget validate` with it;
 - ends with `release checks`, the one check the ruleset requires.
 
 What PR dry-runs can't check:

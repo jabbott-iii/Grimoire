@@ -20,7 +20,7 @@ These files turn a built `grimoire` into the release's distribution channels. `c
   - `channels` fails on any other `@@…@@` key, or if a placeholder is left.
 - **The templates are valid scripts as they stand.** The placeholders sit inside single-quoted strings, so the linters can check the templates too. Run unrendered, a script refuses to install.
 - **npm launcher.** `grimoire.js` is copied as it is. The `package.json` files are generated, and must not set `exports` in a platform package: `require.resolve` can't find the binary then.
-- **No templates for the rest.** The Homebrew formula (`agent-grimoire.rb`), the Scoop manifest (`agent-grimoire.json`), the winget manifests and the npm `package.json` files are written by the Rust code in `xtask/`.
+- **No templates for the rest.** The Homebrew formula (`agent-grimoire.rb`), the Scoop manifest (`agent-grimoire.json`), the winget manifests, and the npm `package.json` files and READMEs are written by the Rust code in `xtask/`. The npm packages don't carry the root `README.md`; the CLI archives and the wheels do.
 
 Change a template here, never a rendered file.
 

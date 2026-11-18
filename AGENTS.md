@@ -23,8 +23,8 @@ Grimoire is a catalog of AI-agent assets (rules, skills, agents, tools, MCP serv
 | `crates/agent-grimoire-model` | Strict types for `asset.toml`, bundles, `grimoire.toml`, `grimoire.lock`; single-document validation; JSON Schema source |
 | `crates/agent-grimoire-catalog` | Catalog loading and catalog-wide validation, including native Agent Skills checks; the embedded pack (`catalog.pack`) and `Source` |
 | `crates/agent-grimoire-resolve` | Selection, versions, conflicts, clients and permission consent |
-| `crates/agent-grimoire-install` | Root-confined filesystem, managed blocks, JSON entries, the planner, `apply` and `verify` |
-| `crates/agent-grimoire-adapters` | Client adapters (`claude-code`, `agents-md`) and the cross-client planner |
+| `crates/agent-grimoire-install` | Root-confined filesystem, managed blocks, JSON, JSONC and TOML entries, the planner, `apply` and `verify` |
+| `crates/agent-grimoire-adapters` | The six client adapters (`claude-code`, `agents-md`, `codex`, `cursor`, `gemini-cli`, `copilot`), the cross-client planner, and the plugin files for the marketplace |
 | `crates/agent-grimoire` | The `grimoire` CLI: a library (`run`) plus the binary |
 | `crates/agent-grimoire-mcp` | Shared hardening for MCP server assets: stdio, Streamable HTTP, limits and OAuth resource-server checks (never published) |
 | `crates/agent-grimoire-testkit` | Fixture catalogs and projects for tests (never published) |
@@ -36,6 +36,9 @@ Grimoire is a catalog of AI-agent assets (rules, skills, agents, tools, MCP serv
 | `catalog/<kind>/<id>/` | One directory per asset (data only). See [`catalog/README.md`](catalog/README.md) |
 | `.claude-plugin/`, `plugins/claude-code/` | The Claude Code plugin marketplace, generated from `catalog/`. Never edit by hand |
 | `schemas/` | Generated JSON Schemas. Never edit by hand |
+| `docs/cli.md`, `docs/diagnostics.md`, `docs/configuration.md`, `docs/versioning.md` | The user reference: commands, flags, exit codes, `--json` output and environment; every user-facing diagnostic code; `grimoire.toml`, `grimoire.lock`, permissions and clients; the versioning and deprecation policy |
+| `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md` | The community files, at the root. `README.md` is also the `agent-grimoire` crate's page on crates.io, the PyPI long description and the README in every CLI archive |
+| `.github/ISSUE_TEMPLATE/`, `.github/pull_request_template.md`, `.github/CODEOWNERS` | The issue forms and the chooser's `config.yml`, the pull request checklist, and the code owners |
 
 ## Everyday commands
 
@@ -69,7 +72,7 @@ cargo xtask release image base                         # print the base index re
 cargo xtask release image context --dist dist --base base --out image   # check the base index (from `crane manifest`) against the pin, unpack both Linux musl targets' binaries into a build context, write the buildx arguments
 cargo xtask release image check --out image --layout image/layout --base base   # check buildx's OCI layout against the plan, binaries byte for byte; print the digests
 cargo xtask release image coverage --out image --report <json> --cdx <file> --platform <p>   # fail unless Grype saw Debian, its packages and every binary's Rust packages
-cargo +1.96 check --workspace --all-targets --locked   # MSRV
+cargo +1.96.0 check --workspace --all-targets --locked   # MSRV, as CI runs it, after rustup toolchain install 1.96.0 --profile minimal
 cargo deny check
 cargo shear
 ```
@@ -84,12 +87,20 @@ cargo shear
 - **Snapshots are reviewed, not rubber-stamped.** Adapter output is covered by `insta` snapshots. When one changes, read the diff before accepting it (`cargo insta review`, or `INSTA_UPDATE=always` and `git diff`).
 - **The installer's guarantees are tested end to end** in `crates/agent-grimoire/tests/cli.rs`. A change to planning, applying or removal needs a test there.
 
+## Documentation
+
+- **The user reference follows the code.** A change to a command, flag or exit code updates [`docs/cli.md`](docs/cli.md), and a new user-facing diagnostic code updates [`docs/diagnostics.md`](docs/diagnostics.md). A unit test and an integration test fail when a command, flag, exit code or diagnostic code is in the code but not in these files, or the other way round. Descriptions aren't checked, so update them in the same change.
+- **The root `README.md` uses absolute links only** (`https://github.com/jabbott-iii/Grimoire/blob/main/…`), and an xtask test enforces it. Relative links break where the file is republished: crates.io resolves them against `crates/agent-grimoire/`, PyPI doesn't rewrite them, and the CLI archives hold no `docs/`.
+- **Keep one copy of each community file.** `README.md`, `CONTRIBUTING.md`, `SECURITY.md` and `CODE_OF_CONDUCT.md` live at the root. Never add one in `.github/` or `docs/`, where GitHub also looks for them: it reads `.github/` first, then the root, then `docs/`, so a copy in `.github/` would replace the root file on GitHub. Package, crate and asset READMEs are different files, and are required where [`catalog/README.md`](catalog/README.md) and the crates need them.
+
 ## Adding an asset
 
 Adding an asset is a data-only change under `catalog/`. See [`catalog/README.md`](catalog/README.md) for the required files, and run `cargo xtask validate` before you open a PR.
 
-Any change to installed content needs a version bump and a CHANGELOG entry.
+Any change to installed content needs a version bump and a CHANGELOG entry. Asset versions and deprecation follow [`docs/versioning.md`](docs/versioning.md).
 
 ## Commits
 
 Use Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `ci:`, `refactor:`, `test:`). Changelogs are generated from them by release-plz (ADR-0003).
+
+Mark a breaking change with `!` (`feat!: …`) or a `BREAKING CHANGE:` footer. That includes a change that breaks any library crate's public API and, while Grimoire is 0.x, an MSRV bump ([`docs/versioning.md`](docs/versioning.md)). Nothing else catches an unmarked one: release-plz runs no semver check.

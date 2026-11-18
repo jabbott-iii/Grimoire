@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/jabbott-iii/Grimoire/security/advisories/new
+    about: Report it privately through GitHub's private vulnerability reporting, never in a public issue. SECURITY.md says what happens next.
+  - name: Documentation
+    url: https://github.com/jabbott-iii/Grimoire/tree/main/docs
+    about: The commands, exit codes, configuration and diagnostic codes, and how Grimoire is designed.

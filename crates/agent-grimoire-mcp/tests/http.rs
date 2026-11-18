@@ -130,7 +130,19 @@ async fn send(
     headers: &[(&str, &str)],
     body: &str,
 ) -> Reply {
-    let mut stream = tokio::net::TcpStream::connect(addr).await.unwrap();
+    let request = head(addr, method, path, headers, body.len()) + body;
+    exchange(addr, &request).await
+}
+
+/// The request line and headers of a request whose body is `content_length`
+/// bytes, up to and including the blank line.
+fn head(
+    addr: SocketAddr,
+    method: &str,
+    path: &str,
+    headers: &[(&str, &str)],
+    content_length: usize,
+) -> String {
     let mut request = format!("{method} {path} HTTP/1.1\r\n");
     if !headers.iter().any(|(n, _)| n.eq_ignore_ascii_case("host")) {
         let _ = write!(request, "Host: {addr}\r\n");
@@ -140,9 +152,15 @@ async fn send(
     }
     let _ = write!(
         request,
-        "Content-Length: {}\r\nConnection: close\r\n\r\n{body}",
-        body.len()
+        "Content-Length: {content_length}\r\nConnection: close\r\n\r\n"
     );
+    request
+}
+
+/// Writes `request` on a new connection and reads the reply until the server
+/// closes it.
+async fn exchange(addr: SocketAddr, request: &str) -> Reply {
+    let mut stream = tokio::net::TcpStream::connect(addr).await.unwrap();
     stream.write_all(request.as_bytes()).await.unwrap();
     let mut raw = Vec::new();
     stream.read_to_end(&mut raw).await.unwrap();
@@ -338,18 +356,18 @@ async fn discovery_lists_both_protocol_versions_and_legacy_clients_stay_stateles
 #[tokio::test]
 async fn oversized_and_malformed_requests_are_refused() {
     let server = start(None).await;
-    let big = format!(
-        "{{\"x\":\"{}\"}}",
-        "a".repeat(agent_grimoire_mcp::MAX_BODY_BYTES)
-    );
-    let reply = send(
+    // Only the head is sent: the server must refuse on the declared length
+    // alone, without waiting for the body. It closes the connection without
+    // reading one, so a client still writing the body would race that close
+    // and could see a broken pipe or a reset instead of the reply.
+    let oversized = head(
         server.addr,
         "POST",
         "/mcp",
         &headers(&[("Mcp-Method", "tools/list")]),
-        &big,
-    )
-    .await;
+        agent_grimoire_mcp::MAX_BODY_BYTES + 1,
+    );
+    let reply = exchange(server.addr, &oversized).await;
     assert_eq!(reply.status, 413);
     let no_header = send(
         server.addr,
