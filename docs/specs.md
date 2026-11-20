@@ -91,6 +91,7 @@ Rows were checked 2026-11-16 unless they say otherwise; the client rows were re-
 | SECURITY-POLICY-P7 | Private vulnerability reporting, `SECURITY.md`, repository advisories and CVEs, Scorecard's Security-Policy check, Contributor Covenant 3.0 | github/docs @ `49a012fa50b4`; Scorecard v5.6.0; Contributor Covenant @ `8d00b9180c88`; cve-website @ `0d524c767399` | https://github.com/github/docs (`content/code-security/`) | Verified (Phase 7): 42 facts, 41 confirmed, 1 corrected; gaps listed |
 | README-RENDER-P7 | One README on GitHub, crates.io, PyPI and npm and in the release archives | crates.io @ `dfefd6318249` (comrak 0.59.0, ammonia 4.2.5); readme_renderer 46.0; warehouse @ `c2f79b4a6fb0`; Cargo 1.100.0; npm 11.19.1 / 12.2.3 | https://github.com/rust-lang/crates.io (`crates/crates_io_markdown/`) | Verified from source (Phase 7): 54 facts, 50 confirmed, 3 corrected, 1 UNVERIFIED (npmjs.com rendering); gaps listed |
 | VERSIONING-P7 | SemVer 2.0.0, Cargo requirements, MSRV and `cargo install`, release-plz bumps, clap 4.6.8 deprecation and help APIs, CLI doc generators | semver.org (Last-Modified 2026-10-16); Cargo 1.100.0 (`3acc79c0c841`) and 1.96–1.99; release-plz 0.4.3; clap 4.6.8; clap_mangen 0.3.4; clap-markdown 0.1.5 | https://semver.org/spec/v2.0.0.html | Verified (Phase 7): 63 facts, 56 confirmed, 7 corrected; gaps listed; nothing built or run |
+| CODEQL | CodeQL advanced setup: `github/codeql-action` `init` and `analyze`, the permissions they need, the pinned release | codeql-action v4.39.3 (`33d7b85`), README at that commit; github/docs @ `0c5268cc10ff`; live REST reads 2026-11-19 | https://github.com/github/codeql-action | Verified 2026-11-19 (CODEQL below); runtime permissions in a public repository seen only on GitHub |
 
 **Not yet researched, to verify in the phase that needs them:**
 
@@ -4405,7 +4406,7 @@ Sources: https://github.com/github/docs at `49a012fa50b4` (committed 2026-11-17T
   - **Probably no classic rule:** `branches/main` reports `protected: true` with `protection.enabled: false`. The protection endpoint itself answered 403 to the token used.
   - **People:** one collaborator, the owner, with the admin role. A personal-account repository has only an owner and collaborators, and collaborators can push; there are no Read or Triage roles. Outside contributors therefore work from forks.
   - **Observed 2026-11-17 and 2026-11-18 (Phase 7 review; read-only `gh api` requests), what feeds the code-scanning and code-quality rules:**
-    - No workflow in `.github/workflows/` runs CodeQL. `actions/workflows` lists only CI, Release PR, Release, Security and the two dynamic Dependabot workflows, and no dynamic code-scanning workflow. The check suites on `b5bb0e6` come only from the `github-actions` and `dependabot` apps.
+    - No workflow in `.github/workflows/` runs CodeQL. *(Since `4dd223d` on 2026-11-18, `codeql.yml` does: CODEQL.)* `actions/workflows` lists only CI, Release PR, Release, Security and the two dynamic Dependabot workflows, and no dynamic code-scanning workflow. The check suites on `b5bb0e6` come only from the `github-actions` and `dependabot` apps.
     - `code-scanning/default-setup` and `code-scanning/analyses` answered 403 to the token used, so whether CodeQL default setup or Code Quality is on couldn't be read (UNVERIFIED).
     - GitHub's own evaluation of the rules, when they refused release-plz's commit (RELEASE-PLZ), said "Waiting for Code Scanning results. Code Scanning may not be configured for the target branch."
     - So, as far as could be seen, nothing produces the results these rules wait for, and no push or pull request into a branch can meet `BestBranch` without the bypass (an inference).
@@ -4697,3 +4698,21 @@ Sources: https://semver.org/spec/v2.0.0.html (Last-Modified 2026-10-16, fetched 
   - How Claude Code compares plugin versions that differ only in build metadata.
   - Any `cargo install` behaviour run for real. All of it was read from Cargo's source and man pages.
 - **Used by:** `docs/versioning.md`, `docs/cli.md`, `CONTRIBUTING.md`, `.github/pull_request_template.md` and `README.md`.
+
+## After Phase 7 (checked 2026-11-19)
+
+### CODEQL: the CodeQL action in `codeql.yml`
+
+- **Why:** the `BestBranch` ruleset requires CodeQL code-scanning results (COMMUNITY-P7). The maintainer added GitHub's advanced-setup workflow, `.github/workflows/codeql.yml`, in `4dd223d`. It used tag refs, so CI's `actions.lock` check and zizmor's blanket pin policy failed, and the xtask workflow reader refused its step indentation.
+- **Release and pin** (REST reads, 2026-11-19):
+  - The newest v4 release is `v4.39.3`, published 2026-11-04T16:49:20Z, so it meets the 7-day cooldown (DEPENDABOT). Its annotated tag `f3bbb056…` points at commit `33d7b85da1a04171e211befe2c739303b9a4c066`.
+  - That commit is identical to the `releases/v4` branch (compare: `identical`, 0 ahead, 0 behind), so it isn't an impostor commit.
+  - `v4.39.1`, which zizmor-action v0.8.1 uses internally, is commit `9b3254085494b55a0f7c4c2b3d2d52cc712ce370` (annotated tag `8498dc4…`), as `actions.lock` records.
+  - `actions/checkout` `v7.0.1` is commit `3d3c42e5aac5ba805825da76410c181273ba90b1`, the pin every other workflow uses.
+- **Permissions** (README at `33d7b85`, "Workflow Permissions"): "All advanced setup code scanning workflows must have the `security-events: write` permission. Workflows in private repositories must additionally have the `contents: read` permission." Grimoire is public (`visibility: public`). The job grants `security-events: write`, and `contents: read` for `actions/checkout`. The template's `packages: read` (private CodeQL packs) and `actions: read` (private repositories) are left out. That analysis runs with these two permissions alone is UNVERIFIED until a run on GitHub.
+- **Build modes** (same README): `none` is the only mode for interpreted languages. The template's `rust` entry also uses `none`, and the Rust analysis succeeded in run 44385436486 (2026-11-18).
+- **Languages:** the repository has Rust, one JavaScript file (`packaging/npm/grimoire.js`), one Python file and workflows. The Python file is a deliberately vulnerable eval fixture (`catalog/agents/security-reviewer/evals/fixtures/download.py`), as is `fixtures/ci.yml`. Whether CodeQL raises alerts on them couldn't be read: `code-scanning/alerts` answered 403 to the token used (UNVERIFIED).
+- **Default setup must stay off** (github/docs @ `0c5268cc10ff`, `content/code-security/reference/code-scanning/sarif-files/troubleshoot-sarif-uploads/default-setup-enabled.md`): an upload of CodeQL results "to a repository where CodeQL default setup is enabled" is rejected (`Upload with CodeQL results rejected due to "default setup"`). `codeql.yml`'s uploads succeeded in runs 44385436486 and 44385784821, so default setup is off today.
+- **Results reach pull requests:** on pull request 1's head `4e40d28`, the check run `CodeQL` from the `github-advanced-security` app concluded `success` (2026-11-19). No code-quality result appeared, so the ruleset's `code_quality` rule still has no producer.
+- **Local checks** (2026-11-19): `gh actions-lock --no-narrow` (v0.4.1) added `codeql.yml`'s two pins, and `--verify` printed "All 7 workflows valid". zizmor 1.32.0 `--persona pedantic --offline` over CI's inputs reported no findings. Its online audits (impostor commits, known-vulnerable actions, tag mismatches) need a token and weren't run; the compare above covers the impostor check. actionlint wasn't run: it isn't installed here.
+- **Used by:** `.github/workflows/codeql.yml`, `.github/workflows/actions.lock`, `docs/release.md` §2 A, PLAN.md §6.

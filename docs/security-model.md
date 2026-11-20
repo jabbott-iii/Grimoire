@@ -303,6 +303,7 @@ Grimoire has one maintainer. This section says what the repository's rules, CI a
 **What CI checks:**
 - `ci.yml` runs on every pull request and every push to `main`. It checks formatting, clippy with warnings denied, the tests on Linux, macOS and Windows, the MSRV build, the catalog, schemas and generated files (`--check`), version bumps for changed assets, the scaffold templates, `claude plugin validate --strict`, unused dependencies and the documentation's links.
 - `security.yml` runs on the same events and weekly: cargo-deny, gitleaks over the whole history, zizmor (pedantic), actionlint, ShellCheck and `actions.lock`. The weekly and manual runs also scan the released image (§6c).
+- `codeql.yml` runs CodeQL (advanced setup) over the Rust, JavaScript and Python code and the workflows, on every pull request to `main`, every push to `main` and weekly, and uploads the results to code scanning.
 - `release.yml` runs the release dry-run on every pull request, summarised by `release checks` (§6b). A pull request's run is always a dry-run: the signing and publishing jobs run only in release mode on `main`, and the signing workflows skip any other caller.
 - **No ruleset requires these checks yet** (`release.md` §2 A lists that step), and the bypass skips them anyway. Until then, a failing check is a signal the maintainer has to read, not a gate.
 
