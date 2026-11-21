@@ -65,7 +65,7 @@
 - **Phase 7, after the research** (the maintainer's choices when asked, 2026-11-17):
   - a change that breaks any library crate's public Rust API is marked breaking (`!` or `BREAKING CHANGE`), so release-plz ships it as the next 0.y. The six crates depend on each other with `^0.1.0`, so Cargo would otherwise build an older CLI against it;
   - an MSRV bump is marked breaking too, so in 0.x it lands in the next 0.y (Q6: never in a patch release). After 1.0 it is a minor release;
-  - `SECURITY.md` promises an acknowledgement within 7 days, updates in the advisory, and publication when the fix is released. It sets no deadline for the fix.
+  - `SECURITY.md` promises an acknowledgment within 7 days, updates in the advisory, and publication when the fix is released. It sets no deadline for the fix.
 - **Phase 7, deviation (2026-11-18, forced by the review; approved by the maintainer on 2026-11-18):** the release PR doesn't delete the `before-first-release` markers. A pull request merged to `main` ahead of it does, because release-plz manages the release PR's branch and whether it keeps a commit pushed there is UNVERIFIED. The guard also fails the release PR's own checks while a marker remains, so it can't be merged early. Markers are paired (an opening and a closing line around the text), and deleting only the opening line still fails: the review showed that a single marker line let the note it marked ship.
 - **CI fixes after Phase 7** (the maintainer's choice when asked, 2026-11-18): the Release dry-run installs winget-cli v1.29.380, pinned by SHA-256, and runs `winget validate` with it. The runner's own winget is older than schema 1.28.0, and accepting its warnings would weaken the check.
 - **Phase 7 approved** (2026-11-18), with its marker deviation. The maintainer committed it and the CI fixes as one commit, `dca6c1d`, and pushed it to `main`. It is the last phase in §5.
@@ -156,7 +156,7 @@ Every phase ends with:
 **Deviations from the plan below**, each recorded where it applies:
 - **Cooldown pins.** Pinned actions and tools are releases at least 7 days old: install-action v2.90.3, cargo-deny 0.20.2, cargo-shear 1.14.0 (`CI-PINS` in `specs.md`).
 - **Workspace globs.** The `catalog/*/*` member globs wait for the first code asset (Phase 3), because Cargo rejects globs that match nothing.
-- **Agent `model` hint deferred.** Neither it, tool permission allow-list outputs, nor `runtime = "docker"` is modelled yet (`architecture.md` §3.4, §6.1, §6.2).
+- **Agent `model` hint deferred.** Neither it, tool permission allow-list outputs, nor `runtime = "docker"` is modeled yet (`architecture.md` §3.4, §6.1, §6.2).
 - **ASCII-only paths.** `RelPath` and all catalog files are ASCII, and case-insensitive collisions are rejected.
 - **No build caching** in CI.
 
@@ -212,7 +212,7 @@ Deviations and refinements, each recorded where it applies:
 - **MCP server ids** `workspace` and `computer-use` are rejected; Claude Code reserves them.
 
 **Review:** an adversarial review (six lenses, each finding re-checked by a skeptic) produced 51 findings: 44 confirmed, 1 uncertain and 6 refuted. The confirmed and uncertain ones, 37 distinct after duplicates across lenses, are all fixed. Most have a regression test; one was settled by documentation (JSON layout, below). Three of the fixes were mutation-checked: each test fails without its fix. The most important:
-- **High: second-apply conflict.** A rule whose text did not end in exactly one newline was hashed before normalisation but written after it, so the second `apply` reported a permanent conflict. Blocks are now hashed exactly as written.
+- **High: second-apply conflict.** A rule whose text did not end in exactly one newline was hashed before normalization but written after it, so the second `apply` reported a permanent conflict. Blocks are now hashed exactly as written.
 - **Consent.**
   - `add --allow` granted the offered permissions to every selected asset that lacked them, including an installed asset whose new version grew permissions. Consent now covers only what the command names.
   - `remove` of an asset that something else still selects dropped its grant and wrote a config that no longer resolved. It now keeps the grant, resolves before writing, and suggests `exclude`.
@@ -337,7 +337,7 @@ Deviations from the Phase 4 candidate list (each the maintainer's choice or forc
 - **Validation:** adapter-only refusals reached users. `cargo xtask validate` now renders every asset for every client it declares, and a test installs the shipped catalog for all six clients.
 - **Lock safety:** a hand-edited lock could claim a whole `.codex/config.toml` as a Grimoire file. Lock records must now name the unit Grimoire owns at that path.
 - **Marketplace:** plugin versions now change with plugin content; agents depend on their MCP servers' plugins, which must exist; READMEs list the permissions a plugin install grants without asking; bundle descriptions give the real reason for each left-out member.
-- **Docs** overstated what Cursor's `readonly` and VS Code's Copilot enforce, and stated some unverified client behaviour as fact. They now say what is documented.
+- **Docs** overstated what Cursor's `readonly` and VS Code's Copilot enforce, and stated some unverified client behavior as fact. They now say what is documented.
 
 ### Phase 5: Release pipeline and every channel, dry-run only
 
@@ -353,7 +353,7 @@ What was built:
 - **`.github/workflows/release.yml`**: a dry-run on every pull request, and the release from `main` once the maintainer enables it. Plan → native builds → package → install tests on each OS → attest and keyless cosign → four approved publish jobs. **`release-plz.yml`** opens the release PR.
 - **Installers** `install.sh` and `install.ps1`, and the npm launcher, under a language-policy exception ([ADR-0010](docs/adr/0010-language-policy-exceptions.md)). The dist spike failed: dist's PowerShell installer checks no checksum, and its shell installer checks one only when dist built the archives.
 - **Templates** for the `homebrew-tap` and `scoop-bucket` repositories, and the maintainer's checklist and user verification in [`docs/release.md`](docs/release.md).
-- **Cargo:** `repository`, `readme`, crates.io keywords and categories, cargo-binstall metadata, licence files in each published crate, and a `dist` profile (fat LTO, one codegen unit, panic unwind).
+- **Cargo:** `repository`, `readme`, crates.io keywords and categories, cargo-binstall metadata, license files in each published crate, and a `dist` profile (fat LTO, one codegen unit, panic unwind).
 
 Deviations from the plan below, each recorded in ADR-0009:
 - release-plz opens the release PR only (it can't tag the commit that was signed).
@@ -369,7 +369,7 @@ Deviations from the plan below, each recorded in ADR-0009:
 - **Artifacts are bound to the package job.** Release jobs download by artifact ID and check `SHA256SUMS` against the hash the package job recorded before attesting, signing or publishing.
 - **Hostile archives:** duplicate members, extra gzip members and overlapping zip entries are refused, and CLI archives must be byte-for-byte what `build` writes.
 - **Re-runs:** staged npm versions block a re-run (CI can't see them), so npm is its own job with a clear error; the recovery steps for a stuck release are documented.
-- **Smaller fixes:** per-package builds; `release checks` as one required check; release-plz on `main` only; sorted wheel tags; Scoop's `|` licence separator; the binstall URLs now tested; licence files in the crates; the launcher forwards signals; `install.ps1` restores the old binary if the swap fails.
+- **Smaller fixes:** per-package builds; `release checks` as one required check; release-plz on `main` only; sorted wheel tags; Scoop's `|` license separator; the binstall URLs now tested; license files in the crates; the launcher forwards signals; `install.ps1` restores the old binary if the swap fails.
 
 
 - **Pipeline:** release-plz config plus the hand-written release workflow (ADR-0003).
@@ -401,9 +401,9 @@ Deviations from the plan below, each recorded in ADR-0011:
 **Review (2026-11-17).** A five-area review (workflows, the xtask code, the image and its supply chain, docs, specs) raised 39 findings. An independent skeptic checked each one: 37 were confirmed (1 high, 8 medium, 28 low) and 2 refuted. All 37 are addressed. The main ones:
 - **High: `check` read layers more loosely than Docker.** A second gzip member, or a directory entry with a size, could install another binary unseen; the skeptic ran one. `check` now reads layers strictly, compares the config and directories exactly, and refused all seven of the review's tampered layouts.
 - **Medium: one signing identity for every OIDC job.** Every job in `release.yml` could get the release's certificate identity, including `publish-pypi`'s tag-pinned container. Signing moved into `sign.yml` (the maintainer's choice), whose jobs refuse any caller but `release.yml` on `main`; verifiers pin the caller too.
-- **Medium: a misspelt key in a `.grype.yaml` ignore rule** silently widened it to a whole package. A test now refuses unknown keys and incomplete rules.
+- **Medium: a misspelled key in a `.grype.yaml` ignore rule** silently widened it to a whole package. A test now refuses unknown keys and incomplete rules.
 - **Medium:** `actions.lock` lacked an entry the new scan job used; a re-run of the image push could deadlock after a partial attestation; the image config and directory metadata were only partly checked.
-- **Smaller fixes:** tags only after signing, and `latest` only past a signed release; the Dockerfile allow-list; coverage of the Debian packages; every platform scanned before the gate fails; the weekly scan can't be cancelled by a push; docs that overstated what ran.
+- **Smaller fixes:** tags only after signing, and `latest` only past a signed release; the Dockerfile allow-list; coverage of the Debian packages; every platform scanned before the gate fails; the weekly scan can't be canceled by a push; docs that overstated what ran.
 
 - **Image:** multi-arch (amd64, arm64) from the static musl binaries on `gcr.io/distroless/static-debian13:nonroot`, pinned by digest, with the base signature verified via cosign. Non-root, no shell, OCI annotations.
 - **Supply chain:** BuildKit SBOM + max provenance, cosign signature, and a Grype gate.
@@ -470,10 +470,10 @@ Seen on GitHub after the push (read-only, 2026-11-18):
   - **Fixed in `f69c0d0`** (the maintainer's choice, above): `sign.yml` keeps the release files' `files` and `sboms` jobs, `sign-image.yml` has the `image` job, and the `target` input is gone. A new xtask test, `xtask/src/workflow_permissions.rs`, checks every reusable-workflow call's grant against every job it calls. With the old `sign.yml` back in place it reports the same two permissions GitHub did. The maintainer regenerated `actions.lock` with gh-actions-lock v0.4.1 in the same commit. Each workflow's pinned actions match its entry, and `gh actions-lock --verify` passes locally ("All 6 workflows valid", 2026-11-18).
   - **Seen on GitHub on `7fc1906`** (read-only, 2026-11-18): Release run 44353090397 started and passed as a dry-run. Its 15 dry-run jobs and `release checks` succeeded, and its 7 release-only jobs were skipped, as in every dry-run. So GitHub accepted both signing calls' grants at startup, but neither signing workflow has run. The image ran on both platforms, the tag script's cases passed, and Grype found nothing. CI and Security passed too, `actions.lock` included.
 - **release-plz was refused again** (run 44324738027), as in §6, and left a third orphan `release-plz-*` branch. On `7fc1906` it was refused once more (run 44353090254), leaving a fourth.
-- **Dependabot opened pull request 1**, which moves the distroless base from `25ac8f0` to `aafe993`. The Dockerfile's base changes only to a digest at least 7 days old, checked by hand (AGENTS.md). [`docs/release.md`](docs/release.md) §6 dates `aafe9936…` to 2026-11-12, so it meets the rule from 2026-11-19T21:16:35Z.
+- **Dependabot opened pull request 1**, which moves the distroless base from `25ac8f0` to `aafe993`. The Dockerfile's base changes only to a digest at least 7 days old, checked by hand (AGENTS.md). [`docs/release.md`](docs/release.md) §6 dates `aafe9936…` to 2026-11-12, so it meets the rule from 2026-11-19T21:16:35Z. It was merged on 2026-11-20 (`2f80306` on `origin/main`).
 
 - **Docs:** README rewrite (the current README is a one-line placeholder), plus user docs for every command and exit code.
-- **Contributor files:** CONTRIBUTING, a PR template with an asset checklist, CODEOWNERS, issue templates, the deprecation and versioning policy, SECURITY.md (private vulnerability reporting), CODE_OF_CONDUCT.md. The licence files were already done in Phase 1 (Q1).
+- **Contributor files:** CONTRIBUTING, a PR template with an asset checklist, CODEOWNERS, issue templates, the deprecation and versioning policy, SECURITY.md (private vulnerability reporting), CODE_OF_CONDUCT.md. The license files were already done in Phase 1 (Q1).
 - **Docs:** `docs/security-model.md` final version.
 
 ## 6. Actions only you can take (none done by the agent)
@@ -484,7 +484,7 @@ Seen on GitHub after the push (read-only, 2026-11-18):
 | After the first green CI run | Add a branch ruleset on `main` that requires the CI and Security jobs to pass (and requires pull requests). Without it, failing gates do not block merges. Optionally enable "Require lockfile" for `actions.lock`. |
 | Before merging Phase 5 | Turn on "Allow GitHub Actions to create and approve pull requests": `release-plz.yml` opens the release PR on the next push to `main`. Leave that PR unmerged until the bootstrap is done. |
 | Phase 5 and 6 bootstrap | The checklist in [`docs/release.md`](docs/release.md) §2: the five environments (`release`, `crates-io`, `npm`, `pypi`, `ghcr`), immutable releases, the ruleset (CI, Security and `release checks`), the npm org and packages, the crates.io first publish and trusted publishers, the PyPI pending publisher, the tap and bucket repos, the GHCR checks (never push to `ghcr.io/jabbott-iii/grimoire` by hand; after the first push, make the package public, which can't be undone: §2 B and D), clearing the Phase 7 `before-first-release` markers (the README's note, the conduct contact and SECURITY.md's "No release exists yet"), and finally `GRIMOIRE_RELEASES=enabled`. |
-| Now: Phase 7 is on `main` | Watch the repository's security alerts (Watch → Custom → Security alerts): `SECURITY.md` has promised a 7-day acknowledgement since it reached `main` on 2026-11-18. Keep private vulnerability reporting on (it read `enabled: true` on 2026-11-17). |
+| Now: Phase 7 is on `main` | Watch the repository's security alerts (Watch → Custom → Security alerts): `SECURITY.md` has promised a 7-day acknowledgment since it reached `main` on 2026-11-18. Keep private vulnerability reporting on (it read `enabled: true` on 2026-11-17). |
 | Now: release-plz is blocked | The `BestBranch` ruleset covers every branch, so release-plz can't commit to its `release-plz-*` branch (run 44198210657: "Changes must be made through a pull request", "Waiting for Code Scanning results"). Choose: target the ruleset at the default branch only, or exclude `refs/heads/release-plz-*`. Don't make GitHub Actions a bypass actor: any workflow token with `contents: write` could then change `main`. Delete the orphan `release-plz-*` branches (the deletion rule needs the admin bypass): there were four on 2026-11-18, and each push to `main` adds one while the ruleset refuses release-plz's commit. [`docs/release.md`](docs/release.md) §2 A has the details. |
 | Now: code quality | The ruleset requires CodeQL and code-quality results. CodeQL now runs in `codeql.yml` (advanced setup, added in `4dd223d`, with its actions pinned since), and pull request 1 got a passing `CodeQL` check. Nothing produces code-quality results yet. Turn on Code Quality, or drop that rule, then confirm a pull request gets both results. Until then, every merge needs the bypass. |
 | After merging Phase 7 | `gh api repos/jabbott-iii/Grimoire/codeowners/errors` listed no errors on 2026-11-18. Still to check: `/issues/new/choose`, opened as someone other than the owner, should show the five forms and the two links, with no duplicate security entry. |

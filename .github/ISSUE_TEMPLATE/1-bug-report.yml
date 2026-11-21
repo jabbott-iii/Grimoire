@@ -1,5 +1,5 @@
 name: Bug report
-description: The grimoire CLI, the catalog or an installed asset doesn't do what its docs say.
+description: The grimoire command-line tool (CLI), the catalog or an installed asset doesn't do what its docs say.
 labels: ["bug"]
 body:
   - type: markdown
@@ -9,7 +9,8 @@ body:
 
         - **Don't paste secrets.** Remove tokens, keys and other credentials from everything you paste below, and anything else you don't want public, such as private URLs. This issue is public.
         - **Security problems don't go here.** Report a vulnerability privately with the [advisory form](https://github.com/jabbott-iii/Grimoire/security/advisories/new), as [SECURITY.md](https://github.com/jabbott-iii/Grimoire/blob/main/SECURITY.md) explains. If you can't use it, use the "Ask for a private contact" form, and don't describe the problem there.
-        - If a client changed a file format that Grimoire writes, use the "Client format change" form instead. For a new feature or a large change, use "Propose a change".
+        - If a client (an AI coding assistant such as Claude Code) changed a file format that Grimoire writes, use the "Client format change" form instead.
+        - For a new feature or a large change, use "Propose a change".
   - type: input
     id: version
     attributes:
@@ -81,7 +82,7 @@ body:
     id: exit-code
     attributes:
       label: Exit code
-      description: Run echo $? (or $LASTEXITCODE in PowerShell) straight after the command. Grimoire's exit codes are listed in docs/cli.md. Write n/a if no grimoire command is involved.
+      description: Run echo $? (or $LASTEXITCODE in PowerShell) right after the command. Grimoire's exit codes are listed in docs/cli.md. Write n/a if no grimoire command is involved.
       placeholder: "4"
     validations:
       required: true
@@ -89,7 +90,7 @@ body:
     id: output
     attributes:
       label: Output
-      description: Everything the command printed, on stdout and stderr. If you can, run it again with --json and paste that too. It prints one JSON document with the exit code, the result and every diagnostic. For an asset that misbehaves inside a client, paste what the client showed instead.
+      description: Everything the command printed, on standard output and standard error (stdout and stderr). If you can, run it again with --json and paste that too. It prints one JSON document with the exit code, the result and every diagnostic (each error or warning). For an asset that misbehaves inside a client, paste what the client showed instead.
       render: shell
     validations:
       required: true
@@ -104,14 +105,14 @@ body:
   - type: textarea
     id: expected
     attributes:
-      label: Expected behaviour
+      label: Expected behavior
       description: What you expected to happen, and where the docs say so if they do.
     validations:
       required: true
   - type: textarea
     id: actual
     attributes:
-      label: Actual behaviour
+      label: Actual behavior
       description: What happened instead, including any files that were or weren't written.
     validations:
       required: true

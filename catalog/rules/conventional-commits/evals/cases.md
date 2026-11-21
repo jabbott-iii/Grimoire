@@ -1,6 +1,6 @@
 # Evaluation cases
 
-Manual evaluation prompts for `conventional-commits`. Run each in a scratch repository with the rule installed, and compare the drafted message with the expected behaviour. The agent should draft the message only; none of these prompts asks it to commit.
+Manual evaluation prompts for `conventional-commits`. Run each in a scratch repository with the rule installed, and compare the drafted message with the expected behavior. The agent should draft the message only; none of these prompts asks it to commit.
 
 | # | Setup | Prompt | Expected |
 |---|---|---|---|

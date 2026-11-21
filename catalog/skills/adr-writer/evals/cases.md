@@ -1,6 +1,6 @@
 # Evaluation cases
 
-Manual evaluation prompts for `adr-writer`. Run each in a scratch repository with the skill installed and the setup described, and compare the result with the expected behaviour.
+Manual evaluation prompts for `adr-writer`. Run each in a scratch repository with the skill installed and the setup described, and compare the result with the expected behavior.
 
 | # | Setup | Prompt | Expected |
 |---|---|---|---|

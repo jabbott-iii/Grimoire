@@ -1,5 +1,5 @@
 name: Asset request
-description: Propose a new rule, skill, agent, tool, MCP server or bundle for the catalog.
+description: Propose a new rule, skill, agent, tool, MCP (Model Context Protocol) server or bundle for the catalog.
 labels: ["enhancement"]
 body:
   - type: markdown
@@ -7,7 +7,7 @@ body:
       value: |
         Use this form to ask for an asset, or to check that one fits before you write it. [catalog/README.md](https://github.com/jabbott-iii/Grimoire/blob/main/catalog/README.md) lists what every asset needs, and [CONTRIBUTING.md](https://github.com/jabbott-iii/Grimoire/blob/main/CONTRIBUTING.md) explains how to add one.
 
-        A tool or an MCP server is a Rust crate that ships as its own binary in every release, so it adds to the work of every release. Say why it can't be a rule, a skill or an agent.
+        A tool or an MCP server is a Rust crate (package) that ships as its own binary in every release, so it adds to the work of every release. Say why it can't be a rule, a skill or an agent.
   - type: dropdown
     id: kind
     attributes:
@@ -24,7 +24,7 @@ body:
   - type: input
     id: asset-id
     attributes:
-      label: Proposed id
+      label: Proposed ID
       description: 1 to 64 characters of a-z, 0-9 and single hyphens, with no hyphen at either end. It can't start with claude-, anthropic-, anthropics-, cc-plugin- or grimoire-, and catalog/README.md has the other naming rules.
       placeholder: rust-errors
     validations:
@@ -40,7 +40,7 @@ body:
     id: clients
     attributes:
       label: Clients
-      description: The clients it should support. Not every kind works with every client; catalog/README.md has the table.
+      description: The clients (AI coding assistants) it should support. Not every kind works with every client; catalog/README.md has the table.
       multiple: true
       options:
         - claude-code
@@ -55,7 +55,7 @@ body:
     id: permissions
     attributes:
       label: Permissions it would need
-      description: Tick each one the asset needs at runtime. Leave them all unticked if it needs none. Rules can't declare any, and only tools can register hooks.
+      description: Tick each one the asset needs at runtime. Leave them all unticked if it needs none. Rules can't declare any, and only tools can register hooks (commands a client runs automatically at set points, such as before a tool call).
       options:
         - label: Read files (filesystem-read)
         - label: Write files (filesystem-write)

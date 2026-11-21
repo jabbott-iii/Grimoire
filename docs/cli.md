@@ -1,12 +1,24 @@
 # The `grimoire` command line
 
-- **Status:** written in Phase 7 (2026-11-17), before the first release, for `grimoire` 0.1.0. The unit test in `crates/agent-grimoire/src/docs_check.rs` fails when a command, a flag or argument in an options table, or a code in the Exit codes table is in the code but not in this file, or the other way round. It also fails when the command sections aren't in the order `grimoire --help` lists them. It doesn't check the synopses, the per-command exit codes, the value names after a flag, the values an option allows, or the JSON keys.
-- **Design:** [`architecture.md`](architecture.md) §7 (the install model) and §9 (the CLI).
-- **Formats:** [`configuration.md`](configuration.md) describes `grimoire.toml`, `grimoire.lock`, permissions and clients. [`diagnostics.md`](diagnostics.md) lists every diagnostic code the CLI prints.
+- **Status:** written in Phase 7 of `PLAN.md`, the project's phased plan, on 2026-11-17, before the first release, for `grimoire` 0.1.0.
+- **What a test checks:** the unit test in `crates/agent-grimoire/src/docs_check.rs` compares this file with the code.
+  - It fails when a command, a flag or argument in an options table, or a code in the Exit codes table is in the code but not in this file, or the other way round.
+  - It also fails when the command sections aren't in the order `grimoire --help` lists them.
+  - It doesn't check the synopses (the usage line at the start of each command's section), the per-command exit codes, the value names after a flag (the `DIR` of `-C <DIR>`), the values an option allows, the JSON keys or any description. Review keeps those true.
+- **Design:** [`architecture.md`](architecture.md) §7, the install model, and §9, the design of this command-line interface (CLI).
+- **Formats:** [`configuration.md`](configuration.md) describes `grimoire.toml`, `grimoire.lock`, permissions and clients. [`diagnostics.md`](diagnostics.md) lists every diagnostic code the CLI prints. A diagnostic code is the stable name of an error or warning, such as `verify/mismatch`.
 
-`grimoire` installs the AI-agent assets you choose (rules, skills, agents, tools and MCP servers) into a repository, for the AI clients you use. You list what you want in `grimoire.toml`. `grimoire apply` writes the files each client reads and records them in `grimoire.lock`. It changes only content it wrote, and stops rather than overwrite content you edited.
+`grimoire` installs the AI-agent assets you choose into a repository, for the AI coding tools you use. Grimoire calls those tools *clients*. There are six: Claude Code, Codex, Cursor, Gemini CLI, GitHub Copilot, and `agents-md`, a portable target (`AGENTS.md` and `.agents/skills/`) that many tools read.
 
-The catalog is built into the binary ([ADR-0001](adr/0001-catalog-delivery.md)): a newer catalog comes with a newer `grimoire`. Installing never runs asset content and makes no network connection.
+An asset is one of five kinds:
+- A **rule** is a set of instructions the client reads automatically, always or when matching files are involved.
+- A **skill** is a folder of instructions, sometimes with scripts, that the model loads when it needs it.
+- An **agent** defines a subagent: a separate session with its own prompt and tools.
+- A **tool** or a **Model Context Protocol (MCP) server** is a program. MCP is a protocol through which a separate program, the MCP server, offers an AI client tools, data and prompts. Grimoire writes only the client configuration that uses these programs, such as an MCP server entry, or a hook (a command the client runs on an event, such as before a tool call). It never installs their binaries.
+
+You list what you want in `grimoire.toml`, a file in TOML (a configuration file format). `grimoire apply` writes the files each client reads and records them in `grimoire.lock`. It changes only content it wrote, and stops rather than overwrite content you edited.
+
+The catalog, the set of assets Grimoire offers, is built into the `grimoire` binary, so a newer catalog comes with a newer `grimoire`. [ADR-0001](adr/0001-catalog-delivery.md), the architecture decision record (ADR) on how the catalog is delivered, chose this so that installing needs no network code and works offline, and so that the binary's checksums and signatures cover the catalog too. Installing never runs asset content and makes no network connection.
 
 A first session:
 
@@ -20,19 +32,25 @@ grimoire apply                        # write the files and grimoire.lock
 grimoire verify                       # later, or in CI: check nothing drifted
 ```
 
+The last line can also run in continuous integration (CI), the service that builds and tests each change to a repository automatically. It checks that nothing *drifted*: that no content Grimoire manages was edited or removed since Grimoire wrote it.
+
 ## Conventions
 
-- **Streams.** Human output goes to stdout. Diagnostics, notes and prompts go to stderr.
+- **Streams.** Output for people goes to standard output (stdout). Diagnostics (errors and warnings), notes and prompts go to standard error (stderr).
   - A diagnostic reads `error[<code>]: <message>` or `warning[<code>]: <message>`. When it is about a file, the file follows the code: `error[verify/mismatch] .claude/rules/conventional-commits.md: …`.
-  - Codes are stable, and [`diagnostics.md`](diagnostics.md) lists them. Control characters in a diagnostic are escaped on stderr.
-  - Output has no colour codes.
-- **`--json`.** Every command prints exactly one JSON document on stdout instead, and writes nothing to stderr ([JSON output](#json-output)). `--help` and `--version` still print plain text.
-- **Prompts.** Only `add` asks a question: whether to accept the permissions an asset needs. It asks only when stdin is a terminal, `CI` is unset or empty, and neither `--no-input` nor `--json` is given.
+  - Codes are stable, so scripts can match on them. [`diagnostics.md`](diagnostics.md) lists them.
+  - Control characters in a diagnostic are escaped on stderr, so a hostile file name can't send escape sequences to your terminal.
+  - Output has no color codes (the escape sequences that make a terminal show color).
+- **`--json`.** With it, every command prints exactly one JSON document on stdout instead of human output, and writes nothing to stderr ([JSON output](#json-output)). `--help` and `--version` still print plain text.
+- **Prompts.** Only `add` asks a question: whether to accept the permissions an asset needs, such as `shell` or `network`.
+  - It asks only when standard input (stdin) is a terminal, the `CI` environment variable (which CI services set) is unset or empty, and neither `--no-input` nor `--json` is given.
   - `y`, `Y`, `yes`, `Yes` or `YES` accepts, and spaces around the answer are ignored. Any other answer refuses.
   - Without a prompt the answer is no. `add` then stops, and its error names the `--allow` value that accepts the permissions.
-- **The project root** is `-C <DIR>` or, without it, the current directory. Grimoire doesn't look for `grimoire.toml` in parent directories. `list` and `show` read only the catalog, so they ignore `-C`.
+- **The project root** is the directory `-C <DIR>` names or, without it, the current directory. It is where `grimoire.toml` lives. Grimoire doesn't look for `grimoire.toml` in parent directories. `list` and `show` read only the catalog, so they ignore `-C`.
 - **Global options go before or after the command:** `grimoire -C repo plan` and `grimoire plan -C repo` are the same.
-- **Grimoire writes only inside the project root**, and never through a symbolic link: a symbolic link at a managed path, or on the way to one, is refused (exit 6). [`security-model.md`](security-model.md) has the threat model.
+- **Grimoire writes only inside the project root**, and never through a symbolic link.
+  - A symbolic link at a managed path (one Grimoire writes and tracks), or on the way to one, is refused (exit 6), even when the link stays inside the project. Writing through a link would put content somewhere you didn't expect ([ADR-0006](adr/0006-filesystem-confinement.md), which confines all file access to the project root).
+  - [`security-model.md`](security-model.md) has the threat model: what Grimoire defends against, and how.
 
 ## Global options
 
@@ -40,13 +58,13 @@ grimoire verify                       # later, or in CI: check nothing drifted
 |---|---|
 | `--json` | Print exactly one JSON document on stdout instead of human output ([JSON output](#json-output)). It also turns prompts off. |
 | `--no-input` | Never prompt. Implied when stdin is not a terminal, when `CI` is set to a non-empty value, and by `--json`. |
-| `-C <DIR>` | Run as if started in DIR, the project root. A relative DIR is taken from the current directory. A DIR that doesn't exist is an I/O error (exit 1), except for `list` and `show`, which ignore it. |
+| `-C <DIR>` | Run as if started in DIR, the project root. A relative DIR is taken from the current directory. A DIR that doesn't exist is an input/output (I/O) error (exit 1), except for `list` and `show`, which ignore it. |
 | `-h`, `--help` | Print help on stdout and exit 0. Every command takes it, as in `grimoire plan --help`. `grimoire help [COMMAND]` prints the same. |
 | `-V`, `--version` | Print `grimoire <version>` on stdout and exit 0. It works only before a command: `grimoire --version`. |
 
 A bare `grimoire`, with no arguments, prints the help on stdout and exits 2.
 
-Each command's section below gives its JSON `result`. Results have no JSON Schema, and a release may add keys to them.
+Each command's section below gives its JSON `result`. Results have no JSON Schema (a formal, machine-readable description of a JSON document's structure), and a release may add keys to them.
 
 ## grimoire init
 
@@ -54,9 +72,15 @@ Each command's section below gives its JSON `result`. Results have no JSON Schem
 grimoire init [--client <CLIENT>]...
 ```
 
-Creates `grimoire.toml` in the project root for the clients you give, or for the clients the project already uses. The new file holds two comment lines, `format = 1`, the `clients` list and an empty `[assets]` table. `init` never overwrites an existing `grimoire.toml`.
+Creates `grimoire.toml` in the project root for the clients you give, or for the clients the project already uses. `init` never overwrites an existing `grimoire.toml`.
 
-Without `--client`, `init` detects each client from files or folders that are already there. It looks only through the project root and follows no symbolic link: a symbolic link at one of these names counts, even a broken one, but a name inside a linked folder doesn't, so with `.github` a symbolic link, `copilot` isn't detected. If it finds none, it stops with a usage error that lists the clients.
+The new file holds two comment lines, `format = 1`, the `clients` list and an empty `[assets]` table (the TOML section where your selected assets go).
+
+Without `--client`, `init` detects each client from files or folders that are already there, as the table below lists. If it finds none, it stops with a usage error that lists the clients.
+
+Detection looks only inside the project root and follows no symbolic link:
+- A symbolic link at one of these names counts, even a broken one (a link whose target doesn't exist).
+- A name inside a linked folder doesn't count. For example, when `.github` is a symbolic link, `copilot` isn't detected.
 
 | Client | Detected from |
 |---|---|
@@ -69,7 +93,7 @@ Without `--client`, `init` detects each client from files or folders that are al
 
 | Argument or option | Meaning |
 |---|---|
-| `--client <CLIENT>` | A client to render for. Repeat it for more than one. One of `claude-code`, `agents-md`, `codex`, `cursor`, `gemini-cli` or `copilot`. With it, nothing is detected. |
+| `--client <CLIENT>` | A client to write files for. Repeat it for more than one. One of `claude-code`, `agents-md`, `codex`, `cursor`, `gemini-cli` or `copilot`. With it, nothing is detected. |
 
 - **Reads:** `grimoire.toml`, to check that it isn't there. Of the files in the table above it checks only whether each one exists, and reads none of them.
 - **Writes:** `grimoire.toml`.
@@ -82,7 +106,12 @@ Without `--client`, `init` detects each client from files or folders that are al
 grimoire list [QUERY] [--kind <KIND>] [--tag <TAG>] [--client <CLIENT>] [--maturity <MATURITY>]
 ```
 
-Lists this grimoire's catalog, one entry per line, in columns: id, kind, version, maturity and summary. Each column but the summary is as wide as its longest value among the entries shown, with two spaces between columns, so the layout changes with the filters; scripts should use `--json`. Assets come first, then bundles, each in id order. A bundle shows `bundle` as its kind and no maturity; when only bundles are listed, the maturity column is left out. When nothing matches, `list` prints a note on stderr and exits 0.
+Lists the catalog built into this `grimoire`, one entry per line, in columns: id, kind, version, maturity and summary. The entries are assets and bundles. A bundle is a named, versioned set of assets that you can select together.
+
+- **Layout.** Each column but the summary is as wide as its longest value among the entries shown, with two spaces between columns. So the layout changes with the filters, and scripts should use `--json`.
+- **Order.** Assets come first, then bundles, each in id order.
+- **Bundles.** A bundle shows `bundle` as its kind and no maturity. When only bundles are listed, the maturity column is left out.
+- **No match.** When nothing matches, `list` prints a note on stderr and exits 0.
 
 | Argument or option | Meaning |
 |---|---|
@@ -109,8 +138,8 @@ grimoire show <ID>
 
 Shows one asset or bundle from the catalog. Read it before you accept an asset's permissions with `add`.
 
-- **For an asset:** its id, version, kind and maturity; its summary and description; its licence; its deprecation and replacement, if it is deprecated; the permissions it needs; the environment variables it reads; what it requires and conflicts with; the files it writes for each client; and the newest section of its changelog.
-- **For a bundle:** its version, summary and description, and each member asset with its version requirement.
+- **For an asset:** its id, version, kind and maturity; its summary and description; its license; its deprecation and replacement, if it is deprecated; the permissions it needs; the environment variables it reads; what it requires and conflicts with; the files it writes for each client; and the newest section of its changelog.
+- **For a bundle:** its version, summary and description, and each member asset with its version requirement (the range of versions it accepts, such as `^0.1.0`).
 
 | Argument or option | Meaning |
 |---|---|
@@ -120,10 +149,10 @@ Shows one asset or bundle from the catalog. Read it before you accept an asset's
 - **Writes:** nothing.
 - **Exit codes:** 0; 2 for a usage error; 3 when the id is invalid or not in the catalog (`show/unknown`).
 - **JSON result for an asset:**
-  - `id`, `kind`, `version`, `maturity`, `summary`, `description`, and `license` (an SPDX expression);
+  - `id`, `kind`, `version`, `maturity`, `summary`, `description`, and `license` (an SPDX license expression, such as `MIT OR Apache-2.0`; SPDX, the Software Package Data Exchange, is a standard way to name licenses);
   - `permissions`: the permissions it needs, written as `--allow` takes them, `env:NAME` included;
   - `env`: the names of the environment variables it reads;
-  - `requires`: an object from asset id to version requirement;
+  - `requires`: the assets it depends on, as an object from asset id to version requirement;
   - `clients`: an object from client id to the destinations it writes there, such as `".mcp.json (mcpServers.project-docs)"`;
   - `changelog`: the newest changelog section as Markdown, or `null`.
   - The deprecation and the conflicts are in the human output only.
@@ -136,27 +165,33 @@ grimoire add <ID|bundle:ID|tag:TAG>... [--allow <ALLOW>] [--apply]
 ```
 
 Adds what you name to `grimoire.toml`, keeping its comments and formatting:
-- `ID` adds an asset under `[assets]` as `ID = "^<version>"`, with the catalog's version. An id that names a bundle adds the bundle.
+- `ID` adds an asset under `[assets]` as `ID = "^<version>"`, with the catalog's version. As in Cargo, Rust's package manager, `^` keeps the left-most non-zero part of the version: `^0.1.0` accepts `0.1.x` but not `0.2.0`. An id that names a bundle adds the bundle.
 - `bundle:ID` adds a bundle to `bundles`.
-- `tag:TAG` adds a tag to `tags`, which selects the catalog's assets with that tag, except deprecated ones and ones that none of the project's clients supports.
+- `tag:TAG` adds a tag to `tags`. A tag selects the catalog's assets that have it, except deprecated ones and ones that none of the project's clients supports.
 
-Something already in `grimoire.toml` gets a note on stderr and is left as it is. Before it writes, `add` checks two things, and writes nothing if either fails:
-1. **Permissions.** Every asset that what you name selects, including bundle and tag members and what they require, needs its permissions accepted. `add` takes them from `--allow`, or asks on a terminal ([Conventions](#conventions)). If some stay unaccepted, its error names the `--allow` value that accepts them.
+Something already in `grimoire.toml` gets a note on stderr and is left as it is.
+
+Before it writes, `add` checks two things, and writes nothing if either fails:
+1. **Permissions.** Every asset that your arguments select needs its permissions accepted. That includes the members of bundles and tags, and the assets they require. `add` takes the permissions from `--allow`, or asks on a terminal ([Conventions](#conventions)). If some stay unaccepted, its error names the `--allow` value that accepts them.
    - Accepted permissions are recorded in `grimoire.toml`: in the asset's `[assets]` entry when it has one, otherwise under `[allow]`.
    - Assets that this command doesn't select are never granted anything.
-2. **Resolution.** The new selection must resolve against the catalog: versions, dependencies, conflicts and clients.
+2. **Resolution.** The new selection must resolve against the catalog. Resolving means working out exactly which assets and versions the selection means, and checking their versions, dependencies, conflicts and clients. Resolving before writing means a broken selection never reaches `grimoire.toml`.
 
 `add` changes only `grimoire.toml`. Run `grimoire apply`, or pass `--apply`, to change the project's files.
 
 | Argument or option | Meaning |
 |---|---|
 | `<ID\|bundle:ID\|tag:TAG>...` | What to add. At least one. |
-| `--allow <ALLOW>` | Accept these permissions for the assets being added. Comma-separated, and repeatable: `filesystem-read`, `filesystem-write`, `network`, `shell`, `hooks`, or `env:NAME` for one environment variable. A bare `env` accepts every variable those assets read now, and `grimoire.toml` records each one by name. A `filesystem-write` grant covers `filesystem-read`. Only permissions that the assets need are recorded. |
+| `--allow <ALLOW>` | Accept these permissions for the assets being added. A comma-separated list, and the option can be repeated: `filesystem-read`, `filesystem-write`, `network`, `shell`, `hooks`, or `env:NAME` for one environment variable. A bare `env` accepts every variable those assets read now, and `grimoire.toml` records each one by name. A `filesystem-write` grant covers `filesystem-read`. Only permissions that the assets need are recorded. |
 | `--apply` | Also run `apply` (without `--force` or `--write-new`). |
 
 - **Reads:** `grimoire.toml` and the catalog. With `--apply`, also what `apply` reads.
 - **Writes:** `grimoire.toml`, only when it changes. With `--apply`, also what `apply` writes.
-- **Exit codes:** 0; 2 for a usage error, such as an unknown `--allow` value; 3 when a name is invalid or unknown (`cli/spec`, `add/unknown`), when it is in `exclude` (`add/excluded`), when a permission isn't accepted (`add/permission`) or the selection doesn't resolve (`add/unresolvable`), or when `grimoire.toml` is missing or invalid. With `--apply`, also `apply`'s codes. After a conflict there (exit 4), `grimoire.toml` has already been written, and the message says so.
+- **Exit codes:**
+  - 0;
+  - 2 for a usage error, such as an unknown `--allow` value;
+  - 3 when a name is invalid or unknown (`cli/spec`, `add/unknown`), when it is in `exclude` (`add/excluded`), when a permission isn't accepted (`add/permission`) or the selection doesn't resolve (`add/unresolvable`), or when `grimoire.toml` is missing or invalid.
+  - With `--apply`, also `apply`'s codes. After a conflict there (exit 4), `grimoire.toml` has already been written, and the message says so.
 - **JSON result:** `added` (what was newly added, written as `ID`, `bundle:ID` or `tag:TAG`) and `allowed` (an object from asset id to the permissions this command accepted for it). With `--apply`, the result is `apply`'s, with this object under `add`.
 
 ## grimoire remove
@@ -170,7 +205,7 @@ Removes what you name from `grimoire.toml`, keeping its comments and formatting:
 - `bundle:ID` and `tag:TAG` remove a bundle or a tag.
 
 A few cases need care:
-- If a bundle, a tag or another asset's `requires` still selects the asset, it stays installed. `remove` warns (`remove/still-selected`) and keeps its permissions under `[allow]`. To stop installing it, add it to `exclude` ([`configuration.md`](configuration.md)).
+- If a bundle, a tag or another asset's `requires` (its list of dependencies) still selects the asset, it stays installed. `remove` warns (`remove/still-selected`) and keeps its permissions under `[allow]`. To stop installing it, add it to `exclude` ([`configuration.md`](configuration.md)).
 - An asset that only a bundle, a tag or `requires` selects has no entry to remove. That is an error (`remove/indirect`) that points to `exclude`.
 - Naming something that isn't in `grimoire.toml` is an error (`remove/absent`).
 - The new selection must still resolve. If it doesn't, nothing is written (`remove/unresolvable`).
@@ -191,9 +226,21 @@ A few cases need care:
 grimoire plan [--check]
 ```
 
-Shows what `apply` would change, and changes nothing. It resolves `grimoire.toml` against the catalog and the pins in `grimoire.lock`, renders each client's files, and compares them with the files on disk and the lock ([`architecture.md`](architecture.md) §7.1 and §7.3).
+Shows what `apply` would change, and changes nothing. It works in three steps ([`architecture.md`](architecture.md) §7.1, on resolving, planning and applying, and §7.3, on drift and conflicts):
+1. It resolves `grimoire.toml` against the catalog and the pins in `grimoire.lock`. A pin is what the lock records for an installed asset: its exact version, and the hash of its manifest (`asset.toml`, the file that describes the asset).
+2. It renders each client's files: it works out the content each client should get.
+3. It compares that content with the files on disk and the lock.
 
-It prints one line for each unit that is not unchanged: the action, the path (with `[block <owner>]` or `[<key>]` for part of a shared file), the owner, the clients and, for a conflict, an adopt or a forget, the reason. A summary line follows, then a unified diff of each file that would change.
+Grimoire tracks content in *units*. A unit is a whole file, a managed block (the text between Grimoire's marker lines) in a shared Markdown file such as `AGENTS.md`, or one entry in a JSON or TOML configuration file.
+
+`plan` prints one line for each unit whose action isn't `unchanged`. The line gives:
+- the action;
+- the path, with `[block <owner>]` or `[<key>]` for part of a shared file;
+- the owner (the asset the unit belongs to, or Grimoire for its own blocks);
+- the clients;
+- for a conflict, an adopt or a forget, the reason.
+
+A summary line follows, then a unified diff (the format `git diff` prints) of each file that would change.
 
 | Action | Meaning |
 |---|---|
@@ -202,19 +249,24 @@ It prints one line for each unit that is not unchanged: the action, the path (wi
 | `delete` | Remove a unit that is no longer wanted. |
 | `adopt` | Already as desired on disk. Only the lock changes. |
 | `forget` | No longer wanted and already gone. Only the lock changes. |
-| `conflict` | Edited or removed since Grimoire wrote it, or an unmanaged file is in the way. The reason says which. `apply` would stop. |
+| `conflict` | Edited or removed since Grimoire wrote it, or an unmanaged file (one `grimoire.lock` doesn't record) is in the way. The reason says which. `apply` would stop. |
 | `unchanged` | Nothing to do. Counted in the summary, not printed. |
 
-A file Grimoire can't edit safely, such as one with broken block markers or invalid JSON, is shown as `conflict` with the reason it can't be edited.
+A file Grimoire can't edit safely, such as one with broken block markers or invalid JSON, is shown as `conflict` with the reason it can't be edited. Grimoire never guesses what it owns in such a file.
 
 | Argument or option | Meaning |
 |---|---|
-| `--check` | Exit 5 if applying would change any file, or create or change `grimoire.lock`. A project without a lock gets one from its first `apply`, even when nothing is selected, so `--check` fails until then. For CI. |
+| `--check` | Exit 5 if applying would change any file, or create or change `grimoire.lock`. A project without a lock gets one from its first `apply`, even when nothing is selected, so `--check` fails until then. Meant for CI. |
 
 - **Reads:** `grimoire.toml`, `grimoire.lock`, the catalog, every file the plan involves, and `PATH` ([Environment](#environment)).
 - **Writes:** nothing.
-- **Exit codes:** 0; 3 when `grimoire.toml` is missing or invalid, `grimoire.lock` is invalid, or the selection doesn't resolve; 4 when anything conflicts (`plan/conflicts`), with or without `--check`; 5 with `--check`, when there are changes to apply (`plan/changes`); 1, 4 (`fs/in-the-way`) or 6 for a filesystem problem.
-  - A grimoire whose catalog has another version of a locked asset, or a changed manifest, stops with exit 3 and names `grimoire update <id>` (`resolve/locked-version-unavailable`, `resolve/locked-manifest-changed`).
+- **Exit codes:**
+  - 0;
+  - 3 when `grimoire.toml` is missing or invalid, `grimoire.lock` is invalid, or the selection doesn't resolve;
+  - 4 when anything conflicts (`plan/conflicts`), with or without `--check`;
+  - 5 with `--check`, when there are changes to apply (`plan/changes`);
+  - 1, 4 (`fs/in-the-way`) or 6 for a filesystem problem.
+  - A grimoire release whose catalog has another version of a locked asset, or a changed manifest, stops with exit 3 and names `grimoire update <id>` (`resolve/locked-version-unavailable`, `resolve/locked-manifest-changed`). It stops even when no file would change, because telling whether one would means rendering the pinned version and manifest, which this release doesn't carry ([`architecture.md`](architecture.md) §7.5).
 - **JSON result:**
   - `summary`: counts of units, under `create`, `update`, `delete`, `conflict` (files Grimoire can't edit included), `unchanged` and `record-only` (`adopt` and `forget`);
   - `lock-changes`: whether `apply` would write `grimoire.lock`, creating it or changing it;
@@ -227,23 +279,36 @@ A file Grimoire can't edit safely, such as one with broken block markers or inva
 grimoire apply [--force | --write-new]
 ```
 
-Makes the managed content on disk match `grimoire.toml` and `grimoire.lock`, as `plan` shows it ([`architecture.md`](architecture.md) §7):
-- It checks every unit first. If anything conflicts, it writes nothing and exits 4, unless you pass `--force` or `--write-new`.
-- It edits only the units it owns: whole files, blocks between `<!-- grimoire:begin <id> -->` and `<!-- grimoire:end <id> -->`, and single entries in JSON or TOML files. Text and keys outside them stay as they are.
-- It writes each file atomically: a temporary file in the same directory, synced, then renamed over the target. Just before writing a file, it reads it again; if the file changed since the plan, it stops (`apply/changed`, exit 4).
-- It deletes a file it owns whole when the file is no longer wanted. It deletes a shared file, one with blocks or entries, only if it created the file, or adopted it when it held nothing else, and nothing else is left in it. Content it adopted, or overwrote with `--force`, counts as its own ([`configuration.md`](configuration.md) §5). After deleting a file, it removes the directories above it that are now empty.
-- It writes `grimoire.lock` last, and only when the lock changes. The first `apply` creates it even when nothing is selected, so `verify` has a lock to check. A second `apply` writes nothing.
-- If an error stops it partway, `grimoire.lock` records the files already written, so running it again continues from there, unless writing `grimoire.lock` itself failed.
+Makes the managed content on disk match `grimoire.toml` and `grimoire.lock`, as `plan` shows it ([`architecture.md`](architecture.md) §7, the install model). Managed content means the units Grimoire owns and records in the lock.
+- **Conflicts first.** It checks every unit before it writes. If anything conflicts, it writes nothing and exits 4, unless you pass `--force` or `--write-new`.
+- **Only its own units.** It edits only the units it owns: whole files, blocks between `<!-- grimoire:begin <id> -->` and `<!-- grimoire:end <id> -->`, and single entries in JSON or TOML files. Text and keys outside them stay as they are.
+- **Atomic writes.** It writes each file atomically, so a crash never leaves a half-written file: it writes a temporary file in the same directory, flushes it to disk (syncs it), then renames it over the target.
+- **A last check.** Just before writing a file, it reads it again. If the file changed since the plan, it stops (`apply/changed`, exit 4).
+- **Deleting files.** It deletes a file it owns whole when the file is no longer wanted.
+  - It deletes a shared file, one where it owns blocks or entries, only when nothing else is left in it, and only if it created the file or adopted it while the file held nothing else. To adopt is to record content that is already what Grimoire would write.
+  - Content it adopted, or overwrote with `--force`, counts as its own ([`configuration.md`](configuration.md) §5, on what Grimoire never touches).
+  - After deleting a file, it removes the directories above it that are now empty.
+- **The lock last.** It writes `grimoire.lock` last, and only when the lock changes. The first `apply` creates it even when nothing is selected, so `verify` has a lock to check. A second `apply` writes nothing.
+- **Stopping partway.** If an error stops it partway, `grimoire.lock` records the files already written, so running it again continues from there, unless writing `grimoire.lock` itself failed.
 
 | Argument or option | Meaning |
 |---|---|
-| `--force` | Overwrite managed content that was edited, and unmanaged files in the way. A file Grimoire can't edit safely is still refused: broken block markers, text that isn't UTF-8, or invalid or non-strict JSON. It can't be combined with `--write-new`. |
+| `--force` | Overwrite managed content that was edited, and unmanaged files in the way. A file Grimoire can't edit safely is still refused: broken block markers, text that isn't UTF-8, or invalid or non-strict JSON (such as comments or trailing commas in a file that must be strict JSON). It can't be combined with `--write-new`. |
 | `--write-new` | Leave each conflicting file alone and write what Grimoire would write to `<path>.new`. It exits 4, because the conflicts remain. It never replaces a different `<path>.new` that is already there (`apply/sidecar-exists`). |
 
 - **Reads:** what `plan` reads.
 - **Writes:** the managed files, `<path>.new` files with `--write-new`, and `grimoire.lock`.
-- **Exit codes:** 0; 2 for `--force` with `--write-new`, or another usage error; 3 as for `plan`; 4 for a conflict (`apply/conflict`), conflicts left by `--write-new` (`apply/conflict-remains`), an existing `<path>.new` (`apply/sidecar-exists`), a file changed while it ran (`apply/changed`), or something in the way (`fs/in-the-way`); 1 for an I/O error; 6 when refused for safety.
-- **JSON result:** `files`, one object per file written, deleted or left alone, with `path`, `outcome` (`wrote`, `deleted`, `wrote-new`, or `skipped` for a conflicting file with nothing to write beside it) and `new-file` (the `<path>.new` written, or `null`); and `lock-written` (whether `grimoire.lock` was written). The result is `null` when `apply` stops before writing anything, and also when `grimoire.lock` can't be written after files were changed.
+- **Exit codes:**
+  - 0;
+  - 2 for `--force` with `--write-new`, or another usage error;
+  - 3 as for `plan`;
+  - 4 for a conflict (`apply/conflict`), conflicts left by `--write-new` (`apply/conflict-remains`), an existing `<path>.new` (`apply/sidecar-exists`), a file changed while it ran (`apply/changed`), or something in the way (`fs/in-the-way`);
+  - 1 for an I/O error;
+  - 6 when refused for safety.
+- **JSON result:** `files` and `lock-written`.
+  - `files` has one object per file written, deleted or left alone, with `path`, `outcome` (`wrote`, `deleted`, `wrote-new`, or `skipped` for a conflicting file with nothing to write beside it) and `new-file` (the `<path>.new` written, or `null`).
+  - `lock-written` says whether `grimoire.lock` was written.
+  - The result is `null` when `apply` stops before writing anything, and also when `grimoire.lock` can't be written after files were changed.
 
 ## grimoire update
 
@@ -251,9 +316,11 @@ Makes the managed content on disk match `grimoire.toml` and `grimoire.lock`, as 
 grimoire update [IDS]... [--no-apply] [--force | --write-new]
 ```
 
-`grimoire.lock` pins each installed asset's version and manifest digest, and `plan` and `apply` keep them. A grimoire carries one version of each asset ([ADR-0001](adr/0001-catalog-delivery.md)). So after you install a grimoire whose catalog has a new version of an installed asset, or a changed manifest, `plan` and `apply` stop and name `grimoire update <id>`.
+`grimoire.lock` pins each installed asset's version and manifest digest (the SHA-256 hash of its `asset.toml`), and `plan` and `apply` keep those pins. A grimoire release carries only one version of each asset ([ADR-0001](adr/0001-catalog-delivery.md), which embeds the catalog in the binary). So after you install a grimoire release whose catalog has a new version of an installed asset, or a changed manifest, `plan` and `apply` stop and name `grimoire update <id>`.
 
-`update` lets the pins of the assets you name, or of every asset, move to this catalog's versions, then applies as `apply` does. The requirements in `grimoire.toml` still apply: `^0.1.0` doesn't allow 0.2.0, so edit the requirement first. When a new version needs more permissions than you accepted, resolution fails (exit 3) until you accept them with `grimoire add <id> --allow <permissions>`.
+`update` lets the pins of the assets you name, or of every asset, move to this catalog's versions, then applies as `apply` does.
+- The requirements in `grimoire.toml` still apply: `^0.1.0` doesn't allow 0.2.0, so edit the requirement first.
+- When a new version needs more permissions than you accepted, resolution fails (exit 3) until you accept them with `grimoire add <id> --allow <permissions>`.
 
 | Argument or option | Meaning |
 |---|---|
@@ -264,7 +331,10 @@ grimoire update [IDS]... [--no-apply] [--force | --write-new]
 
 - **Reads:** what `plan` reads.
 - **Writes:** what `apply` writes. With `--no-apply`, only `grimoire.lock`.
-- **Exit codes:** as for `apply`. With `--no-apply`: 0; 2; 3; 4 when the plan involves a file Grimoire can't edit safely (`update/unreadable`), so the lock is left alone; 1, 4 (`fs/in-the-way`) or 6 for a filesystem problem.
+- **Exit codes:** as for `apply`. With `--no-apply`:
+  - 0; 2; 3;
+  - 4 when the plan involves a file Grimoire can't edit safely (`update/unreadable`), so the lock is left alone;
+  - 1, 4 (`fs/in-the-way`) or 6 for a filesystem problem.
 - **JSON result:** as for `apply`. With `--no-apply`, `lock-written` only.
 
 ## grimoire verify
@@ -273,7 +343,9 @@ grimoire update [IDS]... [--no-apply] [--force | --write-new]
 grimoire verify
 ```
 
-Checks every output that `grimoire.lock` records against the file on disk, by hash. It reads neither `grimoire.toml` nor the catalog. Use it in CI to catch edits to managed content. `plan --check` is the other CI check: it also fails when `grimoire.toml` asks for something not yet applied.
+Checks every output (unit of content) that `grimoire.lock` records against the file on disk, by comparing its SHA-256 hash with the lock's.
+
+It reads neither `grimoire.toml` nor the catalog, so it doesn't depend on which asset versions this grimoire release carries. Use it in CI to catch edits to managed content. `plan --check` is the other CI check: it also fails when `grimoire.toml` asks for something not yet applied.
 
 `verify` has no arguments or options of its own.
 
@@ -288,16 +360,27 @@ Checks every output that `grimoire.lock` records against the file on disk, by ha
 grimoire uninstall [--purge] [--force]
 ```
 
-Removes every unit that `grimoire.lock` records, as `apply` would with nothing selected, then deletes `grimoire.lock`. Your own text and keys in shared files stay. Without a lock there is no managed content to remove, and `uninstall` exits 0; `--purge` still deletes `grimoire.toml`.
+Removes every unit that `grimoire.lock` records, as `apply` would with nothing selected, then deletes `grimoire.lock`. Your own text and keys in shared files stay.
+
+Without a lock there is no managed content to remove, and `uninstall` exits 0. `--purge` still deletes `grimoire.toml` then.
 
 | Argument or option | Meaning |
 |---|---|
-| `--purge` | Also delete `grimoire.toml`, if there is one. It is checked before anything is removed, so a symbolic link, a special file or a directory in its place stops `uninstall` with nothing removed. |
+| `--purge` | Also delete `grimoire.toml`, if there is one. It is checked before anything is removed, so a symbolic link, a special file (such as a named pipe) or a directory in its place stops `uninstall` with nothing removed. |
 | `--force` | Remove managed content even where it was edited. Without it, edited content is a conflict and nothing is removed (exit 4). |
 
 - **Reads:** `grimoire.lock` and the files it records, and with `--purge` whether `grimoire.toml` is there (not its content). It needs neither `grimoire.toml` nor the catalog.
 - **Writes:** removes Grimoire's units, deleting files as `apply` does, then deletes `grimoire.lock` and, with `--purge`, `grimoire.toml` if there is one.
-- **Exit codes:** 0; 2 for a usage error; 3 when `grimoire.lock` is invalid; 4 for a conflict, a file that changed while it ran (`apply/changed`), or something in the way (`fs/in-the-way`), such as a directory at `grimoire.lock` or, with `--purge`, at `grimoire.toml`; 6 when refused for safety (`fs/refused`), such as a symbolic link or special file at or above `grimoire.lock`, a recorded file or, with `--purge`, `grimoire.toml`; 1 for an I/O error. A conflict, or a problem found while planning or while checking `grimoire.toml`, stops it with nothing removed. A refusal or an error while removing, or a changed file, can stop it partway, as for `apply`: `grimoire.lock`, if it is still there, records what is left, and running `uninstall` again continues from there.
+- **Exit codes:**
+  - 0;
+  - 2 for a usage error;
+  - 3 when `grimoire.lock` is invalid;
+  - 4 for a conflict, a file that changed while it ran (`apply/changed`), or something in the way (`fs/in-the-way`), such as a directory at `grimoire.lock` or, with `--purge`, at `grimoire.toml`;
+  - 6 when refused for safety (`fs/refused`), such as a symbolic link or special file at or above `grimoire.lock`, a recorded file or, with `--purge`, `grimoire.toml`;
+  - 1 for an I/O error.
+- **What a stop leaves behind:**
+  - A conflict, or a problem found while planning or while checking `grimoire.toml`, stops it with nothing removed.
+  - A refusal or an error while removing, or a changed file, can stop it partway, as for `apply`. Then `grimoire.lock`, if it is still there, records what is left, and running `uninstall` again continues from there.
 - **JSON result:** `files` and `lock-written`, as for `apply`, and `lock-removed`, `config-removed` and `purged`:
   - `files` lists each file `uninstall` changed, with `outcome` `deleted`, or `wrote` for a shared file that keeps your own content. It doesn't include `grimoire.lock` or `grimoire.toml`. Without a lock it is empty.
   - `lock-written`: whether the emptied `grimoire.lock` was written before `uninstall` deleted it (`false` without a lock).
@@ -322,9 +405,9 @@ Reports on the project and the environment, one check per line, each marked `ok`
 | `grimoire.lock` | Whether it is valid, or not created yet. | It can't be read or is invalid. |
 | `client <id>` | For each client in `grimoire.toml`: the outputs installed for it (unknown when `grimoire.lock` can't be read or is invalid), and what the client needs before it reads them, which Grimoire can't check, such as trusting the project (Codex, Gemini CLI, Copilot) or approving each project MCP server (Cursor). | Never. |
 | `plan` | The number of pending changes, and whether `grimoire.lock` would be created or updated. | `grimoire.lock` can't be read or is invalid (nothing is planned then, and its diagnostics are reported once), `grimoire.toml` doesn't resolve, the plan can't be made (something in the way or refused, or an I/O error), or a conflict would stop `apply`. Pending changes alone don't fail. |
-| `copilot cloud agent` | Shown when an MCP server is installed for `copilot`: the JSON to paste into the repository's Copilot MCP settings. | Never. |
+| `copilot cloud agent` | Shown when an MCP server is installed for `copilot`: the JSON to paste into the repository's Copilot MCP settings. Copilot cloud agent runs on GitHub.com, and reads its MCP configuration from those settings, not from a file Grimoire can write. | Never. |
 | `outputs` | How many locked outputs differ from disk, as `verify` checks. | Any differ. |
-| `binary <name>` | For each locked tool or MCP server, whether its binary is on `PATH`. A server configured over Streamable HTTP needs none. | The binary isn't found. |
+| `binary <name>` | For each locked tool or MCP server, whether its binary is on `PATH`. A server configured over Streamable HTTP needs none: with that transport you start the server yourself, and the client connects to its URL. | The binary isn't found. |
 
 `doctor` has no arguments or options of its own.
 
@@ -338,24 +421,26 @@ Reports on the project and the environment, one check per line, each marked `ok`
 | Code | Meaning | Returned by |
 |---|---|---|
 | 0 | Success, or nothing to do. | Every command. |
-| 1 | Unexpected failure: an I/O error (`fs/io`), such as a `-C` directory that doesn't exist. Also when the current directory can't be read, or the build is broken. | Every command. |
+| 1 | Unexpected failure: an I/O error (`fs/io`), such as a `-C` directory that doesn't exist. Also when the current directory can't be read, or the build is broken: the catalog embedded in it fails to load at start-up, or its own version isn't one Grimoire accepts (SemVer, semantic versioning, without build metadata). | Every command. |
 | 2 | Usage error: an unknown command or option, a missing or invalid argument, `--force` with `--write-new`, or no command at all. | Every command. Also `init` when no client is given or detected. |
-| 3 | Invalid configuration or lock, or a resolution failure ([`architecture.md`](architecture.md) §7.5). | `init`, `show`, `add`, `remove`, `plan`, `apply`, `update`, `verify`, `uninstall`. |
+| 3 | Invalid configuration or lock, or a resolution failure ([`architecture.md`](architecture.md) §7.5, which lists the resolution errors). | `init`, `show`, `add`, `remove`, `plan`, `apply`, `update`, `verify`, `uninstall`. |
 | 4 | Conflict: managed content edited or removed, an unmanaged file in the way, a file where a directory is needed or the reverse, or a file Grimoire can't edit safely. Nothing was written, with three exceptions, each named in the message: `add --apply` and `remove --apply` have already written `grimoire.toml`; `apply --write-new` has written `<path>.new` files; and a run that stopped when a file changed has written some files and recorded them in the lock. | `plan`, `apply`, `update`, `uninstall`, `add --apply`, `remove --apply`. Also `init`, `add`, `remove` and `verify` when something is in the way (`fs/in-the-way`). |
 | 5 | A check failed. | `plan --check`, `verify`, `doctor`. |
 | 6 | Refused for safety: a symbolic link at or above a managed path, a path that would leave the project root, a managed path that is neither a regular file nor a directory, or a file larger than 8 MiB (`fs/refused`). | `init`, `add`, `remove`, `plan`, `apply`, `update`, `verify`, `uninstall`. |
 
 `grimoire --help`, `grimoire <command> --help`, `grimoire help` and `grimoire --version` exit 0. A bare `grimoire` prints the help and exits 2.
 
-**A crash.** Nothing in the CLI catches a panic, so an internal bug that panics exits with Rust's default status, 101, after printing the panic message on stderr. No `--json` document is printed then. Please report it ([`CONTRIBUTING.md`](../CONTRIBUTING.md)).
+**A crash.** A panic is how a Rust program stops on an internal error it can't recover from. Nothing in the CLI catches a panic, so an internal bug that panics exits with Rust's default status, 101, after printing the panic message on stderr. No `--json` document is printed then. Please report it ([`CONTRIBUTING.md`](../CONTRIBUTING.md)).
 
-**Interruption.** Grimoire installs no signal handler, so Ctrl-C (SIGINT) ends it at once, and it returns no exit code of its own. A POSIX shell then reports status 130 (128 plus signal 2). What Windows reports is unverified.
+**Interruption.** Grimoire installs no signal handler, so Ctrl-C, which sends the interrupt signal SIGINT, ends it at once, and it returns no exit code of its own. A POSIX shell (a shell that follows the Portable Operating System Interface standard, such as sh or bash) then reports status 130 (128 plus signal 2). What Windows reports is unverified.
 - No file is left half-written, because each file is written to a temporary file and renamed over the target. A temporary file can be left behind in a managed directory.
-- Files written before the interruption stay, and `grimoire.lock`, which is written last, may not record them yet. Running the command again converges: a unit already as desired on disk is adopted, not reported as a conflict ([`security-model.md`](security-model.md) §7, [`architecture.md`](architecture.md) §7.1).
+- Files written before the interruption stay, and `grimoire.lock`, which is written last, may not record them yet. Running the command again converges, that is, it reaches the intended state: a unit already as desired on disk is adopted, not reported as a conflict ([`security-model.md`](security-model.md) §7, on known gaps, and [`architecture.md`](architecture.md) §7.1, on crash safety).
 
 ## JSON output
 
-With `--json`, a command prints one JSON document on stdout, and nothing on stderr. The document is indented and ends with a newline; don't depend on its whitespace or its key order. For example, `grimoire verify --json` after a managed file was edited:
+With `--json`, a command prints one JSON document on stdout, and nothing on stderr. The document is an *envelope*: the same outer object for every command, with the command's own result inside it.
+
+The document is indented and ends with a newline. Don't depend on its whitespace or its key order. For example, `grimoire verify --json` after a managed file was edited:
 
 ```json
 {
@@ -414,7 +499,7 @@ Each diagnostic has:
 - **Usage errors** produce the envelope too, when `--json` is anywhere on the command line: `command` and `result` are `null`, `exit` is 2, and the one diagnostic has the code `cli/usage` and the parser's message.
 - **`--help` and `--version`** print plain text, even with `--json`, and exit 0.
 - **No JSON Schema** describes the envelope or the results. A release may add keys to both, so ignore keys you don't know.
-- **The only writes to stderr** under `--json` happen before a command runs: when the current directory can't be read, or the build is broken (exit 1).
+- **The only writes to stderr** under `--json` happen before a command runs: when the current directory can't be read, or the build is broken, because its embedded catalog doesn't load or its version carries build metadata, which Grimoire refuses (exit 1).
 
 ## Environment
 
@@ -422,9 +507,9 @@ Each diagnostic has:
 |---|---|
 | `CI` | Set to anything but the empty string, it turns prompts off, as `--no-input` does. |
 | stdin | Prompts happen only when stdin is a terminal. |
-| `PATH` | `doctor` checks each locked tool and MCP server binary against it. `plan`, `apply`, `update`, `add --apply`, `remove --apply` and `doctor` warn (`plan/hook-binary-missing`) when a selected tool's hooks fail closed and its binary isn't found there. |
+| `PATH` | `doctor` checks each locked tool and MCP server binary against it. `plan`, `apply`, `update`, `add --apply`, `remove --apply` and `doctor` warn (`plan/hook-binary-missing`) when a selected tool's hooks fail closed and its binary isn't found there. A hook that fails closed blocks the event it covers when it can't run, rather than letting it through. |
 | The current directory | The project root, unless `-C` is given. |
 
-A binary counts as found on `PATH` when a file of that name is in one of its directories; on Windows, a file with `.exe` added counts too. Grimoire never runs it, and doesn't check that it can be run.
+A binary counts as found on `PATH` when a file of that name is in one of its directories. On Windows, a file with `.exe` added counts too. Grimoire never runs it, and doesn't check that it can be run.
 
 Grimoire's own code reads no other environment variable, and no configuration file outside the project. In the container image, `PATH` is the container's ([`container.md`](container.md)).

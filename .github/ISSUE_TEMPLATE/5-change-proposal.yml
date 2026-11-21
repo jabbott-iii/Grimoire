@@ -5,9 +5,11 @@ body:
   - type: markdown
     attributes:
       value: |
-        [CONTRIBUTING.md](https://github.com/jabbott-iii/Grimoire/blob/main/CONTRIBUTING.md) asks for an issue before a large change, so that nobody spends time on something that can't be merged. Large changes include a new client, asset kind or command; a change to the format of grimoire.toml, grimoire.lock, asset.toml or a bundle; a new dependency, or code that isn't Rust; and anything that needs an ADR. Use this form for a new feature or a docs improvement too. A small fix can go straight to a pull request.
+        [CONTRIBUTING.md](https://github.com/jabbott-iii/Grimoire/blob/main/CONTRIBUTING.md) asks for an issue before a large change, so that nobody spends time on something that can't be merged. Large changes include a new client, asset kind or command; a change to the format of grimoire.toml, grimoire.lock, asset.toml or a bundle; a new dependency, or code that isn't Rust; and anything that needs an architecture decision record (ADR), the short document in docs/adr/ that records a significant decision and its reasons.
 
-        - For a new asset, including a tool or an MCP server, use the "Asset request" form. For a bug, use "Bug report", and for a change in a client's file format, "Client format change".
+        Use this form for a new feature or a docs improvement too. A small fix can go straight to a pull request.
+
+        - For a new asset, including a tool or an MCP (Model Context Protocol) server, use the "Asset request" form. For a bug, use "Bug report", and for a change in a client's file format, "Client format change".
         - **Security problems don't go here.** [SECURITY.md](https://github.com/jabbott-iii/Grimoire/blob/main/SECURITY.md) says how to report one privately.
   - type: textarea
     id: problem
@@ -45,7 +47,7 @@ body:
     id: specs
     attributes:
       label: Does it need a docs/specs.md re-check?
-      description: Code written against an external format, such as a client's files, MCP, Agent Skills, a registry or a CI tool, needs that format re-read at its primary source and its docs/specs.md entry updated in the same change. If it does, name the format in the proposal and link its source.
+      description: Code written against an external format, such as a client's files, MCP, Agent Skills, a registry or a continuous integration (CI) tool, needs that format re-read at its primary source and its docs/specs.md entry updated in the same change. If it does, name the format in the proposal and link its source.
       options:
         - It relies on an external format that needs a re-check
         - It relies on no external format

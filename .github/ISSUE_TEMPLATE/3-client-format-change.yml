@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Client formats change often. Each Grimoire adapter is written against a format recorded in [docs/specs.md](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md), with its version, source and the date it was checked. Use this form when a client's official docs, changelog or source show a change to one of those formats, so that the adapter and its specs.md entry can be checked again.
+        Client formats change often. Each Grimoire adapter, the code that writes one client's files, is written against a format recorded in [docs/specs.md](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md), with its version, source and the date it was checked. Use this form when a client's official docs, changelog or source show a change to one of those formats, so that the adapter and its specs.md entry can be checked again.
 
         Link the client's own docs, changelog or source. Adapters change only against a primary source.
   - type: dropdown

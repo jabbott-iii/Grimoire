@@ -5,13 +5,16 @@
 
 ## Context
 
-"grimoire" is already taken on crates.io, npm and PyPI. We need:
-- published names for each channel;
+"grimoire" is already taken on crates.io (Rust's package registry), npm (JavaScript's) and PyPI (the Python Package Index). We need:
+- published names for each channel (each way users install Grimoire);
 - the installed binary name;
-- names for the internal crates that must be published so that `cargo install` and cargo-binstall work;
-- names for asset binaries, the container image and the Claude Code marketplace.
+- names for the internal crates (Rust packages) that must be published so that `cargo install` and cargo-binstall (which installs a crate's prebuilt binary) work;
+- names for asset binaries, the container image and the Claude Code marketplace (the plugin catalog that Claude Code users add).
 
-Requirements: consistency across channels, no PATH collisions, and no impersonation of unrelated projects.
+Requirements:
+- consistency across channels;
+- no PATH collisions (no other common program installed under the same command name);
+- no impersonation of unrelated projects.
 
 ## Evidence (read-only registry queries, 2026-11-16)
 
@@ -23,7 +26,9 @@ Method:
 - **Scoop:** GitHub contents API on `ScoopInstaller/{Main,Extras}/bucket/<name>.json`.
 - **winget:** GitHub code search on `microsoft/winget-pkgs`.
 
-"Free" means no package exists under that exact name today. It does **not** guarantee the name can be registered: registries also apply normalisation, similarity and typosquat rules, and PyPI pending publishers don't reserve names.
+"Free" means no package exists under that exact name today. It does **not** guarantee the name can be registered:
+- registries also apply normalization (treating names that differ only in case, or in `-` and `_`, as the same), similarity and typosquat rules (refusing names that look like an existing one);
+- PyPI pending publishers (trusted publishers registered before a project exists) don't reserve names.
 
 | Name | crates.io | npm | PyPI | Homebrew core |
 |---|---|---|---|---|
@@ -35,7 +40,7 @@ Method:
 | **`agent-grimoire`** | **free** | **free** | **free** | **free** (formula and cask) |
 | `grim` | **taken** (0.4.0) | — | — | free (but Ubuntu ships a `grim` package) |
 
-npm scopes:
+npm scopes (the `@name/` prefix that groups an organization's packages):
 
 | Scope | Status |
 |---|---|
@@ -60,24 +65,31 @@ Other checks:
 
 ## Decision (proposed)
 
+In the table, ADR-0002 is the architecture decision record (ADR) that packages each Model Context Protocol (MCP) server and tool as its own binary. `ghcr.io` is the GitHub Container Registry, and OCI (the Open Container Initiative) sets the image and registry standards.
+
 | Thing | Name |
 |---|---|
-| Installed CLI binary | **`grimoire`** (rejected `grim` because of the Ubuntu and npm collisions) |
-| crates.io CLI package | **`agent-grimoire`** (`[[bin]] name = "grimoire"`), with `[package.metadata.binstall]` |
+| Installed command-line interface (CLI) binary | **`grimoire`** (rejected `grim` because of the Ubuntu and npm collisions) |
+| crates.io CLI package | **`agent-grimoire`** (`[[bin]] name = "grimoire"`), with `[package.metadata.binstall]` (cargo-binstall's metadata) |
 | crates.io core libraries | **`agent-grimoire-model`, `-catalog`, `-resolve`, `-install`, `-adapters`** (directories under `crates/` use the same names) |
 | npm launcher | **`agent-grimoire`** (unscoped, so `npx agent-grimoire` works) |
-| npm platform packages | **`@agent-grimoire/<platform>-<arch>`**: `linux-x64`, `linux-arm64`, `darwin-x64`, `darwin-arm64`, `win32-x64`, `win32-arm64`. Needs an npm org named `agent-grimoire` |
+| npm platform packages | **`@agent-grimoire/<platform>-<arch>`**: `linux-x64`, `linux-arm64`, `darwin-x64`, `darwin-arm64`, `win32-x64`, `win32-arm64`. Needs an npm organization named `agent-grimoire` |
 | PyPI | **`agent-grimoire`** (maturin `bindings = "bin"`) |
-| Homebrew | formula **`agent-grimoire`** in tap repo **`jabbott-iii/homebrew-tap`** (`brew install jabbott-iii/tap/agent-grimoire`) |
-| Scoop | manifest **`agent-grimoire.json`** in bucket repo **`jabbott-iii/scoop-bucket`** |
-| winget | identifier in `Publisher.Package` form, e.g. `JAbbottIII.AgentGrimoire`. Exact form validated against schema 1.28 in Phase 5 |
+| Homebrew | formula **`agent-grimoire`** in tap repository **`jabbott-iii/homebrew-tap`** (`brew install jabbott-iii/tap/agent-grimoire`). A tap is a third-party Homebrew package repository |
+| Scoop | manifest **`agent-grimoire.json`** in bucket repository **`jabbott-iii/scoop-bucket`**. A bucket is Scoop's name for a package repository |
+| winget | identifier in `Publisher.Package` form, e.g. `JAbbottIII.AgentGrimoire`. Exact form validated against schema 1.28 in Phase 5 (the release-pipeline phase of `PLAN.md`) |
 | Asset binaries (ADR-0002) | **`grimoire-mcp-<id>`**, **`grimoire-tool-<id>`** (not published to registries) |
 | Container image | **`ghcr.io/jabbott-iii/grimoire`**, lowercase. Settled in Phase 6: lowercase is mandatory, because OCI distribution-spec v1.1.1 allows only lowercase repository names. The name is written out, never built from `github.repository` (`jabbott-iii/Grimoire`) ([ADR-0011](0011-container-image.md)) |
-| Claude Code marketplace | **`grimoire`** (not on the reserved list in `CC-MKT`). Plugin names = asset IDs |
+| Claude Code marketplace | **`grimoire`** (not on the list of names Claude Code reserves, `CC-MKT` in [`../specs.md`](../specs.md)). Plugin names = asset IDs |
 
 ## Consequences
 
-- **Maintainer-only setup.** Claiming names (first publishes, creating the npm org and the tap/bucket repos) is done by the maintainer, as listed in `PLAN.md`. Until then a squatter could take any of these names. Claim them close to the first release.
-- **Six crates on crates.io.** The CLI plus 5 libraries means six one-time credentialed bootstrap publishes, and six trusted-publisher configurations (`CRATES-TP`). The alternative is to collapse the libraries into one `agent-grimoire-core` with modules: fewer names, but weaker compile-time boundaries. The proposal keeps separate crates as the brief describes.
+- **Maintainer-only setup.** Claiming names (first publishes, creating the npm organization and the tap and bucket repositories) is done by the maintainer, as listed in `PLAN.md`. Until then a squatter (someone who registers a name before its owner) could take any of these names. Claim them close to the first release.
+- **Six crates on crates.io.**
+  - The CLI plus 5 libraries means six one-time bootstrap publishes that need credentials, and six trusted-publisher configurations (`CRATES-TP`, the crates.io trusted-publishing entry in `specs.md`). Trusted publishing lets continuous integration (CI) publish with a short-lived identity token instead of a stored one.
+  - The alternative is to collapse the libraries into one `agent-grimoire-core` with modules: fewer names, but weaker compile-time boundaries. The proposal keeps separate crates as the brief describes.
 - **Docs wording.** Documentation consistently says "install `agent-grimoire`, run `grimoire`".
-- **Repository name case.** The remote is `github.com/jabbott-iii/Grimoire` (capital G), while the brief says `grimoire`. Trusted-publisher configurations, cosign certificate identities and OIDC subjects embed the repository name. **Settle the canonical spelling before Phase 5.** Nothing in this ADR writes the repository URL into any config.
+- **Repository name case.**
+  - The remote is `github.com/jabbott-iii/Grimoire` (capital G), while the brief says `grimoire`.
+  - Trusted-publisher configurations, cosign certificate identities and OpenID Connect (OIDC) subjects embed the repository name. (cosign signs release files; the OIDC subject is the claim in a CI token that names the repository and the branch or environment.)
+  - **Settle the canonical spelling before Phase 5.** Nothing in this ADR writes the repository URL into any config.

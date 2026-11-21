@@ -28,7 +28,8 @@ pub(crate) struct Global {
     /// Print exactly one JSON document on stdout instead of human output.
     #[arg(long, global = true)]
     pub(crate) json: bool,
-    /// Never prompt. Implied by --json, when stdin is not a terminal, and when CI is set.
+    /// Never prompt. Implied by --json, when stdin is not a terminal, and when the CI
+    /// environment variable is set to a non-empty value.
     #[arg(long, global = true)]
     pub(crate) no_input: bool,
     /// Run as if started in DIR (the project root).
@@ -40,7 +41,7 @@ pub(crate) struct Global {
 pub(crate) enum Command {
     /// Create grimoire.toml, detecting the clients already in use.
     Init {
-        /// A client to render for (repeatable). Detected from the project when omitted.
+        /// A client to write files for (repeatable). Detected from the project when omitted.
         #[arg(long = "client", value_name = "CLIENT")]
         clients: Vec<ClientArg>,
     },
@@ -48,7 +49,7 @@ pub(crate) enum Command {
     List {
         /// Show only entries whose id, summary, description or tags contain this text.
         query: Option<String>,
-        /// Only this kind.
+        /// Only assets of this kind.
         #[arg(long, value_enum)]
         kind: Option<KindArg>,
         /// Only assets with this tag.
@@ -57,11 +58,11 @@ pub(crate) enum Command {
         /// Only assets that support this client.
         #[arg(long, value_enum)]
         client: Option<ClientArg>,
-        /// Only this maturity.
+        /// Only assets of this maturity.
         #[arg(long, value_enum)]
         maturity: Option<MaturityArg>,
     },
-    /// Show an asset or bundle: permissions, outputs, dependencies and changes.
+    /// Show an asset or bundle: permissions, outputs, dependencies and latest changes.
     Show {
         /// Asset or bundle id.
         id: String,
@@ -73,7 +74,7 @@ pub(crate) enum Command {
         specs: Vec<String>,
         /// Accept these permissions for the assets being added (comma-separated).
         /// `env:NAME` accepts one environment variable; a bare `env` accepts every
-        /// variable they read now, and grimoire.toml records each one by name.
+        /// variable those assets read now, and grimoire.toml records each one by name.
         #[arg(long, value_delimiter = ',', value_parser = parse_allow)]
         allow: Vec<AllowArg>,
         /// Also run `apply`.
@@ -95,7 +96,7 @@ pub(crate) enum Command {
         #[arg(long)]
         check: bool,
     },
-    /// Make the managed content on disk match grimoire.toml and grimoire.lock.
+    /// Make the content grimoire manages on disk match grimoire.toml and grimoire.lock.
     Apply(ApplyArgs),
     /// Move assets to the versions in this grimoire's catalog, then apply.
     Update {
@@ -107,9 +108,9 @@ pub(crate) enum Command {
         #[command(flatten)]
         apply: ApplyArgs,
     },
-    /// Check every output recorded in grimoire.lock against the files on disk.
+    /// Check every file, block and entry recorded in grimoire.lock against the disk.
     Verify,
-    /// Remove all managed content and grimoire.lock.
+    /// Remove all content grimoire manages, then grimoire.lock.
     Uninstall {
         /// Also remove grimoire.toml, if there is one.
         #[arg(long)]
@@ -124,7 +125,8 @@ pub(crate) enum Command {
 
 #[derive(Debug, Args, Clone, Copy)]
 pub(crate) struct ApplyArgs {
-    /// Overwrite managed content that was edited, and unmanaged files in the way.
+    /// Overwrite managed content that was edited, and files grimoire doesn't manage that are
+    /// in the way.
     #[arg(long, conflicts_with = "write_new")]
     pub(crate) force: bool,
     /// Leave conflicting files alone and write what grimoire would write to <path>.new.

@@ -1,6 +1,6 @@
 # Evaluation cases
 
-Manual evaluation prompts for `security-reviewer`. Run each in a scratch repository containing the named fixture, and compare the report with the expected behaviour.
+Manual evaluation prompts for `security-reviewer`. Run each in a scratch repository containing the named fixture, and compare the report with the expected behavior.
 
 | # | Setup | Prompt | Expected |
 |---|---|---|---|
