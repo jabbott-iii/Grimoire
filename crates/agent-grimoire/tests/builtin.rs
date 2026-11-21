@@ -1,5 +1,5 @@
-//! The embedded catalog end to end: every exemplar asset and bundle installs,
-//! verifies and uninstalls cleanly, and what it writes is reviewed by snapshot.
+//! The embedded catalog end to end: every asset and bundle installs, verifies
+//! and uninstalls cleanly, and what it writes is reviewed by snapshot.
 
 #![allow(clippy::unwrap_used, reason = "tests fail loudly by design")]
 
@@ -67,6 +67,7 @@ fn snapshot_tree(p: &Project) -> String {
     out
 }
 
+/// One finished asset of each kind, as `catalog/README.md` names them.
 const EXEMPLARS: [&str; 5] = [
     "conventional-commits",
     "adr-writer",
@@ -74,6 +75,10 @@ const EXEMPLARS: [&str; 5] = [
     "secret-guard",
     "project-docs",
 ];
+
+/// Every other asset in the embedded catalog. The install tests below add these
+/// too, so nothing in the catalog ships without an end-to-end test.
+const OTHER_ASSETS: [&str; 1] = ["plain-language-docs"];
 
 #[test]
 fn the_catalog_holds_one_exemplar_per_kind_and_two_bundles() {
@@ -84,7 +89,7 @@ fn the_catalog_holds_one_exemplar_per_kind_and_two_bundles() {
         .map(agent_grimoire_model::AssetId::as_str)
         .collect();
     ids.sort_unstable();
-    let mut expected = EXEMPLARS.to_vec();
+    let mut expected = [&EXEMPLARS[..], &OTHER_ASSETS[..]].concat();
     expected.sort_unstable();
     assert_eq!(ids, expected);
     let bundles: Vec<&str> = source
@@ -128,6 +133,7 @@ fn every_exemplar_installs_verifies_and_uninstalls() {
     );
     let mut add = vec!["add"];
     add.extend_from_slice(&EXEMPLARS);
+    add.extend_from_slice(&OTHER_ASSETS);
     add.extend_from_slice(&["--allow", "filesystem-read,hooks,env"]);
     ok(&source, &p, &add);
     ok(&source, &p, &["apply"]);
@@ -302,8 +308,9 @@ fn doctor_needs_no_local_binary_for_a_server_over_http() {
     );
 }
 
-/// The exemplars and both bundles for all six clients: every client table the
-/// catalog ships renders, installs, verifies and uninstalls.
+/// Both bundles, which hold every exemplar, and the other assets, for all six
+/// clients: every client table the catalog ships renders, installs, verifies and
+/// uninstalls.
 #[test]
 fn every_exemplar_installs_for_every_client() {
     let source = Source::builtin().unwrap();
@@ -324,12 +331,11 @@ fn every_exemplar_installs_for_every_client() {
         &source,
         &p,
         &[
-            "add",
-            "rust-cli",
-            "security-baseline",
-            "--allow",
-            "filesystem-read,hooks,env",
-        ],
+            &["add", "rust-cli", "security-baseline"][..],
+            &OTHER_ASSETS[..],
+            &["--allow", "filesystem-read,hooks,env"][..],
+        ]
+        .concat(),
     );
     ok(&source, &p, &["apply"]);
     insta::assert_snapshot!(snapshot_tree(&p));

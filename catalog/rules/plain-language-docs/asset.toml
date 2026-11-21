@@ -1,0 +1,36 @@
+format = 1
+id = "plain-language-docs"
+kind = "rule"
+version = "0.1.0"
+summary = "Write documentation in plain language without losing any precision"
+description = """An always-on rule for writing and updating documentation: READMEs, guides, reference pages, doc comments, help text and changelog entries. It keeps jargon down (plain phrases where they are just as exact, terms explained on first use, acronyms spelled out, no insider shorthand), keeps every number, limit and caveat, and helps newer readers follow (the reason behind each design choice, one idea at a time, concrete examples, short paragraphs).
+
+Before finishing, the agent rereads the draft twice: as a second-year computer science student, looking for undefined terms and skipped steps, and as a senior engineer, looking for anything vague, oversimplified or wrong. It writes American English. The rule covers only the text the agent writes or changes. A repository's own stricter style guide takes precedence, except on spelling."""
+license = "MIT OR Apache-2.0"
+maintainers = ["jabbott-iii"]
+tags = ["docs", "writing", "style", "plain-language"]
+maturity = "experimental"
+min-cli-version = "0.1.0"
+
+# Rules are pure text and declare no permissions.
+
+[rule]
+# No `paths`: the rule is always on, because documentation isn't only in `.md` files.
+
+[clients.claude-code]
+outputs = [{ src = "rule.md", to = "rules:plain-language-docs.md", strategy = "render" }]
+
+[clients.agents-md]
+outputs = [{ src = "rule.md", to = "instructions", strategy = "block" }]
+
+[clients.codex]
+outputs = [{ src = "rule.md", to = "instructions", strategy = "block" }]
+
+[clients.cursor]
+outputs = [{ src = "rule.md", to = "rules:plain-language-docs.md", strategy = "render" }]
+
+[clients.gemini-cli]
+outputs = [{ src = "rule.md", to = "instructions", strategy = "block" }]
+
+[clients.copilot]
+outputs = [{ src = "rule.md", to = "rules:plain-language-docs.md", strategy = "render" }]
