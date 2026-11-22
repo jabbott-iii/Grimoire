@@ -1,5 +1,7 @@
 # Grimoire
 
+[![M8ven Score](https://m8ven.ai/badge/mcp/jabbott-iii-grimoire-ord61h?v=9243b61f5fb0ce4a43b7c2d42032555a)](https://m8ven.ai/mcp/jabbott-iii-grimoire-ord61h?s=readme)
+
 Grimoire is a catalog of AI-agent assets and a command-line tool (CLI), `grimoire`, that installs only the assets a project selects. The assets are rules, skills, agents, tools and MCP (Model Context Protocol) servers: the instructions and programs that AI coding assistants use. [The catalog](#the-catalog) explains each kind.
 
 Each AI coding assistant that reads these assets is a *client*. Grimoire writes each asset in the files and folders that each of the project's clients expects: Claude Code, OpenAI Codex, Cursor, Gemini CLI, GitHub Copilot, or any client that reads `AGENTS.md`. It records everything it writes, so it can check, update and remove exactly that content.
