@@ -1,13 +1,319 @@
-//! Client adapters and the cross-client planner (`architecture.md` §8).
+//! Client adapters and the cross-client planner: they turn the assets a
+//! project installs into the files each of its AI coding tools reads.
 //!
-//! An adapter is pure: it turns one resolved asset's declared outputs for one
-//! client into outputs at that client's literal paths. [`render`] runs the
-//! adapters for every selected client and then places shared content
-//! (`placement`): where several clients read one location, the content is
-//! written there once and attributed to all of them (ADR-0008).
+//! A client is an AI coding tool that Grimoire installs assets for, such as
+//! Claude Code or Cursor, and an asset is one rule, skill, agent, tool or MCP
+//! server (a program that serves tools, resources and prompts to a client over
+//! the Model Context Protocol) from Grimoire's catalog. An adapter is pure: it reads no files and writes
+//! none, and the same input always gives the same output. It turns one
+//! resolved asset's declared outputs for one client into outputs at that
+//! client's literal paths. [`render`] runs the adapters for every selected
+//! client and then places shared content (`placement`): where several clients
+//! read one location, the content is written there once and attributed to all
+//! of them.
 //!
-//! The v1 adapters are [`claude_code`], [`agents_md`], [`codex`], [`cursor`],
-//! [`gemini_cli`] and [`copilot`].
+//! # Where it fits
+//!
+//! The `grimoire` command-line interface (CLI), in the `agent-grimoire`
+//! crate, calls [`render`] in every command that plans writes, such as
+//! `grimoire plan`, `apply` and `update`. Before it,
+//! [`agent_grimoire_resolve::resolve`] works out which assets the project
+//! installs, at which versions and for which clients. After it,
+//! [`agent_grimoire_install::plan::plan`] compares the outputs with the disk
+//! and plans the writes. The CLI also reads [`AVAILABLE`], checks
+//! `grimoire.lock` with [`managed_unit`] and [`is_project_location`], and
+//! prints [`destination`] in `grimoire show`.
+//!
+//! Grimoire's build tool uses it too. `cargo xtask validate` renders every
+//! catalog asset for every client it declares, so that a refusal only an
+//! adapter makes fails there rather than in a user's `grimoire apply`.
+//! `cargo xtask gen-marketplace` builds the Claude Code plugin marketplace
+//! with [`plugin`].
+//!
+//! It builds on [`agent_grimoire_model`] (the shared types, such as
+//! [`ClientId`] and [`RelPath`]), [`agent_grimoire_catalog`] (the assets'
+//! files), [`agent_grimoire_resolve`] (the [`Resolution`] it renders) and
+//! [`agent_grimoire_install`] (the [`Desired`] outputs it returns).
+//!
+//! The crate is internal to the CLI. It is published only so that
+//! `cargo install agent-grimoire` can build the CLI from crates.io, and its
+//! API changes whenever the CLI needs it to, so don't depend on it
+//! ([the versioning policy](https://github.com/jabbott-iii/Grimoire/blob/main/docs/versioning.md#1-the-public-api)).
+//!
+//! The design is
+//! [`docs/architecture.md` §8, Client adapters](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#8-client-adapters).
+//!
+//! # The parts
+//!
+//! - **Rendering a project:** [`render`] takes a [`Resolution`] and returns
+//!   a [`Rendered`]. Its `desired` field holds every output that should be on
+//!   disk, sorted by path and then owner. Each output says who owns it (an
+//!   asset, or Grimoire itself), which clients it serves, where it goes
+//!   relative to the project root, and what it holds: a whole file, a managed
+//!   block (a marked section that Grimoire owns inside a shared Markdown
+//!   file), or an entry in a JSON or TOML file. Its `warnings` field holds
+//!   what the user should know before applying (below, "Warnings").
+//! - **The adapters:** the v1 adapters are [`claude_code`], [`agents_md`],
+//!   [`codex`], [`cursor`], [`gemini_cli`] and [`copilot`], one module per
+//!   client. Each maps the anchors an asset declares to its client's paths.
+//!   An anchor is a named destination, such as `rules:`, `skills:`,
+//!   `agents:`, `instructions`, `mcp` or `hooks`, so that an asset says what
+//!   it installs and the adapter says where. Each module's documentation has
+//!   a table of what it writes where, and its public constants name the
+//!   client's paths, such as [`agents_md::AGENTS_MD`], [`claude_code::MCP`]
+//!   and [`codex::CONFIG`].
+//! - **Which clients this build supports:** [`AVAILABLE`], all six.
+//! - **Which files Grimoire may own:** [`managed_unit`],
+//!   [`is_managed_location`] and [`is_project_location`] (below, "Which
+//!   files Grimoire may own").
+//! - **What `grimoire show` prints:** [`destination`], where a declared
+//!   output lands for one client. Placement can still move a rule or skill to
+//!   a location another client also reads, and `grimoire plan` shows the
+//!   final paths.
+//! - **Claude Code plugins:** [`plugin`] (below, "Plugins for the
+//!   marketplace").
+//!
+//! # Example
+//!
+//! The catalog built into the binary, resolved for a project that selects
+//! one rule for `agents-md`, `cursor` and `gemini-cli`. The rule is written
+//! once, to `AGENTS.md`, and serves all three clients:
+//!
+//! ```
+//! use std::collections::BTreeSet;
+//!
+//! use agent_grimoire_adapters::{AVAILABLE, render};
+//! use agent_grimoire_catalog::Source;
+//! use agent_grimoire_install::plan::{Content, Owner};
+//! use agent_grimoire_model::{ClientId, ProjectConfig, Version};
+//! use agent_grimoire_resolve::{Request, Update, resolve};
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let source = Source::builtin()?;
+//! let config = ProjectConfig::from_toml(
+//!     r#"
+//!     format = 1
+//!     clients = ["agents-md", "cursor", "gemini-cli"]
+//!
+//!     [assets]
+//!     conventional-commits = "*"
+//!     "#,
+//! )?;
+//! let version = Version::parse(env!("CARGO_PKG_VERSION"))?;
+//! let resolution = resolve(
+//!     &source,
+//!     &Request {
+//!         config: &config,
+//!         lock: None,
+//!         cli_version: &version,
+//!         update: &Update::None,
+//!         available_clients: &AVAILABLE,
+//!     },
+//! )
+//! .map_err(|diagnostics| format!("{diagnostics:?}"))?;
+//!
+//! let rendered = render(&resolution).map_err(|diagnostics| format!("{diagnostics:?}"))?;
+//! let at = |path: &str| rendered.desired.iter().find(|d| d.path.as_str() == path);
+//!
+//! // Cursor always applies AGENTS.md, so it gets no .mdc file of its own.
+//! let rule = at("AGENTS.md").expect("the rule's block");
+//! assert_eq!(
+//!     rule.clients,
+//!     BTreeSet::from([ClientId::AgentsMd, ClientId::Cursor, ClientId::GeminiCli])
+//! );
+//! assert!(at(".cursor/rules/conventional-commits.mdc").is_none());
+//!
+//! // Gemini CLI reads AGENTS.md through Grimoire's own block in GEMINI.md.
+//! let import = at("GEMINI.md").expect("the import block");
+//! assert_eq!(import.owner, Owner::Project);
+//! assert_eq!(import.content, Content::Block("@AGENTS.md\n".to_owned()));
+//!
+//! // Every selected client reads the rule once, so there is nothing to warn about.
+//! assert!(rendered.warnings.is_empty());
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! # Placing shared content once
+//!
+//! Clients read each other's files: Cursor always applies `AGENTS.md`, and
+//! Cursor and Copilot read `.claude/skills/` as well as `.agents/skills/`. A
+//! rule written both to `AGENTS.md` and to a client's own rule folder would
+//! be read twice by that client. So after the adapters run, one placement
+//! pass finds content that several selected clients can read from one place
+//! and writes it there once. The rules come from
+//! [ADR-0008](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0008-phase-4-client-adapters.md),
+//! the architecture decision record (ADR) for the Codex, Cursor, Gemini CLI
+//! and Copilot adapters, and the read matrix (which client reads which
+//! location) is in
+//! [`docs/architecture.md` §8.2](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#82-client-read-matrix-and-cross-client-planning).
+//!
+//! - **Rules.** When `agents-md` or `codex` puts a rule in `AGENTS.md`, the
+//!   other selected clients get no rule file of their own, and the block is
+//!   attributed to them as well. `cursor` and `copilot` read `AGENTS.md`
+//!   directly. `claude-code` and `gemini-cli` read it through a one-line
+//!   `@AGENTS.md` import, in a block that Grimoire owns in `CLAUDE.md`
+//!   ([`claude_code::agents_md_import`]) or `GEMINI.md`. Otherwise each client
+//!   gets its own file.
+//! - **Path-scoped rules.** `AGENTS.md` has no path scoping, so the block of
+//!   a rule meant only for some files starts with a line naming its globs.
+//!   Cursor and Copilot then apply it everywhere, with only that line to
+//!   limit it. Manifest validation requires every client of a rule to use
+//!   the same source file (`manifest/rule-src`), so a shared block never holds
+//!   two versions of a rule.
+//! - **Skills.** Cursor's and Copilot's copy of a skill goes to
+//!   `.agents/skills/` when another selected client needs that folder
+//!   (`agents-md`, `codex` or `gemini-cli`), else to `.claude/skills/` when
+//!   `claude-code` writes it, else to `.agents/skills/`.
+//! - **MCP servers.** `copilot` writes the same `.mcp.json` entry as
+//!   `claude-code`, once for both.
+//!
+//! Outputs of one asset that land in the same place, the same file or the
+//! same entry in it, are then merged and attributed to all their clients.
+//!
+//! Some refusals depend on placement. Cursor and Copilot take a rule's globs
+//! as one comma-separated list, so a glob that contains a comma can't be
+//! written there (`adapter/unsupported`). That error counts only when the
+//! client keeps its own rule file; when the rule is in `AGENTS.md`, the glob
+//! goes in the scope line instead.
+//!
+//! # Warnings
+//!
+//! Placement can't always reach each client exactly once, and installing an
+//! asset for one client can give something to another. [`render`] never
+//! hides either: it returns them in [`Rendered::warnings`].
+//!
+//! - `plan/duplicate-rule` and `plan/duplicate-skill`: a selected client that
+//!   may still read the same rule or skill twice. For example, Copilot CLI may
+//!   read a rule from `AGENTS.md` and again through the `@AGENTS.md` import in
+//!   `CLAUDE.md`, because it deduplicates only identical copies.
+//! - `plan/cross-client-rule`, `plan/cross-client-agent`,
+//!   `plan/cross-client-hooks` and `plan/cross-client-mcp`: content that
+//!   another client loads too, even one the asset isn't installed for. For
+//!   example, Cursor and Copilot also run the hooks Grimoire writes to
+//!   `.claude/settings.json`, and Cursor, which has no per-tool allow-list,
+//!   also loads the agents in `.claude/agents/`.
+//! - `adapter/agent-readonly`, `adapter/agent-strict-tools` and
+//!   `adapter/hook-tools`: an agent or hook that a client limits less
+//!   strictly than the asset declares, or that may rarely run.
+//!
+//! The CLI adds two Codex warnings itself, because they depend on the
+//! planned size of `AGENTS.md` and on the disk: `plan/codex-instructions-size`
+//! and `plan/codex-override`. Every code is described in
+//! [`docs/diagnostics.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/diagnostics.md#planning-plan),
+//! and the leaks between clients in
+//! [`docs/security-model.md` §3a](https://github.com/jabbott-iii/Grimoire/blob/main/docs/security-model.md#3a-cross-client-leaks).
+//!
+//! # Errors
+//!
+//! When any asset can't be rendered, [`render`] returns every diagnostic at
+//! once, errors and warnings, sorted and without duplicates. Clients that
+//! share a renderer, such as `claude-code` and `copilot`, which write the
+//! same `.mcp.json` entry, would otherwise report the same problem once
+//! each. The error codes are:
+//!
+//! - `adapter/unsupported`: a client can't express what the asset needs,
+//!   such as a Cursor agent whose tools aren't exactly `read` and `search`, a
+//!   Copilot agent prompt over 30,000 characters, or an MCP tool name that
+//!   Claude Code would rename or drop;
+//! - `adapter/source`: a source file of the asset is missing or isn't UTF-8;
+//! - `adapter/env-unknown`: an `env` override in `grimoire.toml` names a
+//!   variable the server doesn't read, or one the client sets itself;
+//! - `adapter/env-remap`: Codex can't pass a variable under another name;
+//! - `adapter/entry-key`: the key recorded for a Claude Code hook entry
+//!   couldn't be formed;
+//! - `adapter/output-clash`: one asset would write different content to the
+//!   same place for two clients, which points to a bug in an adapter.
+//!
+//! `cargo xtask validate` renders each catalog asset alone for each client
+//! it declares, so the embedded catalog can't cause `adapter/unsupported` or
+//! `adapter/source` ([`docs/diagnostics.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/diagnostics.md#adapters-adapter)).
+//!
+//! # What some clients can't hold, and why
+//!
+//! An adapter writes an output only where its client can enforce what the
+//! asset declares, or come as close as it can; where a client falls short,
+//! [`render`] warns (`adapter/agent-readonly`, `adapter/agent-strict-tools`).
+//! A client with no anchor for something, such as Codex for
+//! agents, can't be given it: an asset that declares it for that client fails
+//! manifest validation (`manifest/anchor-client`) before an adapter sees it.
+//! The reasons are in ADR-0008, and the mapping for each client and asset
+//! kind is in
+//! [`docs/architecture.md` §8.3](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#83-per-client-mapping-client-order-per-adr-0005-amended-by-adr-0008).
+//!
+//! - **Hooks are Claude Code only.** Grimoire's guard hooks rely on a failed
+//!   hook blocking the action (`onFailure: "block"`). None of the other
+//!   clients can guarantee that, and none could be tested here.
+//! - **Codex gets no agents.** A Codex agent inherits the parent's sandbox,
+//!   MCP servers and web search, and its one switch
+//!   (`features.shell_tool = false`) removes shell access but leaves edits, so
+//!   it can't be limited to the tools an asset declares.
+//! - **Cursor gets only read-only agents.** A Cursor agent has no tool list,
+//!   only `readonly: true`, so [`cursor`] writes an agent only when its tools
+//!   are exactly `read` and `search`.
+//!
+//! [ADR-0005](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0005-client-priority.md)
+//! chose the six clients and the order their adapters were built in;
+//! ADR-0008 amended it with these limits after the formats were checked
+//! again.
+//!
+//! # Which files Grimoire may own
+//!
+//! [`managed_unit`] says what an adapter owns at a path: a whole file in a
+//! managed folder (such as `.claude/skills/` or `.cursor/rules/`), a block in
+//! `AGENTS.md`, `CLAUDE.md` or `GEMINI.md`, or an entry in one of the five
+//! configuration files (`.mcp.json`, `.claude/settings.json`,
+//! `.codex/config.toml`, `.cursor/mcp.json` and `.gemini/settings.json`).
+//! [`is_managed_location`] is true wherever it returns a unit.
+//! [`is_project_location`] is true only for `CLAUDE.md` and `GEMINI.md`,
+//! where Grimoire owns a block for itself: the `@AGENTS.md` import.
+//!
+//! The CLI refuses a `grimoire.lock` that records anything else
+//! (`project/lock-path`). Grimoire never records an output anywhere else, so such a lock
+//! was edited by hand, and following it could make Grimoire read or delete a
+//! user's file. A `file` record on `.codex/config.toml`, for example, would
+//! let it delete the user's whole Codex configuration:
+//!
+//! ```
+//! use agent_grimoire_adapters::managed_unit;
+//! use agent_grimoire_model::{RelPath, Unit};
+//!
+//! # fn main() -> Result<(), agent_grimoire_model::InvalidValue> {
+//! assert_eq!(managed_unit(&RelPath::new(".codex/config.toml")?), Some(Unit::Entry));
+//! assert_eq!(managed_unit(&RelPath::new("AGENTS.md")?), Some(Unit::Block));
+//! assert_eq!(
+//!     managed_unit(&RelPath::new(".claude/skills/adr-writer/SKILL.md")?),
+//!     Some(Unit::File)
+//! );
+//! assert_eq!(managed_unit(&RelPath::new(".env")?), None);
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! # Plugins for the marketplace
+//!
+//! [`plugin`] gives the files of the Claude Code plugins in Grimoire's
+//! generated marketplace, one plugin per eligible asset, so that Claude Code
+//! users can install an asset without the CLI.
+//!
+//! - [`plugin::ineligible`] says why an asset can't be a plugin, as a
+//!   [`plugin::Ineligible`]. A rule can't, because Claude Code loads no
+//!   instructions from a plugin. A tool can't until a plugin hook is known to
+//!   fail closed, because Grimoire never installs the tool's binary. And an
+//!   asset with no `[clients.claude-code]` table can't.
+//! - [`plugin::files`] gives an eligible skill's, agent's or MCP server's
+//!   files, in a [`plugin::PluginFiles`]. They are the files the
+//!   [`claude_code`] adapter installs, laid out the way a plugin carries
+//!   them, except that an agent names MCP tools the way Claude Code names a
+//!   plugin's (`mcp__plugin_<server>_<server>__<tool>`). Per-project options,
+//!   such as an HTTP transport or a renamed environment variable, don't
+//!   apply.
+//! - [`plugin::reserved_name`] applies Claude Code's rules for reserved
+//!   plugin names, including the whole-word rule that
+//!   `claude plugin validate --strict` enforces.
+//!
+//! The layout, versions and dependencies of the marketplace are in
+//! [`docs/architecture.md` §10](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#10-generated-artifacts).
 
 pub mod agents_md;
 pub mod claude_code;
@@ -18,6 +324,12 @@ pub mod gemini_cli;
 mod placement;
 pub mod plugin;
 mod text;
+
+// The README's examples are compiled and run as doc tests too, so the
+// crates.io page breaks the build when the API changes under it.
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeDoctests;
 
 use std::collections::{BTreeMap, BTreeSet};
 

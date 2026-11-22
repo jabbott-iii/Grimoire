@@ -421,9 +421,9 @@ constrained_string! {
     /// configuration.
     ///
     /// `https://`, or `http://` for this machine only (`localhost`, `127.0.0.0/8`,
-    /// `[::1]`). No user information, query or fragment, so no credential can be
-    /// written into a configuration file, and no characters a client would expand
-    /// (`$`, `{`). ASCII, at most 2048 characters.
+    /// `[::1]`). No user information, query or fragment, the parts of a URL where
+    /// a credential usually goes, and no characters a client would expand (`$`,
+    /// `{`). ASCII, at most 2048 characters.
     pub struct ServerUrl {
         what: "server URL",
         check: check_server_url,

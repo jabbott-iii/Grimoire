@@ -563,7 +563,7 @@
           "$ref": "#/$defs/BinaryName"
         },
         "transports": {
-          "description": "Supported transports; production servers support both.",
+          "description": "Supported transports. Every MCP server must list both `stdio` and\n`streamable-http`, each once (`manifest/mcp-transports`).",
           "type": "array",
           "items": {
             "$ref": "#/$defs/Transport"

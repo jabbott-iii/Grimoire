@@ -232,7 +232,8 @@ impl HookEvent {
 pub struct McpServerSpec {
     /// Executable name: `grimoire-mcp-<id>`.
     pub binary: BinaryName,
-    /// Supported transports; production servers support both.
+    /// Supported transports. Every MCP server must list both `stdio` and
+    /// `streamable-http`, each once (`manifest/mcp-transports`).
     pub transports: Vec<Transport>,
     /// Environment variables the server reads.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]

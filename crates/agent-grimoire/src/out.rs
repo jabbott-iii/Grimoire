@@ -15,13 +15,21 @@ pub enum Exit {
     Failure = 1,
     /// Usage error.
     Usage = 2,
-    /// Invalid configuration or manifest, or a resolution failure.
+    /// Invalid configuration or lock, or a resolution failure.
     Invalid = 3,
-    /// Conflict: drift or an unmanaged file in the way. Nothing was written.
+    /// Conflict: drift or an unmanaged file in the way. Nothing was written,
+    /// except that `add --apply` and `remove --apply` have already written
+    /// `grimoire.toml`; `--write-new` has written the files without conflicts,
+    /// recorded them in `grimoire.lock`, and written a `<path>.new` file beside
+    /// each conflicting file it would write; and a run that stopped partway
+    /// (`apply/changed`, or `fs/in-the-way` during a write) has written some
+    /// files and recorded them in `grimoire.lock`.
     Conflict = 4,
     /// A check failed: `plan --check`, `verify` or `doctor`.
     Check = 5,
-    /// Refused for safety: a path escape or a symlink at a managed path.
+    /// Refused for safety (`fs/refused`): a symbolic link at or above a managed
+    /// path, a path that would leave the project root, a managed path that is
+    /// neither a regular file nor a directory, or a file larger than 8 MiB.
     Refused = 6,
 }
 

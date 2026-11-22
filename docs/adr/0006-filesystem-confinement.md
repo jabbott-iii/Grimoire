@@ -80,6 +80,6 @@ The policy's intent still holds:
   - The import-library checksums change only with those crate versions. Dependabot (GitHub's dependency-update bot) pull requests that touch them must update the bypass entries.
 - **Durability.** cap-tempfile does not fsync (force written data to disk). Grimoire syncs the temporary file before the rename, and syncs the directory afterward on Unix (best effort). Windows has no directory sync.
 - **Windows.**
-  - cap-std performs the final rename and removal path-based on Windows (by full path, not relative to an open handle), after resolving both parents inside the sandbox.
+  - cap-std performs the final rename and removal path-based on Windows (by full path, not relative to an open handle), after resolving both parents inside the sandbox. *(Corrected 2026-11-22: creating a missing directory ends the same way, in cap-primitives 4.0.3's `windows/fs/create_dir_unchecked.rs`.)*
   - Confinement holds, but on Windows the last step is not handle-relative. This is recorded in `docs/security-model.md`.
 - **Reversibility.** All filesystem access is in one module (`crates/agent-grimoire-install/src/fs.rs`). Moving to (b), or to another library, changes that module only.

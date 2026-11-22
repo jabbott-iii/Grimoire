@@ -172,8 +172,8 @@ pub(crate) fn check_kebab(value: &str, max: usize) -> Result<(), String> {
     Ok(())
 }
 
-/// Checks free text: length bounds in characters, and no control characters
-/// other than those listed in `allowed_controls`.
+/// Checks free text: length bounds in characters, and no control characters,
+/// except `\n`, `\r` and `\t` in multi-line text (`single_line` false).
 pub(crate) fn check_text(value: &str, max: usize, single_line: bool) -> Result<(), String> {
     if value.trim().is_empty() {
         return Err("must not be empty or only whitespace".into());

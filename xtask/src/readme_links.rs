@@ -7,7 +7,8 @@
 //! and a plain file in every CLI release archive, which holds no `docs/`
 //! (README-RENDER-P7 in `docs/specs.md`). A relative link works on GitHub and
 //! breaks in all three. The library crates' own READMEs link their
-//! `LICENSE-*` files relatively on purpose, so only the root README is checked.
+//! `LICENSE-*` files relatively on purpose, so `crate_docs` checks those
+//! READMEs with that exception, through [`link_targets`] and [`allowed`].
 //!
 //! The README is parsed with pulldown-cmark, as the catalog's Markdown is, with
 //! GitHub's extensions on. Every link and image counts, including reference
@@ -25,7 +26,7 @@ use pulldown_cmark::{Event, LinkType, Options, Parser, Tag, TagEnd};
 use crate::release::plan::{before_first_release, is_marker};
 
 /// Whether the root README may link to `target`.
-fn allowed(target: &str) -> bool {
+pub(crate) fn allowed(target: &str) -> bool {
     target.starts_with('#') || target.starts_with("https://") || target.starts_with("mailto:")
 }
 
@@ -35,6 +36,12 @@ fn allowed(target: &str) -> bool {
 struct Scan {
     links: Vec<(usize, String)>,
     comments: Vec<(usize, String)>,
+}
+
+/// `(line, target)` for every link target in `markdown`, counted as the module
+/// docs say.
+pub(crate) fn link_targets(markdown: &str) -> Vec<(usize, String)> {
+    scan(markdown).links
 }
 
 fn scan(markdown: &str) -> Scan {

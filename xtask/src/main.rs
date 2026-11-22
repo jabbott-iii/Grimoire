@@ -15,6 +15,8 @@
 //! stale files, 2 usage error.
 
 mod bumps;
+#[cfg(test)]
+mod crate_docs;
 mod git;
 mod marketplace;
 mod new;

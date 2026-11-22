@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::InvalidValue;
 use crate::constrained::constrained_string;
 
-/// The document format version. Every Grimoire file starts with `format = 1`.
+/// The document format version. Every Grimoire file must set `format = 1`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "u32", into = "u32")]
 pub struct Format(u32);

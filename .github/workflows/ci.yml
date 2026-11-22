@@ -61,6 +61,12 @@ jobs:
       # A workspace-wide run is required: Cargo's unused-dependency lints only fire when all targets are built.
       - name: Run clippy with warnings denied
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      # rustdoc reports a broken intra-doc link (a [`Name`] link in a doc comment) only as a
+      # warning, so code that moves leaves the crate docs (ADR-0012) pointing nowhere. Deny it.
+      - name: Build the API docs with warnings denied
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc --workspace --no-deps --locked
 
   test:
     name: test (${{ matrix.os }})

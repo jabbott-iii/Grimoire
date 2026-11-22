@@ -46,6 +46,7 @@ Grimoire is a catalog of AI-agent assets (rules, skills, agents, tools, MCP serv
 cargo fmt --all
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
+RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps --locked   # the API docs, as CI builds them: a broken intra-doc link fails
 cargo xtask schema            # regenerate schemas/ after changing model types
 cargo xtask schema --check    # what CI runs
 cargo xtask validate          # validate catalog/
@@ -98,7 +99,12 @@ Terms in the comments above:
 - **The user reference follows the code.** A change to a command, flag or exit code updates [`docs/cli.md`](docs/cli.md), and a new user-facing diagnostic code updates [`docs/diagnostics.md`](docs/diagnostics.md). A unit test and an integration test fail when a command, flag, exit code or diagnostic code is in the code but not in these files, or the other way round. Descriptions aren't checked, so update them in the same change.
 - **The root `README.md` uses absolute links only** (`https://github.com/jabbott-iii/Grimoire/blob/main/…`), and an xtask test enforces it. Relative links break where the file is republished: crates.io resolves them against `crates/agent-grimoire/`, PyPI doesn't rewrite them, and the CLI archives hold no `docs/`.
 - **Keep one copy of each community file.** `README.md`, `CONTRIBUTING.md`, `SECURITY.md` and `CODE_OF_CONDUCT.md` live at the root. Never add one in `.github/` or `docs/`, where GitHub also looks for them. GitHub reads `.github/` first, then the root, then `docs/`, so a copy in `.github/` would replace the root file on GitHub.
-- **Other READMEs are separate files.** Package, crate and asset READMEs are required where [`catalog/README.md`](catalog/README.md) and the crates need them.
+- **Other READMEs are separate files.** Package, crate and asset READMEs are required where [`catalog/README.md`](catalog/README.md) and [ADR-0012](docs/adr/0012-crate-documentation.md) (crate documentation) need them.
+- **Each crate's docs follow its code** ([ADR-0012](docs/adr/0012-crate-documentation.md)).
+  - Every crate under `crates/` opens its `src/lib.rs` with crate docs (the `//!` lines, its docs.rs page) in one shape: what it is, then `# Where it fits`, `# The parts` and `# Example`, then what a caller must know.
+  - Each published library crate also has a `README.md`, its crates.io page, with the sections `Status`, `How the CLI uses it`, `Platforms` (only where behavior differs by operating system), `Documentation` and `License`. Its Rust examples run as doc tests. `agent-grimoire`'s page is the root `README.md` instead.
+  - A change to a crate's public API or behavior updates its crate docs and README in the same change, and a new crate starts in this shape. A test (`xtask/src/crate_docs.rs`) checks the shapes, and the doc tests and `cargo doc` catch stale examples and broken links. Whether the words are still true is checked only by review.
+  - In doc comments, explain a term once, in the crate docs or on the item that defines it, and link to it elsewhere with an intra-doc link such as ``[`Source`]``.
 
 ## Adding an asset
 

@@ -40,7 +40,7 @@
 //! Files are edited in place with a concrete syntax tree, so the user's key
 //! order and unrelated content survive, and so do comments and whitespace outside
 //! the container Grimoire edits. Inserting into a container that is written on one
-//! line reflows that container across lines (a jsonc-parser behaviour); the values
+//! line reflows that container across lines (a jsonc-parser behavior); the values
 //! are unchanged, and removing the entry later does not restore the single line.
 //! Duplicate keys on Grimoire's path are refused, because readers resolve them
 //! differently.

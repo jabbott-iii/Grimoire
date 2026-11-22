@@ -265,7 +265,7 @@ Tool and server crates depend on none of the core crates.
   - unambiguous keys in the lock;
   - one-to-one plugin names in the generated marketplace.
 - **Format:** the Agent Skills `name` rules for every kind: 1–64 characters of `[a-z0-9-]`, no leading, trailing or double hyphen, and equal to the directory name.
-  - IDs starting with the plugin-reserved prefixes `claude-`, `anthropic-`, `anthropics-` and `cc-plugin-` are also rejected, because generated Claude Code plugins would fail to load (`CC-PLUGIN`).
+  - IDs starting with the plugin-reserved prefixes `claude-`, `anthropic-`, `anthropics-` and `cc-plugin-` are also rejected, because each asset and bundle ID becomes a plugin name in the generated marketplace, and Claude Code's plugin tools report such a name as an error (`CC-PLUGIN-P4`).
 - **Asset versions use semantic versioning (SemVer), one version per asset.** A SemVer version has the form `MAJOR.MINOR.PATCH`, such as `1.0.0`.
   - CI requires a version bump and a CHANGELOG entry whenever an asset's files change.
   - The asset version is independent of the CLI version.
@@ -430,7 +430,7 @@ In practice:
 - Tools and MCP servers: the crate builds, `binary` matches a `[[bin]]` target in its `Cargo.toml`, and the declared tools match the server's `tools/list` in tests.
   - Phase 3, for every asset crate:
     - no dependency on Grimoire's core crates (`crate/core-dependency`);
-    - no `path` or `git` dependency (one taken from a local folder or a Git repository) except on `agent-grimoire-mcp` (`crate/path-dependency`);
+    - no `path` or `git` dependency (one taken from a local folder or a Git repository) in the asset's own `Cargo.toml` (`crate/path-dependency`), because one could bring in crates this check never sees. That includes `agent-grimoire-mcp`, which a server reaches through the workspace instead (`agent-grimoire-mcp.workspace = true`);
     - no `Cargo.toml` below the asset's own (`crate/nested-manifest`).
   - Phase 3, for MCP servers:
     - a dependency on `agent-grimoire-mcp` (`crate/hardening`);
@@ -493,7 +493,7 @@ The lock is sorted deterministically and uses normalized `/` paths, so it diffs 
 
 1. **Resolve:** `grimoire.toml` + lock + catalog become the resolved asset set. The versions recorded in the lock (its pins) are kept unless `update` asks otherwise.
 2. **Render:** adapters turn the resolved set and the selected clients into the desired outputs.
-3. **Plan:** compare the desired outputs, the lock and disk. The result is a list of `create | update | delete | unchanged | conflict` actions, each with a reason and a diff.
+3. **Plan:** compare the desired outputs, the lock and disk. The result is a list of `create | update | delete | unchanged | adopt | forget | conflict` actions, each with a reason and a diff. `adopt` is content already as desired on disk, and `forget` is content no longer wanted and already gone; for both, only the lock changes.
 4. **Apply:**
    1. Check every precondition first. Any conflict means nothing is written (exit 4) unless `--force` or `--write-new` is given.
    2. Write each output atomically, so a crash never leaves a half-written file (§7.4).
@@ -604,7 +604,7 @@ Each of these is a distinct, actionable diagnostic (exit 3):
 - unsupported client for an asset (naming the clients it supports);
 - `min-cli-version` too new;
 - unaccepted permissions;
-- an agent a selected client can't limit to its tools at all (Codex has no agents; Cursor takes only exactly `read` and `search`, as `readonly`). Where a client limits the tools only partly, `plan` warns instead, as ADR-0008 decided;
+- an agent that Cursor can't limit to its tools: Cursor takes only exactly `read` and `search`, as `readonly`. The Cursor adapter refuses it while rendering (`adapter/unsupported`), and catalog validation keeps such an agent out of the embedded catalog. Codex has no agents at all, but that alone is not an error: an agent can't declare Codex (`manifest/anchor-client`), so a project with Codex gets a `resolve/client-not-covered` warning and the agent is installed for its other clients. It is an error only as the unsupported-client error above (`resolve/unsupported-client`): when the agent's `clients` in `grimoire.toml` names Codex, or when no other client is left. Where a client limits the tools only partly, `plan` warns instead, as ADR-0008 decided;
 - a pinned version unavailable in this CLI's catalog when content is needed. Each CLI release embeds only one version of each asset (ADR-0001).
 
 **Phase 2 refinement of the last item.** With one embedded version per asset, `plan`, `apply` and `update --no-apply` stop whenever a selected asset's locked version (or manifest digest) differs from the catalog's.

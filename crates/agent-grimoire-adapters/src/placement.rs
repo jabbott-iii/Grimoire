@@ -271,7 +271,7 @@ pub(crate) fn warnings(resolution: &Resolution<'_>, desired: &[Desired], report:
         if w.has(Place::SettingsHooks) {
             report.warnings.push(Diagnostic::warning(
                 "plan/cross-client-hooks",
-                format!("Cursor and GitHub Copilot also run hooks from .claude/settings.json, so `{id}`'s hooks run there too; whether they pass `args` and honour `onFailure` is undocumented, so there a hook may let actions through when it fails, or block every tool call if its arguments are dropped (turn off Claude Code hooks in that client to recover)"),
+                format!("Cursor and GitHub Copilot also run hooks from .claude/settings.json, so `{id}`'s hooks run there too; whether they pass `args` and honor `onFailure` is undocumented, so there a hook may let actions through when it fails, or block every tool call if its arguments are dropped (turn off Claude Code hooks in that client to recover)"),
             ));
         }
         if let Some(clients) = &w.mcp_json {

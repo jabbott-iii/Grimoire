@@ -88,7 +88,7 @@ pub(crate) fn read(format: Format, bytes: &[u8]) -> Result<Vec<File>, String> {
 }
 
 /// Reads an archive that `cargo xtask release build` made, and refuses it unless
-/// [`write`] gives back exactly the same bytes. Extra gzip members, trailing data,
+/// [`write()`] gives back exactly the same bytes. Extra gzip members, trailing data,
 /// nested or duplicate names and odd headers can then never make one tool see a
 /// different binary from another.
 pub(crate) fn read_canonical(format: Format, bytes: &[u8]) -> Result<Vec<File>, String> {

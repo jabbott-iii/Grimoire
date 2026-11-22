@@ -35,6 +35,7 @@ Kind: <!-- rule, skill, agent, tool, mcp-server or bundle -->
 - [ ] A test in `crates/agent-grimoire/tests/cli.rs` covers any change to planning, applying or removal.
 - [ ] Changed `insta` snapshots were read before they were accepted.
 - [ ] `docs/cli.md` and `docs/diagnostics.md` match the commands, flags, exit codes and diagnostic codes.
+- [ ] A crate whose public API or behavior changed has updated crate docs (the `//!` lines in `src/lib.rs`) and, if it is published, an updated `README.md` (ADR-0012, crate documentation).
 
 ## Formats and decisions
 

@@ -142,10 +142,9 @@ fn modified(path: &std::path::Path) -> Option<SystemTime> {
     std::fs::metadata(path).and_then(|m| m.modified()).ok()
 }
 
-/// Reads and filters the JWKS file. Keys that are not usable for RS256 (RSA,
-/// 2048 bits or more) or ES256 (P-256) signatures are skipped.
-/// Reads the JWKS file. `Ok(None)` when the file does not exist; otherwise
-/// the usable keys, which may be none.
+/// Reads and filters the JWKS file. `Ok(None)` when the file does not exist;
+/// otherwise the usable keys, which may be none. Keys that are not usable for
+/// RS256 (RSA, 2048 to 8192 bits) or ES256 (P-256) signatures are skipped.
 fn read_key_set(path: &std::path::Path) -> Result<Option<Vec<SigningKey>>, AuthError> {
     let shown = path.display();
     let meta = match std::fs::metadata(path) {
@@ -174,7 +173,7 @@ fn load_keys(path: &std::path::Path) -> Result<Vec<SigningKey>, AuthError> {
     match read_key_set(path)? {
         None => Err(AuthError(format!("the JWKS file {shown} does not exist"))),
         Some(keys) if keys.is_empty() => Err(AuthError(format!(
-            "the JWKS file {shown} has no usable signing key (RSA of 2048 bits or more for RS256, or P-256 for ES256)"
+            "the JWKS file {shown} has no usable signing key (RSA of 2048 to 8192 bits for RS256, or P-256 for ES256)"
         ))),
         Some(keys) => Ok(keys),
     }

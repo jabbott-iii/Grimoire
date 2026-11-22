@@ -466,7 +466,7 @@ Grimoire has one maintainer. This section says what the repository's rules, CI a
 
 ## 7. Known gaps and residual risks
 
-- **The final step on Windows.** cap-std performs the final rename and remove path-based on Windows, after resolving the parents inside the sandbox. Confinement holds, but on Windows the last step isn't relative to a directory handle (ADR-0006, which chose cap-std).
+- **The final step on Windows.** cap-std performs the final step of creating a missing directory, of a rename and of a removal path-based on Windows, after resolving the parents inside the sandbox. Confinement holds, but on Windows the last step isn't relative to a directory handle (ADR-0006, which chose cap-std).
 - **Leftover temporary files.** After a crash, a temporary file with a UUID name (a random unique identifier) can be left in a managed directory. Grimoire does not clean these up automatically. On Linux, cap-tempfile 4.0.3 uses an unnamed `O_TMPFILE` file (a Linux file with no name in any directory) where the filesystem supports it, and names it only just before the rename, so a leftover is rare there.
 - **Interrupts.** There is no signal handler (code that runs when the process receives a signal, such as Ctrl-C's SIGINT). Atomic writes keep files consistent, and rerunning converges. Grimoire's own exit codes are 0 to 6; a run stopped by Ctrl-C ends with the status the shell reports for a process killed by SIGINT, 130 in a POSIX (standard Unix) shell.
 - **Empty directories.** After deleting a file it owns, Grimoire removes every directory above it that is now empty, including one the user created empty. An empty directory holds no content, and Git does not track one.

@@ -274,7 +274,10 @@ impl Root {
     ///
     /// # Errors
     ///
-    /// Refuses symlinks and non-files at or above `path`; reports I/O errors.
+    /// Refuses ([`FsError::Refused`]) a symbolic link at or above `path` and a
+    /// special file at it. Reports ([`FsError::InTheWay`]) a regular or special
+    /// file above `path`, where a directory is needed, and a directory at it.
+    /// Reports I/O errors.
     pub fn write(&self, path: &RelPath, bytes: &[u8]) -> Result<(), FsError> {
         self.write_like(path, bytes, None)
     }
@@ -331,7 +334,10 @@ impl Root {
     ///
     /// # Errors
     ///
-    /// Refuses symlinks and non-files; reports I/O errors.
+    /// Refuses ([`FsError::Refused`]) a symbolic link at or above `path` and a
+    /// special file at it. Reports ([`FsError::InTheWay`]) a regular or special
+    /// file above `path`, where a directory is needed, and a directory at it.
+    /// Reports I/O errors.
     pub fn remove(&self, path: &RelPath) -> Result<(), FsError> {
         let shown = path.as_str();
         let Some(dir) = self.parent(path, false)? else {

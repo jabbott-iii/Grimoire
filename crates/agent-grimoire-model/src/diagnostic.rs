@@ -123,7 +123,8 @@ pub fn has_errors(diagnostics: &[Diagnostic]) -> bool {
     diagnostics.iter().any(Diagnostic::is_error)
 }
 
-/// Sorts diagnostics into a stable order: by file, then field, then code.
+/// Sorts diagnostics into a stable order: by file, then field, then code, then
+/// message.
 pub fn sort(diagnostics: &mut [Diagnostic]) {
     diagnostics.sort_by(|a, b| {
         (&a.file, &a.field, a.code, &a.message).cmp(&(&b.file, &b.field, b.code, &b.message))

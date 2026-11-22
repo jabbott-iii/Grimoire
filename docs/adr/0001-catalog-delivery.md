@@ -59,7 +59,7 @@ A static index plus content blobs (the files themselves), hosted (e.g. on GitHub
 
 Adopt **(a) for v1**, implemented behind a `Source` abstraction so that (b) can be added later without changing the lockfile format.
 
-- `Source` is a small trait (a Rust interface) with:
+- `Source` is a small trait (a Rust interface) with: *(Corrected 2026-11-22: in the code, `Source` is a struct, not a trait, in `crates/agent-grimoire-catalog/src/source.rs`. It is the in-memory index of the catalog, built from a pack; a later remote source would build the same type. Phase 2 decided this, because a trait with a single implementation added nothing, as [`architecture.md`](../architecture.md) §4 and [`PLAN.md`](../../PLAN.md) record.)*
   - an identity (recorded in the lock as `source`);
   - an index of available `(id, kind, version, manifest)`;
   - read access to an asset's content files by relative path.
