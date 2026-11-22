@@ -586,10 +586,10 @@ A pin fixes the exact version and checksum, or the digest, of a tool or image th
 - **Then let the pull request's checks run.** The release dry-run verifies distroless's signature on the new index and both platform manifests, then builds, checks and scans the image. Merge only when they pass.
 - The pull request has no release notes, because distroless sets no labels.
 - Dependabot opens no security updates for Docker images. The weekly `image-scan` job in `security.yml` scans the latest release's image instead (§3).
-- **Today's pin** is `sha256:25ac8f0c…` (first uploaded 2026-10-31).
-  - The current `nonroot`, `sha256:aafe9936…`, was first uploaded 2026-11-12, so it met the rule at 2026-11-19T21:16:35Z.
-  - The two differ only in the mode (the file permissions) of `/usr/lib/os-release`, to which `/etc/os-release` links.
-  - Dependabot's pull request 1 moves the pin to it. Take it only after that time.
+- **Today's pin** is `sha256:aafe9936…`, which `nonroot` still pointed to on 2026-11-20. It was first uploaded 2026-11-12T21:16:35Z.
+  - It met the rule at 2026-11-19T21:16:35Z. Dependabot's pull request 1 moved the pin to it and was merged on 2026-11-20, after that time.
+  - It differs from the previous pin, `sha256:25ac8f0c…` (first uploaded 2026-10-31), only in the mode (the file permissions) of `/usr/lib/os-release`, to which `/etc/os-release` links.
+  - The pull request's release dry-run (run 44385784834) verified distroless's signature on the new index and both platform manifests, then built, checked and scanned the image. Grype found no vulnerabilities on either platform.
 
 **Where the other pins live.** Dependabot can't see values in a workflow's `env:`, so bump these by hand:
 

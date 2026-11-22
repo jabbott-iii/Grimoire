@@ -189,7 +189,8 @@ That led to decisions 6 and 7, and to the changes marked "after the review" belo
   - With no `# syntax=` line, the frontend is the one inside the digest-pinned BuildKit image, so nothing is pulled by tag.
   - The first line is `# check=error=true`, so a build-check warning fails the build. `context` (through `parse_dockerfile`) refuses a Dockerfile whose first line isn't that, and a unit test covers it. Checked locally on the pinned BuildKit v0.34.2 with no `# syntax=` line: with the directive a `FromAsCasing` warning fails the build; without it the build only warns.
 - **The base is pinned and verified before every build.**
-  - The pin is `gcr.io/distroless/static-debian13:nonroot@sha256:25ac8f0c3b2334a9eb05452266bd4697864a8c8ef0ef71e5e6480d7f92868329`, the newest index at least 7 days old (first uploaded 2026-10-31). Its linux/amd64 manifest is `sha256:336e53e9941facdb69b755e6fd2c63f5400abd3b1ba47bb17ebafc2b1547cebd`, and its linux/arm64/v8 manifest `sha256:bf6233b64054d17b31c3b555b1bbcee58958896830a305ef4d51faa257990d87`.
+  - The pin was `gcr.io/distroless/static-debian13:nonroot@sha256:25ac8f0c3b2334a9eb05452266bd4697864a8c8ef0ef71e5e6480d7f92868329`, the newest index at least 7 days old (first uploaded 2026-10-31). Its linux/amd64 manifest is `sha256:336e53e9941facdb69b755e6fd2c63f5400abd3b1ba47bb17ebafc2b1547cebd`, and its linux/arm64/v8 manifest `sha256:bf6233b64054d17b31c3b555b1bbcee58958896830a305ef4d51faa257990d87`.
+  - *(2026-11-20: the pin moved to `sha256:aafe993665bf6200db38a02c11a9351e782a84b6a45e7f33b6695638c88e3931`, first uploaded 2026-11-12, after it passed the 7-day rule. Dependabot's pull request 1 made the change. Its linux/amd64 manifest is `sha256:816dc4d589459a7fe33b8a2e69edb70da56ffad7161f4b415937fa2bfe7e92e8`, and its linux/arm64/v8 manifest `sha256:50e178649a8d77a5d8414f205471c829f06b876cbdb2455dace0b5de549fd1e5`. The two indexes differ only in the mode of `/usr/lib/os-release`.)*
   - It holds base-files, ca-certificates, media-types, netbase, tzdata and tzdata-legacy (Debian 13.7, per Grype). No shell, no libc (C standard library).
   - `crane manifest` fetches the index. `context` checks that its bytes hash to the pinned digest, and that it lists exactly one linux/amd64 and one linux/arm64 manifest.
   - `cosign verify` then checks distroless's keyless signature (one made with a short-lived Sigstore certificate rather than a stored key) on the index and on both platform manifests, with `--certificate-identity keyless@distroless.iam.gserviceaccount.com --certificate-oidc-issuer https://accounts.google.com`.
@@ -366,7 +367,7 @@ Not run locally: the arm64 image (built and scanned, but there is no emulation h
 
 **Revisit when:**
 - BuildKit v0.35.0 and buildx v0.39.0 pass the 7-day rule (from 2026-11-18): bump them, and re-check `provenance-add-gha` and the attestation layout `check` expects.
-- distroless's `aafe9936…` passes the 7-day rule (after 2026-11-19T21:16:35Z): re-pin the base.
+- distroless's `aafe9936…` passes the 7-day rule (after 2026-11-19T21:16:35Z): re-pin the base. *(Done 2026-11-20, by Dependabot's pull request 1.)*
 - GHCR supports the referrers API: the fallback-tag check must also accept referrers.
 - Dependabot dates Docker updates for gcr.io or GHCR: drop the hand check of the base digest's age.
 - MCP clients share a project-directory variable, or rendering one form per client is worth it: reconsider `runtime = "docker"`, after v1.
