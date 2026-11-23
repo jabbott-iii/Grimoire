@@ -1,4 +1,7 @@
-//! Managed blocks in shared Markdown files such as `AGENTS.md` (`architecture.md` §7.2).
+//! Managed blocks in shared Markdown files such as `AGENTS.md`.
+//!
+//! The design is in
+//! [`docs/architecture.md` §7.2, Ownership units and merge strategies](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#72-ownership-units-and-merge-strategies).
 //!
 //! A block is the text between two marker lines:
 //!

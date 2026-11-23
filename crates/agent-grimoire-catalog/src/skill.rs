@@ -1,4 +1,5 @@
-//! Native validation of Agent Skills directories (`SKILLS` in `docs/specs.md`).
+//! Native validation of Agent Skills directories, against the Agent Skills
+//! specification ([`docs/specs.md`, SKILLS](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#skills-agent-skills-specification)).
 //!
 //! Grimoire applies the specification's rules, and is deliberately stricter
 //! where the spec only recommends:

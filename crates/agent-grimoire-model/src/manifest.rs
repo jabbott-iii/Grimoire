@@ -1,4 +1,6 @@
-//! The asset manifest, `catalog/<kind>/<id>/asset.toml` (`architecture.md` §6.1).
+//! The asset manifest, `catalog/<kind>/<id>/asset.toml`.
+//!
+//! The design is in [`docs/architecture.md` §6.1, `asset.toml`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#61-assettoml).
 
 use std::collections::BTreeMap;
 
@@ -256,7 +258,9 @@ pub struct EnvVarSpec {
     pub description: Summary,
 }
 
-/// A tool an MCP server exposes, with every annotation stated explicitly (`MCP-SPEC`).
+/// A tool an MCP server exposes, with every annotation stated explicitly. The
+/// annotations and their defaults are in the Model Context Protocol
+/// specification ([`docs/specs.md`, MCP-SPEC](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#mcp-spec-protocol-specification)).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 #[allow(

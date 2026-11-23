@@ -1,4 +1,9 @@
-//! Root-confined, symlink-refusing, atomic filesystem access (`architecture.md` §7.4, ADR-0006).
+//! Root-confined, symlink-refusing, atomic filesystem access.
+//!
+//! The design is in
+//! [`docs/architecture.md` §7.4, Filesystem safety](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#74-filesystem-safety),
+//! and [ADR-0006](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0006-filesystem-confinement.md)
+//! chose `cap-std` to confine every access to the project root.
 //!
 //! Every operation starts from a capability handle on the project root
 //! ([`cap_std::fs::Dir`]) and walks to the parent directory one component at a
@@ -22,7 +27,7 @@ use cap_fs_ext::{DirExt as _, FollowSymlinks, OpenOptionsFollowExt as _};
 use cap_std::fs::{Dir, OpenOptions};
 
 /// The largest file Grimoire reads in a project. Managed files are small; Claude
-/// Code itself skips instruction files over 4 MiB (`CC-MEM`).
+/// Code itself skips instruction files over 4 MiB ([`docs/specs.md`, CC-MEM](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#cc-mem-memory-and-rules)).
 pub const MAX_READ_BYTES: u64 = 8 * 1024 * 1024;
 
 /// A filesystem operation that failed.

@@ -1,5 +1,8 @@
 //! Owned entries in config files such as `.mcp.json`, `.gemini/settings.json`
-//! and `.codex/config.toml` (`architecture.md` §7.2).
+//! and `.codex/config.toml`.
+//!
+//! The design is in
+//! [`docs/architecture.md` §7.2, Ownership units and merge strategies](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#72-ownership-units-and-merge-strategies).
 //!
 //! An entry key is an RFC 6901 JSON Pointer to what Grimoire owns:
 //!
@@ -20,7 +23,8 @@
 //! still be known then, so it cannot come from the adapter that wrote the entry.
 //!
 //! - **JSON**, the default (`.mcp.json`, `.claude/settings.json`, …): strict
-//!   RFC 8259. Claude Code reads its settings files as strict JSON (`CC-SET`),
+//!   RFC 8259. Claude Code reads its settings files as strict JSON
+//!   ([`docs/specs.md`, CC-SET](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#cc-set-settings-permissions-hooks)),
 //!   and Grimoire refuses to edit what a client could not read.
 //! - **JSONC**, exactly `.gemini/settings.json`: Gemini CLI reads it as
 //!   `JSON.parse` of the text with its `//` and `/* */` comments stripped. Comments

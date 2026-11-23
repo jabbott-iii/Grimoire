@@ -1,5 +1,8 @@
 //! Claude Code plugins for Grimoire's generated marketplace
-//! (`cargo xtask gen-marketplace`; `CC-PLUGIN-P4` in `docs/specs.md`).
+//! (`cargo xtask gen-marketplace`).
+//!
+//! The plugin manifest, components and naming rules it follows are in
+//! [`docs/specs.md`, CC-PLUGIN-P4](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#cc-plugin-p4-plugin-manifest-components-and-naming).
 //!
 //! Each eligible asset becomes one plugin named after it, with the same files
 //! the `claude-code` adapter installs, laid out the way a plugin carries them:
@@ -153,8 +156,9 @@ pub fn files(asset: &SourceAsset) -> Result<PluginFiles, Diagnostic> {
 }
 
 /// Why `name` can't be a plugin name, by Claude Code's reserved-name rules
-/// (`CC-PLUGIN-P4`). The whole-word rule is only a warning in `claude plugin
-/// validate`, but the marketplace is validated with `--strict`, so it counts.
+/// ([`docs/specs.md`, CC-PLUGIN-P4](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#cc-plugin-p4-plugin-manifest-components-and-naming)).
+/// The whole-word rule is only a warning in `claude plugin validate`, but the
+/// marketplace is validated with `--strict`, so it counts.
 #[must_use]
 pub fn reserved_name(name: &str) -> Option<String> {
     const EXACT: [&str; 5] = [

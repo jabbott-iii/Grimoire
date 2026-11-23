@@ -60,7 +60,7 @@ impl JsonSchema for Format {
     }
 }
 
-/// An asset kind (`architecture.md` §3).
+/// An asset kind ([`docs/architecture.md` §3, Asset kinds](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#3-asset-kinds)).
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema,
 )]
@@ -118,7 +118,8 @@ impl Kind {
         Kind::ALL.into_iter().find(|k| k.catalog_dir() == dir)
     }
 
-    /// Whether assets of this kind are Rust crates (ADR-0002).
+    /// Whether assets of this kind are Rust crates, each built as its own binary
+    /// and released with the CLI ([ADR-0002](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0002-mcp-server-and-tool-packaging.md)).
     #[must_use]
     pub fn is_code_bearing(self) -> bool {
         matches!(self, Kind::Tool | Kind::McpServer)
@@ -143,7 +144,8 @@ pub enum Maturity {
     Deprecated,
 }
 
-/// An MCP transport (`MCP-SPEC`).
+/// An MCP transport, as the Model Context Protocol specification defines it
+/// ([`docs/specs.md`, MCP-SPEC](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#mcp-spec-protocol-specification)).
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema,
 )]

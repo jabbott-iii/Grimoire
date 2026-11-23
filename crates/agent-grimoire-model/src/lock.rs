@@ -1,4 +1,6 @@
-//! The lockfile, `grimoire.lock` (`architecture.md` §6.5).
+//! The lockfile, `grimoire.lock`.
+//!
+//! The design is in [`docs/architecture.md` §6.5, `grimoire.lock`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#65-grimoirelock).
 
 use std::borrow::Cow;
 use std::collections::BTreeSet;
@@ -13,7 +15,9 @@ use crate::{
     Sha256Digest, Tag, Version,
 };
 
-/// A `grimoire.lock` document. Never contains the CLI version (ADR-0001).
+/// A `grimoire.lock` document. Never contains the CLI version, so upgrading
+/// `grimoire` doesn't change the lock unless what it installs changes
+/// ([ADR-0001](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0001-catalog-delivery.md)).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 #[schemars(title = "Grimoire lockfile (grimoire.lock)")]
@@ -24,8 +28,9 @@ pub struct Lockfile {
     #[serde(default, rename = "asset", skip_serializing_if = "Vec::is_empty")]
     pub assets: Vec<LockedAsset>,
     /// Content Grimoire itself owns rather than any asset, such as the `CLAUDE.md`
-    /// block that imports `AGENTS.md` (`architecture.md` §8.2). Its managed blocks
-    /// use the reserved name [`Lockfile::PROJECT_OWNER`].
+    /// block that imports `AGENTS.md`
+    /// ([`docs/architecture.md` §8.2, Client read matrix and cross-client planning](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#82-client-read-matrix-and-cross-client-planning)).
+    /// Its managed blocks use the reserved name [`Lockfile::PROJECT_OWNER`].
     #[serde(default, rename = "output", skip_serializing_if = "Vec::is_empty")]
     pub outputs: Vec<LockedOutput>,
 }
@@ -104,7 +109,9 @@ pub struct LockedAsset {
     pub outputs: Vec<LockedOutput>,
 }
 
-/// A catalog source (ADR-0001). v1 has only the catalog embedded in the binary.
+/// A catalog source. v1 has only the catalog embedded in the binary, which
+/// [ADR-0001](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0001-catalog-delivery.md)
+/// chose, leaving room for a remote catalog later.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum SourceId {
@@ -112,7 +119,8 @@ pub enum SourceId {
     Builtin,
 }
 
-/// One unit of content Grimoire owns (`architecture.md` §7.2).
+/// One unit of content Grimoire owns
+/// ([`docs/architecture.md` §7.2, Ownership units and merge strategies](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#72-ownership-units-and-merge-strategies)).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct LockedOutput {

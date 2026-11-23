@@ -6,7 +6,7 @@ use crate::constrained::{check_kebab, check_text, constrained_string};
 ///
 /// - `claude-`, `anthropic-`, `anthropics-` and `cc-plugin-`: Claude Code reserves them
 ///   for plugin names, and asset and bundle IDs become plugin names in the generated
-///   marketplace (`CC-PLUGIN` in `docs/specs.md`).
+///   marketplace ([`docs/specs.md`, CC-PLUGIN](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#cc-plugin-plugins)).
 /// - `grimoire-`: kept for content Grimoire itself owns in a project.
 const RESERVED_ID_PREFIXES: [&str; 5] = [
     "claude-",
@@ -17,9 +17,11 @@ const RESERVED_ID_PREFIXES: [&str; 5] = [
 ];
 /// Reserved names.
 ///
-/// - `synced`: a reserved skill folder name in Claude Code (`CC-SKILL`).
+/// - `synced`: a reserved skill folder name in Claude Code
+///   ([`docs/specs.md`, CC-SKILL](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#cc-skill-skills)).
 /// - `grimoire`: the owner of Grimoire's own managed blocks, e.g. the `CLAUDE.md`
-///   import of `AGENTS.md` (`architecture.md` §8.2).
+///   import of `AGENTS.md`
+///   ([`docs/architecture.md` §8.2, Client read matrix and cross-client planning](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#82-client-read-matrix-and-cross-client-planning)).
 const RESERVED_IDS: [&str; 2] = ["synced", "grimoire"];
 
 fn check_asset_id(value: &str) -> Result<(), String> {
@@ -242,7 +244,9 @@ fn check_mcp_tool_name(value: &str) -> Result<(), String> {
 }
 
 constrained_string! {
-    /// An MCP tool name: 1–128 characters of `[A-Za-z0-9_.-]` (`MCP-SPEC`).
+    /// An MCP tool name: 1–128 characters of `[A-Za-z0-9_.-]`, as the Model
+    /// Context Protocol specification recommends
+    /// ([`docs/specs.md`, MCP-SPEC](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#mcp-spec-protocol-specification)).
     pub struct McpToolName {
         what: "MCP tool name",
         check: check_mcp_tool_name,
@@ -263,7 +267,9 @@ fn check_binary_name(value: &str) -> Result<(), String> {
 }
 
 constrained_string! {
-    /// The executable name of a tool or MCP server: `grimoire-tool-<id>` or `grimoire-mcp-<id>` (ADR-0002).
+    /// The executable name of a tool or MCP server: `grimoire-tool-<id>` or
+    /// `grimoire-mcp-<id>`. Each is its own binary, released with the CLI
+    /// ([ADR-0002](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0002-mcp-server-and-tool-packaging.md)).
     pub struct BinaryName {
         what: "binary name",
         check: check_binary_name,

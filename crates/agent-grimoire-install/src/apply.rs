@@ -1,5 +1,8 @@
-//! Applying a plan, building the next lock, and verifying a lock against disk
-//! (`architecture.md` §7.1, §7.3).
+//! Applying a plan, building the next lock, and verifying a lock against disk.
+//!
+//! The design is in `docs/architecture.md`, in
+//! [§7.1, Desired state, plan, apply](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#71-desired-state-plan-apply) and
+//! [§7.3, Drift and conflicts](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#73-drift-and-conflicts).
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;

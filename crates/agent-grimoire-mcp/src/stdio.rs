@@ -1,8 +1,11 @@
 //! The stdio transport: newline-delimited JSON-RPC on stdin and stdout.
 //!
-//! Nothing but MCP messages is ever written to stdout (`MCP-SPEC`); this crate
-//! logs to stderr only. The server stops when the client closes stdin, or on
-//! `SIGINT`/`SIGTERM`, which is how Claude Code stops a stdio server.
+//! Nothing but MCP messages is ever written to stdout, as the Model Context
+//! Protocol specification requires
+//! ([`docs/specs.md`, MCP-SPEC](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#mcp-spec-protocol-specification)),
+//! so this crate logs to stderr only. The server stops when the client closes
+//! stdin, or on `SIGINT`/`SIGTERM`, which is how Claude Code stops a stdio
+//! server.
 
 use rmcp::ServerHandler;
 use rmcp::ServiceExt as _;

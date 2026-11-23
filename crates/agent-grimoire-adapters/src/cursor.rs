@@ -1,4 +1,10 @@
-//! The `cursor` adapter (`CURSOR-P4` in `docs/specs.md`, ADR-0008).
+//! The `cursor` adapter.
+//!
+//! What it writes was decided in
+//! [ADR-0008](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0008-phase-4-client-adapters.md),
+//! the record of what the Codex, Cursor, Gemini CLI and Copilot adapters write.
+//! The Cursor facts it relies on are in
+//! [`docs/specs.md`, CURSOR-P4](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#cursor-p4-cursor-facts-for-phase-4).
 //!
 //! | Anchor | Path | Written as |
 //! |---|---|---|
@@ -8,8 +14,10 @@
 //! | `mcp` | `.cursor/mcp.json` | `mcpServers.<id>`: stdio with `${env:NAME}` references, or the configured URL |
 //!
 //! Cursor always applies `AGENTS.md`, so a rule that is written there gets no
-//! `.mdc` file (placement). Cursor has no `hooks` anchor: its hooks fail open
-//! by default and can't be tested here (ADR-0008).
+//! `.mdc` file (placement). Cursor has no `hooks` anchor, as
+//! [ADR-0008](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0008-phase-4-client-adapters.md)
+//! decided: its hooks fail open by default (a hook that fails lets the action
+//! through) and can't be tested here.
 
 use agent_grimoire_install::entry::member_key;
 use agent_grimoire_install::plan::Content;
@@ -54,7 +62,7 @@ pub(crate) fn render(
 /// `globs` is a comma-separated string, so a glob that itself contains a comma,
 /// such as a brace set, can't be written. Grimoire quotes the string, because an
 /// unquoted pattern starting with `*` is a YAML alias; whether Cursor reads it
-/// as YAML is undocumented (`CURSOR-P4`).
+/// as YAML is undocumented ([`docs/specs.md`, CURSOR-P4](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#cursor-p4-cursor-facts-for-phase-4)).
 ///
 /// The refusal is deferred: when `AGENTS.md` holds the rule, placement drops
 /// this client's file, and the glob goes in the scope line instead.
@@ -107,7 +115,8 @@ fn rule(
 }
 
 /// A Cursor agent has no tool list, only `readonly: true`, documented as "no
-/// file edits, no state-changing shell commands" (`CURSOR-P4`). That matches an
+/// file edits, no state-changing shell commands"
+/// ([`docs/specs.md`, CURSOR-P4](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#cursor-p4-cursor-facts-for-phase-4)). That matches an
 /// agent limited to reading and searching, and nothing else.
 fn agent(
     resolved: &Resolved<'_>,
@@ -156,7 +165,8 @@ fn agent(
     ))
 }
 
-/// `mcpServers.<id>` (`CURSOR-P4`). Cursor writes environment references as
+/// `mcpServers.<id>`
+/// ([`docs/specs.md`, CURSOR-P4](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#cursor-p4-cursor-facts-for-phase-4)). Cursor writes environment references as
 /// `${env:NAME}` and documents no default syntax, so optional variables are
 /// written the same way.
 fn mcp(resolved: &Resolved<'_>, report: &mut Report) -> Option<(RelPath, Content)> {

@@ -1,4 +1,9 @@
-//! The Streamable HTTP transport, hardened (`MCP-SPEC`, ADR-0007).
+//! The Streamable HTTP transport, hardened.
+//!
+//! The Model Context Protocol specification defines the transport
+//! ([`docs/specs.md`, MCP-SPEC](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#mcp-spec-protocol-specification)), and
+//! [ADR-0007](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0007-mcp-server-authorization.md)
+//! chose the hardening below.
 //!
 //! Each request is checked in this order before rmcp sees it:
 //! 1. **`Host`** must be one this server answers to (403). With Origin

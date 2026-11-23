@@ -19,7 +19,8 @@ pub(crate) const METADATA: [&str; 5] =
 const RULE_MAX_LINES: usize = 500;
 /// Rules at or above this length get a warning; Claude Code advises "under 200 lines".
 const RULE_WARN_LINES: usize = 200;
-/// GitHub Copilot caps a custom agent's prompt at 30,000 characters (`COPILOT-AGENTS`).
+/// GitHub Copilot caps a custom agent's prompt at 30,000 characters
+/// ([`docs/specs.md`, COPILOT-AGENTS](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#copilot-agents-copilot-skills-copilot-prompts)).
 const AGENT_MAX_CHARS: usize = 30_000;
 
 /// An asset that parsed, with what later catalog-wide checks need.

@@ -2,11 +2,12 @@
 //!
 //! | Anchor | Path | Written as |
 //! |---|---|---|
-//! | `instructions` | `AGENTS.md` | a managed block per rule (`AGENTSMD`) |
-//! | `skills:` | `.agents/skills/<path>` | a byte-for-byte copy (`SKILLS`) |
+//! | `instructions` | `AGENTS.md` | a managed block per rule ([`docs/specs.md`, AGENTSMD](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#agentsmd-agentsmd)) |
+//! | `skills:` | `.agents/skills/<path>` | a byte-for-byte copy ([`docs/specs.md`, SKILLS](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#skills-agent-skills-specification)) |
 //!
 //! `AGENTS.md` has no path scoping, so a path-scoped rule's block starts with a
-//! line saying which files it applies to (`architecture.md` §3.1).
+//! line saying which files it applies to
+//! ([`docs/architecture.md` §3.1, Rule](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#31-rule)).
 
 use agent_grimoire_install::plan::Content;
 use agent_grimoire_model::{Anchor, ClientId, OutputSpec, RelPath, Strategy};
@@ -50,7 +51,8 @@ pub(crate) fn block(
 }
 
 /// A rule as block text: the rule, after a scope line when it is path-scoped,
-/// because shared instruction files have no path scoping (`architecture.md` §3.1).
+/// because shared instruction files have no path scoping
+/// ([`docs/architecture.md` §3.1, Rule](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#31-rule)).
 pub(crate) fn block_text(
     resolved: &Resolved<'_>,
     spec: &OutputSpec,

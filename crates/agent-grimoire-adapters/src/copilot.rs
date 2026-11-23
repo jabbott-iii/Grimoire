@@ -1,4 +1,10 @@
-//! The `copilot` adapter for GitHub Copilot (`COPILOT-P4` in `docs/specs.md`, ADR-0008).
+//! The `copilot` adapter for GitHub Copilot.
+//!
+//! What it writes was decided in
+//! [ADR-0008](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0008-phase-4-client-adapters.md),
+//! the record of what the Codex, Cursor, Gemini CLI and Copilot adapters write.
+//! The Copilot facts it relies on are in
+//! [`docs/specs.md`, COPILOT-P4](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#copilot-p4-github-copilot-facts-for-phase-4).
 //!
 //! | Anchor | Path | Written as |
 //! |---|---|---|
@@ -7,12 +13,14 @@
 //! | `agents:` | `.github/agents/<id>.agent.md` | `name`, `description`, a `tools` list of aliases and `strict-tools-list: true` |
 //! | `mcp` | `.mcp.json` | the same `mcpServers.<id>` entry as `claude-code`, written once for both |
 //!
-//! Copilot reads `AGENTS.md` (`COPILOT-P4`; for the cloud agent alongside a
-//! root `CLAUDE.md` this is undocumented), so a rule that is written there gets no
-//! `.instructions.md` file (placement). Copilot has no `hooks` anchor: a timed-out
-//! Copilot hook always lets the action through, and the cloud agent runs only
-//! shell strings (ADR-0008). Its cloud agent reads MCP servers only from the
-//! repository settings, which `grimoire doctor` explains.
+//! Copilot reads `AGENTS.md` (for the cloud agent alongside a root `CLAUDE.md`
+//! this is undocumented), so a rule that is written there gets no
+//! `.instructions.md` file (placement). Copilot has no `hooks` anchor, as
+//! [ADR-0008](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0008-phase-4-client-adapters.md)
+//! decided: a timed-out Copilot hook always lets the action through,
+//! and the cloud agent runs only shell strings. Its cloud agent reads MCP
+//! servers only from the repository settings, which `grimoire doctor`
+//! explains.
 
 use agent_grimoire_install::plan::Content;
 use agent_grimoire_model::{
@@ -31,7 +39,8 @@ pub const INSTRUCTIONS_DIR: &str = ".github/instructions/";
 /// Copilot's custom agent directory.
 pub const AGENTS_DIR: &str = ".github/agents/";
 const SKILLS: &str = ".agents/skills";
-/// The documented cap on a custom agent's prompt (`COPILOT-P4`).
+/// The documented cap on a custom agent's prompt
+/// ([`docs/specs.md`, COPILOT-P4](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#copilot-p4-github-copilot-facts-for-phase-4)).
 const MAX_AGENT_BODY: usize = 30_000;
 
 /// Renders one declared output.
@@ -77,7 +86,8 @@ fn rule(
     ))
 }
 
-/// Copilot tool aliases for a capability (`COPILOT-P4`). MCP tools are
+/// Copilot tool aliases for a capability
+/// ([`docs/specs.md`, COPILOT-P4](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#copilot-p4-github-copilot-facts-for-phase-4)). MCP tools are
 /// `<server>/<tool>`, or `<server>/*` for all of a server's tools.
 fn tool_names(capability: &Capability) -> String {
     match capability {

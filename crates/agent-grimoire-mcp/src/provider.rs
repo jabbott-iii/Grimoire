@@ -2,8 +2,9 @@
 //! SHA-256) and ES256 (ECDSA P-256 with SHA-256) on the `RustCrypto` crates.
 //!
 //! `jsonwebtoken` is used without a backend feature, so only these two
-//! algorithms can ever verify, and nothing can sign (ADR-0007). RSA keys must
-//! be 2048 to 8192 bits (RFC 7518 §3.3).
+//! algorithms can ever verify, and nothing can sign
+//! ([ADR-0007](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0007-mcp-server-authorization.md), on server-side MCP authorization).
+//! RSA keys must be 2048 to 8192 bits (RFC 7518 §3.3).
 
 use std::ops::RangeInclusive;
 

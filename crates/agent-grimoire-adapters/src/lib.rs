@@ -347,7 +347,8 @@ use agent_grimoire_resolve::{Resolution, Resolved};
 /// the second with a narrower set. Narrowing this again, for a client the model
 /// knows before its adapter exists, means updating those two codes' rows in
 /// `docs/diagnostics.md`, `init`'s exit codes in `docs/cli.md` and
-/// `docs/architecture.md` §9.1, deciding whether `init`'s detection should look
+/// [`docs/architecture.md` §9.1, Commands](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#91-commands),
+/// deciding whether `init`'s detection should look
 /// only at these clients, and testing both codes end to end in
 /// `crates/agent-grimoire/tests/cli.rs`.
 pub const AVAILABLE: [ClientId; 6] = ClientId::ALL;
@@ -694,8 +695,11 @@ pub fn is_project_location(path: &RelPath) -> bool {
 }
 
 /// Where a declared output lands for `client`, for `grimoire show`. Shared
-/// placement (ADR-0008) can move a rule or skill to a location another client
-/// also reads; `grimoire plan` shows the final paths.
+/// placement, which writes content that several selected clients read once,
+/// in one place, as
+/// [ADR-0008](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0008-phase-4-client-adapters.md)
+/// decided, can move a rule or skill to a location another client also reads;
+/// `grimoire plan` shows the final paths.
 #[must_use]
 pub fn destination(
     client: ClientId,

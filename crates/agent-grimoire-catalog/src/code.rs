@@ -1,4 +1,6 @@
-//! Checks for code-bearing assets: tools and MCP servers are Rust crates (ADR-0002).
+//! Checks for code-bearing assets: tools and MCP servers are Rust crates, each
+//! built as its own binary and released with the CLI
+//! ([ADR-0002](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0002-mcp-server-and-tool-packaging.md)).
 
 use std::path::Path;
 
@@ -52,7 +54,8 @@ fn target_paths(table: &toml::Table, package: &toml::Table, file: &str, out: &mu
     }
 }
 
-/// Core crates that asset crates must not depend on (`architecture.md` §4).
+/// Core crates that asset crates must not depend on
+/// ([`docs/architecture.md` §4, Repository layout](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#4-repository-layout)).
 const CORE_CRATES: [&str; 7] = [
     "agent-grimoire",
     "agent-grimoire-adapters",
@@ -62,7 +65,11 @@ const CORE_CRATES: [&str; 7] = [
     "agent-grimoire-resolve",
     "agent-grimoire-testkit",
 ];
-/// The shared hardening crate every MCP server uses (ADR-0002, ADR-0007).
+/// The shared hardening crate every MCP server uses.
+/// [ADR-0002](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0002-mcp-server-and-tool-packaging.md)
+/// puts the shared server hardening in one core crate, and
+/// [ADR-0007](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0007-mcp-server-authorization.md)
+/// chose its authorization and HTTP checks.
 const MCP_HARDENING: &str = "agent-grimoire-mcp";
 
 /// Every dependency in `[dependencies]`, `[dev-dependencies]`,

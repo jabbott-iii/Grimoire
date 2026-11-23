@@ -826,9 +826,11 @@ fn versions(
 /// Clients listed explicitly in its `[assets]` entry must be supported. Otherwise
 /// the asset renders for every project client it supports, and one the asset
 /// merely does not support gets a warning. A client that cannot host the asset's
-/// kind at all is skipped with a warning too (ADR-0008: hooks are Claude Code
-/// only, and Codex has no agents), except `agents-md`, which by design holds no
-/// agents, MCP servers or hooks.
+/// kind at all is skipped with a warning too (hooks are Claude Code only, and
+/// Codex has no agents, as
+/// [ADR-0008](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0008-phase-4-client-adapters.md)
+/// decided), except `agents-md`, which by design holds no agents, MCP servers
+/// or hooks.
 fn clients(
     asset: &SourceAsset,
     options: Option<&AssetOptions>,

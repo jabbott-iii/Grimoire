@@ -1,5 +1,7 @@
-//! Limits on tool work: concurrency, rate and time (`MCP-SPEC`: servers MUST
-//! rate-limit tool invocations), and output size.
+//! Limits on tool work: concurrency, rate and time, and output size.
+//!
+//! The Model Context Protocol specification says servers MUST rate-limit tool
+//! invocations ([`docs/specs.md`, MCP-SPEC](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#mcp-spec-protocol-specification)).
 
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};

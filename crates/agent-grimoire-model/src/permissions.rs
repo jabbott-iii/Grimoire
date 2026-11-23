@@ -1,4 +1,8 @@
-//! Declared permissions, consent grants and agent capabilities (`architecture.md` §3.3, §6.3).
+//! Declared permissions, consent grants and agent capabilities.
+//!
+//! The design is in `docs/architecture.md`, in
+//! [§3.3, Agent](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#33-agent), for agent capabilities, and
+//! [§6.3, Permission consent](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#63-permission-consent).
 
 use std::borrow::Cow;
 use std::collections::BTreeSet;
@@ -66,7 +70,8 @@ impl Permissions {
 
     /// The grants a user must accept before this asset is installed. Each
     /// environment variable is its own grant, so a new version that reads one
-    /// more variable needs consent again (`architecture.md` §6.3).
+    /// more variable needs consent again
+    /// ([`docs/architecture.md` §6.3, Permission consent](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#63-permission-consent)).
     #[must_use]
     pub fn required(&self) -> BTreeSet<Permission> {
         let mut out = BTreeSet::new();

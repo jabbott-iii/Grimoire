@@ -1,4 +1,7 @@
-//! Cross-field validation of single documents (`architecture.md` §6.4).
+//! Cross-field validation of single documents.
+//!
+//! The design is in
+//! [`docs/architecture.md` §6.4, Catalog validation](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#64-catalog-validation-cargo-xtask-validate-also-a-ci-gate).
 //!
 //! Parsing already enforces field types, value formats and unknown-field
 //! rejection. These checks cover rules that span several fields of one
@@ -330,7 +333,8 @@ fn tool(m: &AssetManifest, out: &mut Vec<Diagnostic>) {
 }
 
 /// Server names Claude Code reserves for its built-in servers; a configured server
-/// with one of them is skipped (`CC-MCP`). `claude-in-chrome` is already excluded
+/// with one of them is skipped ([`docs/specs.md`, CC-MCP](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#cc-mcp-project-mcp-config)).
+/// `claude-in-chrome` is already excluded
 /// by the `claude-` prefix.
 const RESERVED_MCP_NAMES: [&str; 2] = ["workspace", "computer-use"];
 
@@ -439,8 +443,11 @@ fn clients(m: &AssetManifest, out: &mut Vec<Diagnostic>) {
 }
 
 /// Clients read each other's rule files: Claude Code reads `AGENTS.md` through
-/// the `CLAUDE.md` import (`CC-MEM`), Cursor and Copilot always read
-/// `AGENTS.md`, and Gemini CLI reads it through a `GEMINI.md` import (ADR-0008).
+/// the `CLAUDE.md` import ([`docs/specs.md`, CC-MEM](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#cc-mem-memory-and-rules)),
+/// Cursor and Copilot always read `AGENTS.md`, and Gemini CLI reads it through
+/// a `GEMINI.md` import
+/// ([ADR-0008](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0008-phase-4-client-adapters.md),
+/// the record of what the Codex, Cursor, Gemini CLI and Copilot adapters write).
 /// A rule is written once where they share a file, so every client must ship the
 /// same text: otherwise a client would load two different versions of it.
 fn rule_sources(m: &AssetManifest, out: &mut Vec<Diagnostic>) {

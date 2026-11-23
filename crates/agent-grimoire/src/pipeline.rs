@@ -89,7 +89,7 @@ pub(crate) fn prepare(
 }
 
 /// Codex reads `AGENTS.override.md` instead of `AGENTS.md` in a directory that
-/// has both, even an empty one (`CODEX-P4`).
+/// has both, even an empty one ([`docs/specs.md`, CODEX-P4](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#codex-p4-releases-agentsmd-and-project-trust)).
 fn codex_override(out: &mut Out<'_, '_>, project: &Project) {
     if project.exists(CODEX_OVERRIDE) {
         out.diag(Diagnostic::warning(
@@ -104,11 +104,14 @@ pub(crate) const CODEX_OVERRIDE: &str = "AGENTS.override.md";
 
 /// Codex reads at most `project_doc_max_bytes` (32 KiB by default) of project
 /// instructions, shared by every `AGENTS.md` from the repository root to the
-/// working directory, and truncates the rest (`CODEX-P4`).
+/// working directory, and truncates the rest
+/// ([`docs/specs.md`, CODEX-P4](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#codex-p4-releases-agentsmd-and-project-trust)).
 const CODEX_BUDGET: usize = 32 * 1024;
 
-/// Warns when the planned `AGENTS.md` uses most of Codex's budget on its own
-/// (`architecture.md` §11.5).
+/// Warns when the planned `AGENTS.md` uses most of Codex's budget on its own,
+/// at three quarters of it (24 KiB of the default 32 KiB). That threshold was
+/// settled in item 5, "Codex `AGENTS.md` budget", of
+/// [`docs/architecture.md` §11, Open design issues](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#11-open-design-issues-to-settle-in-the-phase-noted).
 fn codex_budget(out: &mut Out<'_, '_>, plan: &Plan) {
     let Some(size) = plan
         .files

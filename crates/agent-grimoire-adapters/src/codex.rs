@@ -1,4 +1,11 @@
-//! The `codex` adapter (`CODEX-*-P4` in `docs/specs.md`, ADR-0008).
+//! The `codex` adapter.
+//!
+//! What it writes was decided in
+//! [ADR-0008](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0008-phase-4-client-adapters.md),
+//! the record of what the Codex, Cursor, Gemini CLI and Copilot adapters write.
+//! The Codex facts it relies on are in the Codex entries of `docs/specs.md`,
+//! starting at
+//! [CODEX-P4](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#codex-p4-releases-agentsmd-and-project-trust).
 //!
 //! | Anchor | Path | Written as |
 //! |---|---|---|
@@ -6,12 +13,14 @@
 //! | `skills:` | `.agents/skills/<path>` | a byte-for-byte copy |
 //! | `mcp` | `.codex/config.toml` | `[mcp_servers.<id>]`: `command` and `env_vars`, or `url` |
 //!
-//! Codex has no `agents` or `hooks` anchor: a Codex agent inherits the parent's
-//! sandbox, MCP servers and web search, so its tools can't be restricted, and
-//! every Codex hook fails open (ADR-0008).
+//! Codex has no `agents` or `hooks` anchor, as
+//! [ADR-0008](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0008-phase-4-client-adapters.md)
+//! decided: a Codex agent inherits the parent's sandbox, MCP servers and web
+//! search, so its tools can't be restricted, and every Codex hook fails open
+//! (a hook that fails lets the action through).
 //!
 //! Codex reads `.codex/config.toml`, and so its MCP servers, only in projects
-//! the user has marked trusted (`CODEX-P4`).
+//! the user has marked trusted.
 
 use agent_grimoire_install::entry::member_key;
 use agent_grimoire_install::plan::Content;
@@ -46,7 +55,7 @@ pub(crate) fn render(
     }
 }
 
-/// `[mcp_servers.<id>]` (`CODEX-MCP-P4`).
+/// `[mcp_servers.<id>]` ([`docs/specs.md`, CODEX-MCP-P4](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#codex-mcp-p4-mcp_serversid-in-codexconfigtoml)).
 ///
 /// A stdio server starts with an almost empty environment: Codex passes only a
 /// small allowlist plus the variables named in `env_vars`, each under its own

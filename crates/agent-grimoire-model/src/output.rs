@@ -1,4 +1,8 @@
-//! Clients, anchors and the per-client output map of a manifest (`architecture.md` §6.1, §8.3).
+//! Clients, anchors and the per-client output map of a manifest.
+//!
+//! The design is in `docs/architecture.md`, in
+//! [§6.1, `asset.toml`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#61-assettoml) and
+//! [§8.3, Per-client mapping](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#83-per-client-mapping-client-order-per-adr-0005-amended-by-adr-0008).
 
 use std::borrow::Cow;
 use std::fmt;
@@ -9,7 +13,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{InvalidValue, Kind, RelPath};
 
-/// A client Grimoire renders for (ADR-0005).
+/// A client Grimoire renders for, one of the six v1 clients that
+/// [ADR-0005](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0005-client-priority.md)
+/// chose.
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema,
 )]
@@ -30,7 +36,9 @@ pub enum ClientId {
 }
 
 impl ClientId {
-    /// Every client, in ADR-0005 order.
+    /// Every client, in the order
+    /// [ADR-0005](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0005-client-priority.md)
+    /// set for v1.
     pub const ALL: [ClientId; 6] = [
         ClientId::ClaudeCode,
         ClientId::AgentsMd,
@@ -53,11 +61,14 @@ impl ClientId {
         }
     }
 
-    /// Whether this client has a destination for `anchor` (`architecture.md` §8.3).
+    /// Whether this client has a destination for `anchor`
+    /// ([`docs/architecture.md` §8.3, Per-client mapping](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#83-per-client-mapping-client-order-per-adr-0005-amended-by-adr-0008)).
     ///
     /// Hooks are Claude Code only, and Codex has no agents: no other client can
     /// keep a failed hook from letting the action through, and a Codex agent
-    /// can't be restricted to its declared tools (ADR-0008).
+    /// can't be restricted to its declared tools
+    /// ([ADR-0008](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0008-phase-4-client-adapters.md),
+    /// the record of what the Codex, Cursor, Gemini CLI and Copilot adapters write).
     #[must_use]
     pub fn supports(self, anchor: Anchor) -> bool {
         use Anchor::{Agents, Hooks, Instructions, Mcp, Rules, Skills};
@@ -144,7 +155,9 @@ impl fmt::Display for Anchor {
     }
 }
 
-/// How an output is written (`architecture.md` §6.1, §7.2).
+/// How an output is written
+/// ([`docs/architecture.md` §6.1, `asset.toml`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#61-assettoml) and
+/// [§7.2, Ownership units and merge strategies](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#72-ownership-units-and-merge-strategies)).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum Strategy {

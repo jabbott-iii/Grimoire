@@ -1,7 +1,12 @@
 //! The `claude-code` adapter.
 //!
-//! Every format here was checked against the Claude Code docs on 2026-11-16
-//! (`CC-MEM`, `CC-SKILL`, `CC-AGENT`, `CC-SET`, `CC-MCP` in `docs/specs.md`):
+//! Every format here was checked against the Claude Code docs on 2026-11-16,
+//! and each is recorded in `docs/specs.md`:
+//! [CC-MEM](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#cc-mem-memory-and-rules) for memory and rules,
+//! [CC-SKILL](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#cc-skill-skills) for skills,
+//! [CC-AGENT](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#cc-agent-subagents) for subagents,
+//! [CC-SET](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#cc-set-settings-permissions-hooks) for settings and hooks, and
+//! [CC-MCP](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#cc-mcp-project-mcp-config) for the project MCP configuration.
 //!
 //! | Anchor | Path | Written as |
 //! |---|---|---|
@@ -34,7 +39,8 @@ const SKILLS: &str = ".claude/skills";
 const AGENTS: &str = ".claude/agents";
 /// The project memory file that imports `AGENTS.md`.
 pub const CLAUDE_MD: &str = "CLAUDE.md";
-/// The import line; `CC-MEM` documents that it never makes Claude read `AGENTS.md` twice.
+/// The import line. Claude Code documents that it never makes Claude read
+/// `AGENTS.md` twice ([`docs/specs.md`, CC-MEM](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#cc-mem-memory-and-rules)).
 pub const AGENTS_MD_IMPORT: &str = "@AGENTS.md\n";
 
 /// Renders one declared output.
@@ -84,7 +90,8 @@ fn rule(
     Some((path, Content::File(text.into_bytes())))
 }
 
-/// Claude Code drops a tool whose full name is over 128 characters (`CC-P2`).
+/// Claude Code drops a tool whose full name is over 128 characters
+/// ([`docs/specs.md`, CC-P2](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#cc-p2-what-the-claude-code-adapter-relies-on)).
 const MAX_TOOL_NAME: usize = 128;
 
 /// How Claude Code names an MCP server's tools.
@@ -93,7 +100,8 @@ pub(crate) enum McpNaming {
     /// A server in the project's `.mcp.json`: `mcp__<server>__<tool>`.
     Project,
     /// A server shipped by the plugin of the same name, as in Grimoire's
-    /// marketplace: `mcp__plugin_<plugin>_<server>__<tool>` (`CC-PLUGIN-P4`).
+    /// marketplace: `mcp__plugin_<plugin>_<server>__<tool>`
+    /// ([`docs/specs.md`, CC-PLUGIN-P4](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#cc-plugin-p4-plugin-manifest-components-and-naming)).
     Plugin,
 }
 
@@ -109,7 +117,8 @@ impl McpNaming {
 
 /// Why Claude Code may not expose an MCP tool under the name Grimoire would
 /// write. Model-facing tool names allow only `[A-Za-z0-9_-]`; how Claude Code
-/// renames other characters in tool names is not documented (`CC-P2`).
+/// renames other characters in tool names is not documented
+/// ([`docs/specs.md`, CC-P2](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#cc-p2-what-the-claude-code-adapter-relies-on)).
 fn mcp_name_problem(capability: &Capability, naming: McpNaming) -> Option<String> {
     let Capability::Mcp { server, tool } = capability else {
         return None;
@@ -129,7 +138,7 @@ fn mcp_name_problem(capability: &Capability, naming: McpNaming) -> Option<String
     }
 }
 
-/// Claude Code tool names for a capability (`CC-AGENT`).
+/// Claude Code tool names for a capability ([`docs/specs.md`, CC-AGENT](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#cc-agent-subagents)).
 fn tool_names(capability: &Capability, naming: McpNaming) -> Vec<String> {
     let names: &[&str] = match capability {
         Capability::Read => &["Read"],
@@ -213,7 +222,8 @@ pub(crate) fn agent_file(
     Ok(with_frontmatter(&fields, body))
 }
 
-/// The `.mcp.json` entry, which GitHub Copilot reads too (`COPILOT-P4`).
+/// The `.mcp.json` entry, which GitHub Copilot reads too
+/// ([`docs/specs.md`, COPILOT-P4](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#copilot-p4-github-copilot-facts-for-phase-4)).
 pub(crate) fn mcp(resolved: &Resolved<'_>, report: &mut Report) -> Option<(RelPath, Content)> {
     let manifest = &resolved.asset.manifest;
     let id = &manifest.id;
@@ -285,7 +295,7 @@ fn event_name(event: HookEvent) -> &'static str {
 
 /// A matcher for tool names. Names of letters, digits, `_` and `-` joined by `|`
 /// are an exact list; anything else is an unanchored JavaScript regex, so it is
-/// anchored here (`CC-SET`).
+/// anchored here ([`docs/specs.md`, CC-SET](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#cc-set-settings-permissions-hooks)).
 fn matcher(tools: &[Capability]) -> Option<String> {
     let mut names: Vec<String> = Vec::new();
     for capability in tools {

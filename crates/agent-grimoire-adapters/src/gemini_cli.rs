@@ -1,4 +1,10 @@
-//! The `gemini-cli` adapter (`GEMINI-P4` in `docs/specs.md`, ADR-0008).
+//! The `gemini-cli` adapter.
+//!
+//! What it writes was decided in
+//! [ADR-0008](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0008-phase-4-client-adapters.md),
+//! the record of what the Codex, Cursor, Gemini CLI and Copilot adapters write.
+//! The Gemini CLI facts it relies on are in
+//! [`docs/specs.md`, GEMINI-P4](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#gemini-p4-gemini-cli-facts-for-phase-4).
 //!
 //! | Anchor | Path | Written as |
 //! |---|---|---|
@@ -9,9 +15,10 @@
 //!
 //! Gemini CLI reads all of these only in a folder the user has trusted. It finds
 //! `GEMINI.md` from any directory up to the repository root, but reads
-//! `.gemini/` and `.agents/skills/` only from the directory it was started in
-//! (`GEMINI-P4`). It has no `hooks` anchor:
-//! a failed Gemini CLI hook always lets the action through (ADR-0008).
+//! `.gemini/` and `.agents/skills/` only from the directory it was started in.
+//! It has no `hooks` anchor, as
+//! [ADR-0008](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0008-phase-4-client-adapters.md)
+//! decided: a failed Gemini CLI hook always lets the action through.
 
 use agent_grimoire_install::entry::member_key;
 use agent_grimoire_install::plan::Content;
@@ -34,7 +41,7 @@ pub const SETTINGS: &str = ".gemini/settings.json";
 /// Gemini CLI's project agent directory.
 pub const AGENTS_DIR: &str = ".gemini/agents/";
 /// The import line for `GEMINI.md`: Gemini CLI inlines a file named after `@`
-/// at the start of a line (`GEMINI-P4`).
+/// at the start of a line ([`docs/specs.md`, GEMINI-P4](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#gemini-p4-gemini-cli-facts-for-phase-4)).
 pub const AGENTS_MD_IMPORT: &str = "@AGENTS.md\n";
 const SKILLS: &str = ".agents/skills";
 
@@ -68,7 +75,8 @@ pub(crate) fn render(
 /// Gemini CLI exposes a tool name of up to this many characters unchanged.
 const MAX_TOOL_NAME: usize = 63;
 
-/// Gemini CLI tool names for a capability (`GEMINI-P4`). MCP tools are
+/// Gemini CLI tool names for a capability
+/// ([`docs/specs.md`, GEMINI-P4](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#gemini-p4-gemini-cli-facts-for-phase-4)). MCP tools are
 /// `mcp_<server>_<tool>`, with the wildcard `mcp_<server>_*`.
 fn tool_names(capability: &Capability) -> Result<Vec<String>, String> {
     let names: &[&str] = match capability {
@@ -153,7 +161,8 @@ fn agent(
     ))
 }
 
-/// `mcpServers.<id>` (`GEMINI-P4`). Gemini CLI hides variables whose names look
+/// `mcpServers.<id>`
+/// ([`docs/specs.md`, GEMINI-P4](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#gemini-p4-gemini-cli-facts-for-phase-4)). Gemini CLI hides variables whose names look
 /// secret (`*TOKEN*`, `*KEY*` …) from servers unless they are listed in `env`,
 /// so every variable the server reads is listed explicitly.
 fn mcp(resolved: &Resolved<'_>, report: &mut Report) -> Option<(RelPath, Content)> {

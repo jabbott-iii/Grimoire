@@ -1319,7 +1319,8 @@ fn client_note(client: ClientId) -> Option<&'static str> {
 }
 
 /// The JSON for Copilot cloud agent's repository settings, for each locked MCP
-/// server installed for `copilot` (`COPILOT-P4`). The cloud agent reads no
+/// server installed for `copilot`
+/// ([`docs/specs.md`, COPILOT-P4](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#copilot-p4-github-copilot-facts-for-phase-4)). The cloud agent reads no
 /// repository file for MCP, its secrets must be named `COPILOT_MCP_*`, and it
 /// can't use a remote server that needs OAuth.
 fn copilot_cloud_mcp(

@@ -73,7 +73,7 @@
       "const": 1
     },
     "ClientId": {
-      "description": "A client Grimoire renders for (ADR-0005).",
+      "description": "A client Grimoire renders for, one of the six v1 clients that\n[ADR-0005](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0005-client-priority.md)\nchose.",
       "oneOf": [
         {
           "description": "Claude Code.",
@@ -216,7 +216,7 @@
       "pattern": "^[A-Z_][A-Z0-9_]*$"
     },
     "Transport": {
-      "description": "An MCP transport (`MCP-SPEC`).",
+      "description": "An MCP transport, as the Model Context Protocol specification defines it\n([`docs/specs.md`, MCP-SPEC](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#mcp-spec-protocol-specification)).",
       "oneOf": [
         {
           "description": "Newline-delimited JSON-RPC over stdin/stdout.",

@@ -1,4 +1,8 @@
-//! Content hashes recorded in `grimoire.lock` (`architecture.md` §6.5, §7.3).
+//! Content hashes recorded in `grimoire.lock`.
+//!
+//! The design is in `docs/architecture.md`, in
+//! [§6.5, `grimoire.lock`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#65-grimoirelock) and
+//! [§7.3, Drift and conflicts](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#73-drift-and-conflicts).
 //!
 //! Text is hashed with `\r\n` line endings folded to `\n`, so a checkout that
 //! converts line endings (for example `core.autocrlf` on Windows) is not reported

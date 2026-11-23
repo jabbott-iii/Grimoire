@@ -1,4 +1,10 @@
-//! Cross-client placement (`architecture.md` §8.2, ADR-0008).
+//! Cross-client placement.
+//!
+//! The design is in
+//! [`docs/architecture.md` §8.2, Client read matrix and cross-client planning](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#82-client-read-matrix-and-cross-client-planning),
+//! and [ADR-0008](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0008-phase-4-client-adapters.md),
+//! the record of what the Codex, Cursor, Gemini CLI and Copilot adapters write,
+//! chose both placements below.
 //!
 //! Each adapter renders to its client's own locations. This pass then moves
 //! content that several selected clients can read from one place, so it is
@@ -7,7 +13,7 @@
 //! - **Rules.** When `agents-md` or `codex` puts a rule in `AGENTS.md`, that
 //!   block also serves `claude-code` (through Grimoire's `@AGENTS.md` block in
 //!   `CLAUDE.md`), `gemini-cli` (through the same block in `GEMINI.md`), and
-//!   `cursor` and `copilot`, which read `AGENTS.md` (ADR-0008). Their own rule files
+//!   `cursor` and `copilot`, which read `AGENTS.md`. Their own rule files
 //!   are dropped.
 //! - **Skills.** Cursor and Copilot read both `.claude/skills/` and
 //!   `.agents/skills/`. Their copy goes to `.agents/skills/` when another client
@@ -208,7 +214,8 @@ fn written(desired: &[Desired]) -> BTreeMap<&AssetId, Written> {
 }
 
 /// Reports duplicates placement can't avoid, and content that another client,
-/// possibly an unselected one, also reads (`architecture.md` §8.2).
+/// possibly an unselected one, also reads
+/// ([`docs/architecture.md` §8.2, Client read matrix and cross-client planning](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#82-client-read-matrix-and-cross-client-planning)).
 pub(crate) fn warnings(resolution: &Resolution<'_>, desired: &[Desired], report: &mut Report) {
     let project = |path: &str| {
         desired

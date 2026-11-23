@@ -189,7 +189,7 @@
       "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
     },
     "Kind": {
-      "description": "An asset kind (`architecture.md` §3).",
+      "description": "An asset kind ([`docs/architecture.md` §3, Asset kinds](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#3-asset-kinds)).",
       "oneOf": [
         {
           "description": "Instructions loaded into context automatically, always or for matching paths.",
@@ -592,7 +592,7 @@
       ]
     },
     "Transport": {
-      "description": "An MCP transport (`MCP-SPEC`).",
+      "description": "An MCP transport, as the Model Context Protocol specification defines it\n([`docs/specs.md`, MCP-SPEC](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#mcp-spec-protocol-specification)).",
       "oneOf": [
         {
           "description": "Newline-delimited JSON-RPC over stdin/stdout.",
@@ -636,7 +636,7 @@
       ]
     },
     "DeclaredTool": {
-      "description": "A tool an MCP server exposes, with every annotation stated explicitly (`MCP-SPEC`).",
+      "description": "A tool an MCP server exposes, with every annotation stated explicitly. The\nannotations and their defaults are in the Model Context Protocol\nspecification ([`docs/specs.md`, MCP-SPEC](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#mcp-spec-protocol-specification)).",
       "type": "object",
       "properties": {
         "name": {
@@ -731,7 +731,7 @@
       "pattern": "^((rules|skills|agents):.+|instructions|mcp|hooks)$"
     },
     "Strategy": {
-      "description": "How an output is written (`architecture.md` §6.1, §7.2).",
+      "description": "How an output is written\n([`docs/architecture.md` §6.1, `asset.toml`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#61-assettoml) and\n[§7.2, Ownership units and merge strategies](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#72-ownership-units-and-merge-strategies)).",
       "oneOf": [
         {
           "description": "A whole file (or directory tree), byte-for-byte.",
@@ -756,7 +756,7 @@
       ]
     },
     "ClientId": {
-      "description": "A client Grimoire renders for (ADR-0005).",
+      "description": "A client Grimoire renders for, one of the six v1 clients that\n[ADR-0005](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0005-client-priority.md)\nchose.",
       "oneOf": [
         {
           "description": "Claude Code.",

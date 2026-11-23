@@ -1,7 +1,10 @@
-//! OAuth 2.1 resource-server checks for Streamable HTTP (ADR-0007).
+//! OAuth 2.1 resource-server checks for Streamable HTTP.
+//!
+//! [ADR-0007](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0007-mcp-server-authorization.md),
+//! the decision on server-side MCP authorization, chose these checks.
 //!
 //! An MCP server that requires authorization is an OAuth resource server
-//! (`MCP-SPEC`). This module:
+//! ([`docs/specs.md`, MCP-SPEC](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#mcp-spec-protocol-specification)). This module:
 //! - serves RFC 9728 Protected Resource Metadata;
 //! - takes the access token from the `Authorization: Bearer` header only,
 //!   never from the query string;

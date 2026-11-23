@@ -7,7 +7,9 @@ use std::path::Path;
 
 use agent_grimoire_model::{Diagnostic, RelPath};
 
-/// Largest file the catalog accepts. Assets ship inside the binary (ADR-0001).
+/// Largest file the catalog accepts. Assets ship inside the binary, as
+/// [ADR-0001](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0001-catalog-delivery.md)
+/// chose, so every file adds to the binary's size.
 pub const MAX_FILE_BYTES: u64 = 1024 * 1024;
 /// Deepest directory nesting the catalog accepts inside one asset.
 const MAX_DEPTH: usize = 12;

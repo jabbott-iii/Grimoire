@@ -1,4 +1,9 @@
-//! Where catalog data comes from (ADR-0001).
+//! Where catalog data comes from.
+//!
+//! [ADR-0001](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0001-catalog-delivery.md)
+//! chose to embed the catalog in the binary for v1, behind this abstraction,
+//! so that a remote catalog can be added later without changing the lockfile
+//! format.
 //!
 //! A [`Source`] is the in-memory index the resolver and installer work from: every
 //! asset's manifest, its manifest digest and the files it installs, plus every

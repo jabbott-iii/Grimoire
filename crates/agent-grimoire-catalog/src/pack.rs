@@ -1,4 +1,7 @@
-//! The packed catalog embedded in the `grimoire` binary (ADR-0001).
+//! The packed catalog embedded in the `grimoire` binary.
+//!
+//! [ADR-0001](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0001-catalog-delivery.md)
+//! chose to ship the catalog inside the binary for v1.
 //!
 //! A pack is a deterministic, binary-safe list of files: the magic line, then for
 //! each file, sorted by path, a little-endian `u32` path length, the path (ASCII,
