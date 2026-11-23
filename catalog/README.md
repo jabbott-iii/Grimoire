@@ -123,4 +123,5 @@ Start a new asset with `cargo xtask new <kind> <id> --maintainer <login>` (or `c
   - After changing anything here, run `cargo xtask gen-marketplace`. CI fails if it is stale, and runs `claude plugin validate --strict` on every plugin.
 - **No symlinks** (symbolic links), and no files over 1 MiB (1,048,576 bytes).
   - Every path must be portable across Linux, macOS and Windows: ASCII only, and no Windows reserved names (device names such as `CON` and `NUL`). ASCII only rules out invisible characters and names that look the same but are stored differently.
+  - Every path may be at most 200 characters, counted from the catalog root: `skills/adr-writer/references/status-lifecycle.md` counts as 48. The pack stores each file under that path.
   - No two paths may differ only in letter case, such as `Guide.md` and `guide.md`. A case-insensitive file system, the default on Windows and macOS, can't hold both.

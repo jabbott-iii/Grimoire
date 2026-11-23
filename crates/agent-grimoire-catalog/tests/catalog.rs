@@ -12,7 +12,8 @@
 use std::fs;
 use std::path::Path;
 
-use agent_grimoire_catalog::{Validation, load};
+use agent_grimoire_catalog::{Source, Validation, load};
+use agent_grimoire_model::{AssetId, MAX_REL_PATH, RelPath, SourceId};
 use tempfile::TempDir;
 
 struct Fixture {
@@ -404,6 +405,40 @@ fn symlinks_and_unportable_names_are_rejected() {
     let f = valid();
     f.write("rules/rust-errors/evals/aux.md", "x");
     f.assert_code("catalog/path");
+}
+
+/// The pack stores each file under its path from the catalog root, and loading
+/// reads that path back as a `RelPath`. So `load` must refuse a file whose full
+/// path is too long, even when its path inside the asset is not.
+#[test]
+fn paths_from_the_catalog_root_must_fit_in_the_pack() {
+    // `references` is installed, so every file in it is packed.
+    let prefix = "skills/adr-writer/references/";
+    let long = |len: usize| format!("{prefix}{}.md", "a".repeat(len - prefix.len() - 3));
+
+    let f = valid();
+    let at_limit = long(MAX_REL_PATH);
+    f.write(&at_limit, "# Long\n");
+    let v = f.load();
+    assert!(v.diagnostics.is_empty(), "{}", render(&v));
+    let bytes = agent_grimoire_catalog::pack(f.root()).unwrap();
+    let source = Source::from_pack(SourceId::Builtin, &bytes).unwrap();
+    let rel = RelPath::new(at_limit.strip_prefix("skills/adr-writer/").unwrap()).unwrap();
+    let skill = source.asset(&AssetId::new("adr-writer").unwrap()).unwrap();
+    assert_eq!(skill.file(&rel), Some(&b"# Long\n"[..]));
+
+    let f = valid();
+    let over = long(MAX_REL_PATH + 1);
+    f.write(&over, "# Long\n");
+    let v = f.load();
+    assert!(
+        v.diagnostics
+            .iter()
+            .any(|d| d.code == "catalog/path" && d.file.as_deref() == Some(over.as_str())),
+        "expected catalog/path on {over}, got:\n{}",
+        render(&v)
+    );
+    assert!(agent_grimoire_catalog::pack(f.root()).is_err());
 }
 
 #[test]

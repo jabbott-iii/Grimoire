@@ -13,7 +13,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
-use agent_grimoire_model::{Diagnostic, RelPath, has_errors};
+use agent_grimoire_model::{Diagnostic, MAX_REL_PATH, RelPath, has_errors};
 
 use crate::fs::{MAX_FILE_BYTES, read_bytes, walk};
 
@@ -21,8 +21,10 @@ use crate::fs::{MAX_FILE_BYTES, read_bytes, walk};
 const MAGIC: &[u8] = b"grimoire catalog pack v1\n";
 /// Most files a pack may hold.
 const MAX_FILES: usize = 100_000;
-/// Longest path inside a pack: a kind directory, an asset id and a relative path.
-const MAX_PATH: usize = 300;
+/// Longest path inside a pack, in bytes. Each path, such as `<kind>/<id>/<rel>`
+/// or `bundles/<id>.toml`, is a whole [`RelPath`], which is ASCII, so its
+/// character limit is also its byte limit.
+const MAX_PATH: usize = MAX_REL_PATH;
 /// Files every asset ships with besides its installed outputs.
 const ASSET_FILES: [&str; 3] = ["asset.toml", "README.md", "CHANGELOG.md"];
 
@@ -90,6 +92,9 @@ fn encode(files: &BTreeMap<String, Vec<u8>>) -> Result<Vec<u8>, String> {
     }
     let mut out = MAGIC.to_vec();
     for (path, data) in files {
+        // Never write a pack that `decode` would refuse.
+        RelPath::new(path.as_str())
+            .map_err(|e| format!("`{path}` is not a portable relative path: {}", e.reason()))?;
         let path_len = u32::try_from(path.len()).map_err(|_| format!("`{path}` is too long"))?;
         let data_len = u32::try_from(data.len()).map_err(|_| format!("`{path}` is too large"))?;
         out.extend_from_slice(&path_len.to_le_bytes());
@@ -178,5 +183,28 @@ mod tests {
             unsorted.extend_from_slice(&0u32.to_le_bytes());
         }
         assert!(decode(&unsorted).is_err());
+    }
+
+    #[test]
+    fn encode_and_decode_agree_on_path_length() {
+        let path = |len: usize| format!("skills/x/{}", "a".repeat(len - "skills/x/".len()));
+        let mut files = BTreeMap::new();
+        files.insert(path(MAX_PATH), Vec::new());
+        assert_eq!(decode(&encode(&files).unwrap()).unwrap(), files);
+
+        let over = path(MAX_PATH + 1);
+        let mut files = BTreeMap::new();
+        files.insert(over.clone(), Vec::new());
+        assert!(encode(&files).is_err());
+        // Encoded by hand, past `encode`'s check.
+        let mut long = MAGIC.to_vec();
+        long.extend_from_slice(&u32::try_from(over.len()).unwrap().to_le_bytes());
+        long.extend_from_slice(over.as_bytes());
+        long.extend_from_slice(&0u32.to_le_bytes());
+        assert!(decode(&long).is_err());
+
+        let mut files = BTreeMap::new();
+        files.insert("../x".to_owned(), Vec::new());
+        assert!(encode(&files).is_err());
     }
 }

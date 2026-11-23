@@ -106,7 +106,10 @@
 //!     opening a FIFO (a named pipe) would block;
 //!   - every path must be a portable
 //!     [`RelPath`](agent_grimoire_model::RelPath), the same on Linux, macOS and
-//!     Windows;
+//!     Windows, and at most [`MAX_REL_PATH`](agent_grimoire_model::MAX_REL_PATH)
+//!     (200) characters counted from the catalog root, such as
+//!     `skills/<id>/references/guide.md`, because the pack stores each file
+//!     under that path;
 //!   - no two paths may differ only in letter case, such as `skill.md` and
 //!     `SKILL.md`. They collide on macOS and Windows, where one would silently
 //!     replace the other on install;
@@ -228,8 +231,11 @@
 //!
 //! [`Source::from_pack`] reads a pack as untrusted input:
 //! - at most 100,000 files, each at most [`MAX_FILE_BYTES`];
-//! - every path a portable relative path, in strictly sorted order, so no path
-//!   appears twice;
+//! - every path a portable relative path from the catalog root, of at most
+//!   [`MAX_REL_PATH`](agent_grimoire_model::MAX_REL_PATH) characters, in
+//!   strictly sorted order, so no path appears twice. [`load`] applies the same
+//!   path rule to every catalog file, so a pack that [`pack`] writes never fails
+//!   it;
 //! - every manifest and bundle parsed strictly and checked again on its own,
 //!   so a damaged pack fails when it is loaded rather than at install time.
 //!   Each manifest's `id` and `kind` must match its directory, and no id may be

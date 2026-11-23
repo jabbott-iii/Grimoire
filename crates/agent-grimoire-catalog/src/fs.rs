@@ -83,7 +83,9 @@ pub(crate) fn read_dir_sorted(dir: &Path) -> io::Result<Vec<(String, fs::Metadat
     Ok(out)
 }
 
-/// Walks `root` without following symlinks. `display` prefixes paths in diagnostics.
+/// Walks `root` without following symlinks. `display` is `root`'s path from the
+/// catalog root, such as `skills/<id>`: it prefixes paths in diagnostics, and
+/// counts towards each path's length.
 pub(crate) fn walk(root: &Path, display: &str, diagnostics: &mut Vec<Diagnostic>) -> Tree {
     let mut tree = Tree::default();
     walk_into(root, None, 0, display, &mut tree, diagnostics);
@@ -155,20 +157,10 @@ fn walk_into(
             );
             return;
         }
-        let path = match rel {
-            Some(rel) => format!("{rel}/{name}"),
-            None => name.clone(),
-        };
-        let path = match RelPath::new(&path) {
+        let path = match entry_path(rel, &name, display) {
             Ok(path) => path,
-            Err(e) => {
-                diagnostics.push(
-                    Diagnostic::error(
-                        "catalog/path",
-                        format!("not a portable path: {}", e.reason()),
-                    )
-                    .in_file(shown(&name)),
-                );
+            Err(message) => {
+                diagnostics.push(Diagnostic::error("catalog/path", message).in_file(shown(&name)));
                 continue;
             }
         };
@@ -222,6 +214,25 @@ fn walk_into(
             );
         }
     }
+}
+
+/// The path of the entry `name` in the directory `rel`, relative to the walked
+/// directory `display`. It must be a [`RelPath`], and so must its path from the
+/// catalog root: the pack stores each file under that path, and loading the pack
+/// requires it to be a `RelPath` too.
+fn entry_path(rel: Option<&RelPath>, name: &str, display: &str) -> Result<RelPath, String> {
+    let path = match rel {
+        Some(rel) => format!("{rel}/{name}"),
+        None => name.to_owned(),
+    };
+    let path = RelPath::new(path).map_err(|e| format!("not a portable path: {}", e.reason()))?;
+    RelPath::new(format!("{display}/{path}")).map_err(|e| {
+        format!(
+            "the embedded pack stores files by their path from the catalog root, and that path {}",
+            e.reason()
+        )
+    })?;
+    Ok(path)
 }
 
 /// Reads a catalog text file, which must be a regular UTF-8 file of at most
