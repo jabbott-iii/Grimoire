@@ -1,6 +1,6 @@
 {
   "name": "project-docs",
-  "version": "0.1.0+df295b0ae4ee",
+  "version": "0.1.1+df295b0ae4ee",
   "description": "A read-only MCP server that lists, reads and searches a project's docs and ADRs",
   "author": {
     "name": "jabbott-iii"

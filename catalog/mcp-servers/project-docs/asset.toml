@@ -1,7 +1,7 @@
 format = 1
 id = "project-docs"
 kind = "mcp-server"
-version = "0.1.0"
+version = "0.1.1"
 summary = "A read-only MCP server that lists, reads and searches a project's docs and ADRs"
 description = """A Rust MCP server that gives an agent read-only access to a project's documentation: Markdown, reStructuredText and AsciiDoc files, and architecture decision records.
 

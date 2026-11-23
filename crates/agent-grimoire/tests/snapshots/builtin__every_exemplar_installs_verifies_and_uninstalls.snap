@@ -827,5 +827,5 @@ conventional-commits = "^0.2.0"
 adr-writer = "^0.2.0"
 security-reviewer = { version = "^0.2.0", allow = ["filesystem-read"] }
 secret-guard = { version = "^0.1.0", allow = ["filesystem-read", "hooks"] }
-project-docs = { version = "^0.1.0", allow = ["filesystem-read", "env:CLAUDE_PROJECT_DIR"] }
+project-docs = { version = "^0.1.1", allow = ["filesystem-read", "env:CLAUDE_PROJECT_DIR"] }
 plain-language-docs = "^0.1.0"

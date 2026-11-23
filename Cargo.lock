@@ -924,7 +924,7 @@ dependencies = [
 
 [[package]]
 name = "grimoire-mcp-project-docs"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "agent-grimoire-mcp",
  "cap-fs-ext",

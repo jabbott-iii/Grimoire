@@ -9,8 +9,11 @@ use std::fmt::Write as _;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 
-use agent_grimoire_mcp::{AuthConfig, HttpLimits, HttpOptions, HttpServer, PROTOCOL_VERSIONS};
+use agent_grimoire_mcp::{
+    AuthConfig, Caller, HttpLimits, HttpOptions, HttpServer, PROTOCOL_VERSIONS,
+};
 use rmcp::handler::server::router::tool::ToolRouter;
+use rmcp::handler::server::tool::Extension;
 use rmcp::model::{Implementation, ProtocolVersion, ServerCapabilities, ServerConfig};
 use rmcp::{ServerHandler, tool, tool_handler, tool_router};
 use serde_json::{Value, json};
@@ -60,6 +63,57 @@ impl ServerHandler for Ping {
     }
 }
 
+/// A server whose one tool reports what a handler gets of the HTTP request:
+/// the names of its headers, and the caller's subject.
+#[derive(Clone)]
+struct Seen {
+    tool_router: ToolRouter<Seen>,
+}
+
+#[tool_router]
+impl Seen {
+    fn new() -> Self {
+        Self {
+            tool_router: Self::tool_router(),
+        }
+    }
+
+    #[tool(
+        description = "Reports the request headers and caller a handler sees",
+        annotations(
+            read_only_hint = true,
+            destructive_hint = false,
+            idempotent_hint = true,
+            open_world_hint = false
+        )
+    )]
+    #[allow(clippy::unused_self, reason = "rmcp tools are methods")]
+    fn seen(&self, Extension(parts): Extension<http::request::Parts>) -> String {
+        let headers: Vec<&str> = parts.headers.keys().map(http::HeaderName::as_str).collect();
+        let subject = parts
+            .extensions
+            .get::<Caller>()
+            .and_then(|caller| caller.subject.clone());
+        json!({ "headers": headers, "subject": subject }).to_string()
+    }
+}
+
+#[tool_handler(router = self.tool_router)]
+#[expect(
+    clippy::unused_async_trait_impl,
+    reason = "rmcp's generated handler methods are async"
+)]
+impl ServerHandler for Seen {
+    fn get_info(&self) -> ServerConfig {
+        ServerConfig::new(ServerCapabilities::builder().enable_tools().build())
+            .with_server_info(Implementation::new("seen-test", "0.0.0"))
+    }
+
+    fn supported_protocol_versions(&self) -> Cow<'static, [ProtocolVersion]> {
+        Cow::Borrowed(&PROTOCOL_VERSIONS)
+    }
+}
+
 struct Running {
     addr: SocketAddr,
     stop: Option<tokio::sync::oneshot::Sender<()>>,
@@ -74,12 +128,16 @@ impl Running {
 }
 
 async fn start(auth: Option<AuthConfig>) -> Running {
-    start_with(auth, HttpLimits::default()).await
+    start_with(Ping::new, auth, HttpLimits::default()).await
 }
 
-async fn start_with(auth: Option<AuthConfig>, limits: HttpLimits) -> Running {
+async fn start_with<S: ServerHandler>(
+    factory: impl Fn() -> S + Send + Sync + 'static,
+    auth: Option<AuthConfig>,
+    limits: HttpLimits,
+) -> Running {
     let server = HttpServer::bind(
-        Ping::new,
+        factory,
         HttpOptions {
             listen: "127.0.0.1:0".parse().unwrap(),
             path: "/mcp".to_owned(),
@@ -529,6 +587,72 @@ async fn authorization_challenges_then_accepts_a_valid_token() {
     server.stop().await;
 }
 
+/// Calls `Seen`'s tool and returns what it reported.
+async fn call_seen(addr: SocketAddr, extra: &[(&str, &str)]) -> Value {
+    let mut params = meta();
+    params["name"] = json!("seen");
+    let mut all = vec![("Mcp-Method", "tools/call"), ("Mcp-Name", "seen")];
+    all.extend_from_slice(extra);
+    let call = send(
+        addr,
+        "POST",
+        "/mcp",
+        &headers(&all),
+        &rpc("tools/call", &params),
+    )
+    .await;
+    assert_eq!(call.status, 200, "{}", call.body);
+    let text = call.json()["result"]["content"][0]["text"]
+        .as_str()
+        .unwrap_or_else(|| panic!("no text content: {}", call.body))
+        .to_owned();
+    serde_json::from_str(&text).unwrap()
+}
+
+#[tokio::test]
+async fn handlers_get_the_caller_but_never_the_token() {
+    let dir = tempfile::tempdir().unwrap();
+    let jwks = support::write_jwks(dir.path(), &[support::ec_jwk("ec1")]);
+    let server = start_with(Seen::new, Some(auth_config(jwks)), HttpLimits::default()).await;
+    let authorization = format!("Bearer {}", support::es256(&support::good_claims()));
+    let seen = call_seen(
+        server.addr,
+        &[
+            ("Host", "docs.example.com"),
+            ("Authorization", &authorization),
+        ],
+    )
+    .await;
+    let names = seen["headers"].as_array().unwrap();
+    assert!(
+        names.contains(&json!("mcp-method")),
+        "the handler gets the request's other headers: {seen}"
+    );
+    assert!(
+        !names.contains(&json!("authorization")),
+        "the token is removed once checked: {seen}"
+    );
+    assert_eq!(seen["subject"], "user-1", "the Caller stays: {seen}");
+    server.stop().await;
+
+    // Without authorization, a token a client sends anyway is removed too.
+    let server = start_with(Seen::new, None, HttpLimits::default()).await;
+    let seen = call_seen(server.addr, &[("Authorization", "Bearer unchecked")]).await;
+    assert!(
+        !seen["headers"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("authorization")),
+        "{seen}"
+    );
+    assert_eq!(
+        seen["subject"],
+        Value::Null,
+        "no Caller without authorization"
+    );
+    server.stop().await;
+}
+
 #[tokio::test]
 async fn a_2025_11_25_client_lists_and_calls_tools_statelessly() {
     let server = start(None).await;
@@ -682,6 +806,7 @@ async fn origin_is_checked_before_authorization() {
 #[tokio::test]
 async fn a_client_that_stops_reading_cannot_hold_a_connection_slot() {
     let server = start_with(
+        Ping::new,
         None,
         HttpLimits {
             max_connections: 1,

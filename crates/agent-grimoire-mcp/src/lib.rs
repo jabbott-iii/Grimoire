@@ -86,7 +86,8 @@
 //!   that passes carries a [`Caller`], what the token says about who sent it,
 //!   in the HTTP request's extensions. rmcp hands each handler the request's
 //!   `http::request::Parts`, so a tool reads it as
-//!   `parts.extensions.get::<Caller>()`.
+//!   `parts.extensions.get::<Caller>()`. The token itself never reaches a
+//!   handler (below, "Logging: stderr only, and never a token").
 //! - **Limits on tool work**, in [`limits`]: [`limits::Limits`] runs a tool's
 //!   blocking work within concurrency, rate and time limits
 //!   ([`limits::LimitConfig`]), and says why it refused
@@ -336,11 +337,15 @@
 //! would corrupt the protocol. MCP doesn't allow a server to pass a token on,
 //! and a token in a log can leak.
 //!
-//! The request a handler gets still carries the token: rmcp gives each
-//! handler the request's `http::request::Parts`, `Authorization` header
-//! included. So a server's own code must not log or forward those headers
-//! either. A server writes its own diagnostics with [`log`], and never with a
-//! token in them.
+//! The token stops at the authorization check. rmcp gives each handler the
+//! request's `http::request::Parts`, headers included, so [`HttpServer`]
+//! removes the `Authorization` header from every request before rmcp sees
+//! it, whether authorization is configured or not. A handler learns who sent
+//! a request from its [`Caller`] instead, and rmcp itself reads no
+//! `Authorization` header. The other headers still reach handlers, and a
+//! client may put anything in them, so a server's own code doesn't log or
+//! forward a request's headers whole. A server writes its own diagnostics
+//! with [`log`], and never with a token in them.
 //!
 //! # What catalog validation requires of a server
 //!

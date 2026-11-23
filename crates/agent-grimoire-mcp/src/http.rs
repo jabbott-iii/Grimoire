@@ -9,7 +9,9 @@
 //! 3. **Path and method:** RFC 9728 metadata on `GET`, then `POST` to the MCP
 //!    path only (404, or 405 with `Allow`).
 //! 4. **Authorization**, when configured (401, 403 or 400 with an RFC 6750
-//!    challenge).
+//!    challenge). A request that passes carries a [`Caller`](crate::Caller)
+//!    in its extensions. Then the `Authorization` header is removed from
+//!    every request, configured or not, so no handler ever sees a token.
 //!
 //! 5. **Protocol version:** `MCP-Protocol-Version` must name a version the
 //!    server speaks (400, -32022). It is required on everything but a legacy
@@ -371,6 +373,12 @@ impl<S: ServerHandler> App<S> {
                 }
             }
         }
+        // The token stops here. rmcp hands each handler the request's
+        // `http::request::Parts`, headers included, and reads no
+        // `Authorization` header itself; a handler needs only the `Caller`.
+        // Without authorization, a token a client sends anyway was never
+        // checked, and goes too.
+        request.headers_mut().remove(header::AUTHORIZATION);
         let work = async {
             match version_gate(request).await {
                 Ok(request) => self.service.handle(request).await,

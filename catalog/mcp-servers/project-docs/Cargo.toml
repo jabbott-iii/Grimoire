@@ -1,6 +1,6 @@
 [package]
 name = "grimoire-mcp-project-docs"
-version = "0.1.0"
+version = "0.1.1"
 description = "A read-only MCP server for a project's documentation and architecture decision records"
 edition.workspace = true
 rust-version.workspace = true
