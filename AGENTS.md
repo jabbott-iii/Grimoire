@@ -16,6 +16,15 @@ Grimoire is a catalog of AI-agent assets (rules, skills, agents, tools, MCP serv
 - **Never weaken checks.** Don't weaken lints, tests, type checks or security controls to get something passing. Fix the cause.
 - **Keep changes small.** Prefer the smallest complete change. Write an ADR in `docs/adr/` for significant or hard-to-reverse decisions.
 
+## Rules and skills adopted from Doctrina
+
+[Doctrina](https://github.com/jabbott-iii/Doctrina) is the maintainer's library of portable rules and skills for coding agents. Grimoire uses five of its rules, in `.claude/rules/`: `writing.md`, `commits.md`, `rust.md`, `testing.md`, and `roadmap-and-docs.md`. Each rule's **Project details** section holds Grimoire's values. All ten of Doctrina's skills are in `.claude/skills/`, unchanged.
+
+- **Follow the rules as this repository's rules.** Claude Code loads `writing.md`, `commits.md`, and `testing.md` in every session, `rust.md` when it works on Rust files, and `roadmap-and-docs.md` when it works on `PLAN.md`, `AGENTS.md`, `README.md`, `CONTRIBUTING.md`, or files in `docs/`. If you are another agent, read every file in `.claude/rules/` before you start.
+- **This file and the ADRs win** where a rule's general text says otherwise, for example on the shape of a crate README ([ADR-0012](docs/adr/0012-crate-documentation.md)) or of a decision record.
+- **Claude Code offers the skills as slash commands**, such as `/next-task` and `/fix-doc-drift`. Each one sets `disable-model-invocation: true`, so it starts only when someone types it. `build-course` relies on Doctrina's `teaching-materials.md`, which Grimoire hasn't adopted.
+- **Keep the copies in step with Doctrina.** Change a rule's general text or a skill in Doctrina first, then copy it here. Change only **Project details** here. The one local change to general text is `PLAN.md` in `roadmap-and-docs.md`'s `paths`, because Grimoire's roadmap is `PLAN.md`.
+
 ## Repository layout
 
 | Path | What |
@@ -35,6 +44,7 @@ Grimoire is a catalog of AI-agent assets (rules, skills, agents, tools, MCP serv
 | `.grype.yaml` | The image's Grype gate ([ADR-0011](docs/adr/0011-container-image.md)); Grype is a vulnerability scanner. Any medium, high or critical match fails, fixed or not. A finding without a fix needs an ignore rule with a reason, reviewed like the exceptions in `deny.toml`, the cargo-deny dependency policy |
 | `catalog/<kind>/<id>/` | One directory per asset (data only). See [`catalog/README.md`](catalog/README.md) |
 | `.claude-plugin/`, `plugins/claude-code/` | The Claude Code plugin marketplace, generated from `catalog/`. Never edit by hand |
+| `.claude/rules/`, `.claude/skills/` | The rules and skills adopted from Doctrina for work on Grimoire itself (see above). Grimoire doesn't install them; they aren't catalog assets |
 | `schemas/` | Generated JSON Schemas. Never edit by hand |
 | `docs/cli.md`, `docs/diagnostics.md`, `docs/configuration.md`, `docs/versioning.md` | The user reference: commands, flags, exit codes, `--json` output and environment; every user-facing diagnostic code; `grimoire.toml`, `grimoire.lock`, permissions and clients; the versioning and deprecation policy |
 | `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md` | The community files, at the root. `README.md` is also the `agent-grimoire` crate's page on crates.io, the PyPI long description and the README in every CLI archive |
