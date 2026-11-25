@@ -8,7 +8,8 @@
     - after the Phase 6 review, which moved every signature and attestation into `.github/workflows/sign.yml`;
     - in Phase 7 (2026-11-17), for the before-first-release markers, the README's channels and vulnerability reporting;
     - after the Phase 7 review (2026-11-18), when the repository's ruleset (the rules GitHub enforces on its branches) refused the first GitHub run of release-plz, the tool that opens the release pull request (§2 A);
-    - again on 2026-11-18, when GitHub refused to start `release.yml` and the image's signing moved into `.github/workflows/sign-image.yml`.
+    - again on 2026-11-18, when GitHub refused to start `release.yml` and the image's signing moved into `.github/workflows/sign-image.yml`;
+    - on 2026-11-24, when the ruleset, read again, had no code-scanning or code-quality rule left, and its exclusion for release-plz's branches matched none of them (§2 A).
 - **Decisions** (architecture decision records, ADRs): [ADR-0009](adr/0009-release-pipeline.md) (the pipeline and channels), [ADR-0010](adr/0010-language-policy-exceptions.md) (the code that isn't Rust) and [ADR-0011](adr/0011-container-image.md) (the container image).
 - **Facts:** the `*-P5` and `*-P6` entries in [`specs.md`](specs.md), the verified research of Phases 5 and 6; SIGN-P6, the research on signing from a reusable workflow, for the signing identity.
 
@@ -31,7 +32,7 @@ This file has six parts:
    - The pull request bumps the shared workspace version: the one version that the `grimoire` command-line interface (CLI) and its five library crates share. It adds a section for the new version to `CHANGELOG.md`, written from the Conventional Commits since the last release: commit messages that start with a type, such as `feat:` or `fix:`.
    - It is labeled `release`.
    - release-plz is configured never to tag, create releases or publish. The release workflow does those instead, so that it tags the exact commit it built and signed ([ADR-0009](adr/0009-release-pipeline.md)). release-plz's token could still do the first two; [`security-model.md`](security-model.md) §6b, on releases and distribution, says what still protects users.
-   - **Today it can't open the pull request.** The ruleset covers every branch, so it refused release-plz's commit to its `release-plz-*` branch (run 44198210657). No release pull request exists until you change the ruleset (§2 A).
+   - **Today it can't open the pull request.** The ruleset's pull-request rule still applies to the `release-plz-*` branches, so it refuses release-plz's commit there (most recently run 45513260333, on 2026-11-24). No release pull request exists until you change the ruleset (§2 A).
 3. **Approve the release pull request's continuous integration (CI) runs.**
    - The pull request is opened with `GITHUB_TOKEN`, the token GitHub Actions gives each job. So its `pull_request` runs (CI, Security and the release dry-run) wait for approval.
    - Open the pull request's checks and approve the workflows to run, or push a commit to the branch yourself.
@@ -47,7 +48,7 @@ This file has six parts:
      - A security fix merged from an advisory's temporary private fork (a private copy of the repository, which GitHub creates so that the fix for a reported vulnerability can be prepared out of public view) names the advisory's GHSA ID, its GitHub Security Advisory identifier, in the first line of its commit message ([`SECURITY.md`](../SECURITY.md), "What happens to a report").
      - release-plz carries that line into the `CHANGELOG.md` section, and the release notes come from the section. Check that the section names each such advisory.
      - If one is missing, add it to the GitHub Release's notes once the release is published. An immutable release (one whose tag and files GitHub locks once it is published, §2 A) keeps its notes editable.
-   - Until pull requests receive the code-scanning and code-quality results the ruleset requires, the merge needs the administrator bypass: your administrator role's permission to merge past the ruleset (§2 A).
+   - **Approve it before you merge.** The ruleset needs one approving review from a code owner, and you are the only one (read on 2026-11-24, §2 A). release-plz opens the pull request, not you, so your approval meets the rule without the administrator bypass, your administrator role's permission to merge past the ruleset. A push that changes the pull request dismisses the approval, so approve it again after each update. This hasn't been seen on GitHub yet, because no release pull request exists.
 5. **The release run starts.**
    - The merge's push to `main` starts `.github/workflows/release.yml`.
    - **Release mode or dry-run.** The `plan` job chooses release mode, the mode that tags and publishes, only when the repository variable `GRIMOIRE_RELEASES` is `enabled`, `vX.Y.Z` isn't tagged, and `CHANGELOG.md` has a section for X.Y.Z.
@@ -153,24 +154,26 @@ Never store a token in GitHub at any step.
 ### A. Repository settings
 
 - [ ] **Now: let release-plz commit to its branch.** Until you do, release-plz can't open the release pull request, so no release can start (§1).
-  - **What happened.** The Release PR workflow's run 44198210657 failed in both attempts, on 2026-11-17 and 2026-11-18 (recorded under RELEASE-PLZ in [`specs.md`](specs.md)). Each attempt created a `release-plz-<timestamp>` branch, and then GitHub refused its commit there: "Repository rule violations found … Changes must be made through a pull request … Waiting for Code Scanning results. Code Scanning may not be configured for the target branch."
-  - **Why.** The ruleset `BestBranch` covers every branch (`~ALL`), the `release-plz-*` branches included. Its pull-request rule and its code-scanning rule both refuse the commit, so lifting only one of them isn't enough.
+  - **What happened.** The Release PR workflow's run 44198210657 failed in both attempts, on 2026-11-17 and 2026-11-18 (recorded under RELEASE-PLZ in [`specs.md`](specs.md)). Each attempt created a `release-plz-<timestamp>` branch, and then GitHub refused its commit there: "Repository rule violations found … Changes must be made through a pull request … Waiting for Code Scanning results. Code Scanning may not be configured for the target branch." All 11 runs up to 2026-11-24 have failed. The most recent, run 45513260333, was refused with only "Changes must be made through a pull request".
+  - **Why.** The ruleset `BestBranch` covers every branch (`~ALL`), the `release-plz-*` branches included. In the first runs, its pull-request rule and its code-scanning rule both refused the commit. Read on 2026-11-24, the code-scanning rule is gone (the next item), and the pull-request rule alone still refuses it.
   - **Your decision.** Either target the ruleset at the default branch only (`~DEFAULT_BRANCH`), or keep `~ALL` and exclude `refs/heads/release-plz-*`.
     - With the first, other branches also lose the deletion and force-push rules.
     - With either, pull requests into `main`, the release pull request included, keep every rule.
+    - **Read on 2026-11-24:** the ruleset keeps `~ALL` and excludes `refs/heads/refs/heads/release-plz-*`. That pattern has `refs/heads/` twice, so it matches no release-plz branch: `gh api repos/jabbott-iii/Grimoire/rules/branches/release-plz-2026-11-24T23-50-39Z` still lists `BestBranch`'s deletion, force-push, and pull-request rules. Correct the exclusion until `gh api repos/jabbott-iii/Grimoire/rulesets/27435535 --jq .conditions` shows `refs/heads/release-plz-*`.
   - **Don't add GitHub Actions as a bypass actor** (an app or role that the ruleset lets skip its rules) instead. Any workflow job whose token has `contents: write` could then change `main` without a pull request.
   - **Then delete the orphan branches**, the `release-plz-*` branches that the failed runs left behind: `release-plz-2026-11-17T23-18-49Z`, `release-plz-2026-11-18T05-09-04Z`, `release-plz-2026-11-18T14-29-28Z` (run 44324738027, on the push of `dca6c1d`) and `release-plz-2026-11-18T16-57-17Z` (run 44353090254, on the push of `7fc1906`).
+    - Read on 2026-11-24, those four are gone, and two newer ones are left: `release-plz-2026-11-23T00-25-50Z` and `release-plz-2026-11-24T23-50-39Z`.
     - Each push to `main` adds another until the ruleset lets release-plz commit, so list them with `gh api 'repos/jabbott-iii/Grimoire/branches?per_page=100' --jq '.[].name'` first.
     - While the ruleset still covers them, its deletion rule allows that only through the administrator bypass.
   - Then run `release-plz.yml` on `main` (Actions → Release PR → Run workflow), or push to `main`, and check that the release pull request opens. Opening it also needs the Actions setting below.
-- [ ] **Now: give the code-quality rule its results, or drop it.** `BestBranch` also requires CodeQL code-scanning results and code-quality results. Code scanning is GitHub's automated search of the code for security problems; CodeQL is GitHub's analysis engine for it.
-  - **CodeQL:** `.github/workflows/codeql.yml` analyzes Rust, JavaScript, Python and the workflows on every pull request to `main`, every push to `main` and weekly.
+- [ ] **Now: give the code-quality rule its results, or drop it.** When read on 2026-11-17 and 2026-11-18, `BestBranch` also required CodeQL code-scanning results and code-quality results. Code scanning is GitHub's automated search of the code for security problems; CodeQL is GitHub's analysis engine for it.
+  - **Read on 2026-11-24, both rules are gone.** `BestBranch` has only its deletion, force-push, and pull-request rules, so no code-scanning or code-quality result blocks a merge or a commit. Tick this item if removing both was your decision.
+  - **CodeQL still runs.** `.github/workflows/codeql.yml` analyzes Rust, JavaScript, Python and the workflows, with the `security-extended` queries, on every pull request to `main`, every push to `main` and weekly.
     - It is an advanced setup: the repository's own workflow file, rather than the default setup that GitHub configures by itself.
     - Its actions are pinned like every other workflow's (CODEQL in [`specs.md`](specs.md), the entry on the CodeQL action).
-    - Pull request 1 received a passing `CodeQL` check on 2026-11-19. Whether the ruleset's `code_scanning` rule then passes wasn't read.
-  - **Code quality:** nothing produces those results yet, and whether Code Quality, the GitHub feature that would produce them, is on couldn't be read (UNVERIFIED, COMMUNITY-P7 in [`specs.md`](specs.md)). Until something produces them, no pull request into `main`, a contributor's or the release pull request, can be merged without the administrator bypass.
-  - **Your decision.** Enable Code Quality in the repository's settings, or remove the ruleset's `code_quality` rule. Don't also turn on CodeQL default setup: GitHub doesn't accept advanced-setup results while default setup is on.
-  - Then confirm that a pull request receives both results, and that the rules can pass.
+    - Its results reach a pull request as the `CodeQL` check, which pull request 1 passed on 2026-11-19. Nothing requires that check now.
+  - **To make CodeQL a gate again,** require it on `main` only: for example, add the `CodeQL` check to the CI ruleset below. CodeQL doesn't run on other branches, so a code-scanning rule on every branch (`~ALL`) would refuse release-plz's commit again (the first item).
+  - Don't turn on CodeQL default setup: GitHub doesn't accept advanced-setup results while default setup is on.
 - [ ] **Allow GitHub Actions to create and approve pull requests** (Settings → Actions → General). This was due before the Phase 5 merge. Whether it is on couldn't be read: the API answered 403 (forbidden) to the token used.
   - `release-plz.yml` runs on the next push to `main` and opens the release pull request (`chore: release`).
   - With the setting off, each run creates a `release-plz-<timestamp>` branch and then fails to open the pull request. The ruleset leaves such branches too (the first item). Delete any `release-plz-*` branch that has no pull request.
@@ -207,7 +210,7 @@ Never store a token in GitHub at any step.
   - `release checks` is the release workflow's summary job. On a pull request it fails unless every dry-run job passed.
   - A skipped job counts as a failure, because a required check whose job is skipped would otherwise count as passed.
   - The release pull request's checks then come from the runs you approve.
-  - A ruleset on every branch already requires pull requests, with one approval and code-owner review ([`.github/CODEOWNERS`](../.github/CODEOWNERS)), but no status checks (read on 2026-11-17). The administrator role, Dependabot (GitHub's dependency-update bot) and two other GitHub Apps can bypass it; GitHub Actions can't.
+  - A ruleset on every branch already requires pull requests, with one approval and code-owner review ([`.github/CODEOWNERS`](../.github/CODEOWNERS)), but no status checks (read on 2026-11-17, and again on 2026-11-24). The administrator role, Dependabot (GitHub's dependency-update bot) and two other GitHub Apps can bypass it; GitHub Actions can't.
 
 ### B. Registries and repositories, close to the first release
 

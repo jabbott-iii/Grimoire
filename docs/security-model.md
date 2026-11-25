@@ -1,7 +1,7 @@
 # Grimoire security model
 
 - **Status:** final version (Phase 7). Phases are the stages of the project plan in [`PLAN.md`](../PLAN.md). Phases 2 to 6 wrote this document a part at a time: the installer (§1–§3), Model Context Protocol (MCP) servers, hooks and model-facing content (§4–§6), the other four clients and the plugin marketplace (§6a), releases (§6b) and the container image (§6c). Phase 7 checked every statement again against the code, the workflows (the GitHub Actions automation in `.github/workflows/`) and the other docs. It also completed the list of cross-client leaks (§3a), which [ADR-0005](adr/0005-client-priority.md), the architecture decision record (ADR) that chose the six supported clients and their order, had promised for Phase 7. And it added the repository and contribution process (§6d).
-- **Date:** 2026-11-17, revised after the Phase 7 review on 2026-11-18 (the effect of the ruleset, the repository's branch rules on GitHub, on release-plz, the tool that opens each release's pull request, and on merges: §6b and §6d), and again on 2026-11-18, when the image's signing moved into `sign-image.yml` (§6b and §6c)
+- **Date:** 2026-11-17, revised after the Phase 7 review on 2026-11-18 (the effect of the ruleset, the repository's branch rules on GitHub, on release-plz, the tool that opens each release's pull request, and on merges: §6b and §6d), and again on 2026-11-18, when the image's signing moved into `sign-image.yml` (§6b and §6c), and on 2026-11-24, when the ruleset no longer had its code-scanning and code-quality rules (§6b and §6d)
 - **No release exists yet.** Where a section describes a release, a registry or GitHub's behavior, it says what has and hasn't run.
 
 This is Grimoire's threat model: what could go wrong, what Grimoire does about it, and what risk remains. Some conventions:
@@ -195,7 +195,7 @@ Rules, skills, agents and MCP tool results become text in the model's context. G
 **The trust chain.** Each link is checked by the next:
 1. **Source.** A commit on `main`.
    - The ruleset requires a pull request with one approval and a review by a code owner (an owner named in `.github/CODEOWNERS`). But the administrator role and some GitHub Apps (integrations installed on the repository) can bypass it (§6d).
-   - **The release pull request doesn't exist yet.** release-plz opens it: the pull request bumps the version and adds the version's section to `CHANGELOG.md`, and merging it starts the release. The ruleset covers every branch, so it refused release-plz's commit to its `release-plz-*` branch (run 44198210657). The release pull request depends on the maintainer changing the ruleset (`release.md` §2 A, the repository settings checklist).
+   - **The release pull request doesn't exist yet.** release-plz opens it: the pull request bumps the version and adds the version's section to `CHANGELOG.md`, and merging it starts the release. The ruleset's pull-request rule still applies to the `release-plz-*` branches, so it refuses release-plz's commit there (most recently run 45513260333, on 2026-11-24). The release pull request depends on the maintainer changing the ruleset (`release.md` §2 A, the repository settings checklist).
    - The CI and Security workflows and `release checks` (the release workflow's summary check) run on the release pull request, from runs the maintainer approves. But no ruleset requires them yet (`release.md` §2 A). The release run doesn't wait for CI or Security on its commit either. What holds a release back is the maintainer, who approves the release pull request's runs and reviews them before merging (`release.md` §1, steps 3 and 4).
    - Release mode (a run that signs and publishes, unlike a dry-run, which builds and checks but publishes nothing) also needs the version's section in `CHANGELOG.md`, which only the merged release pull request adds.
    - That run, and the release pull request's dry-run, fail while `README.md`, `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md` or `SECURITY.md` still has an opening `<!-- before-first-release: … -->` or closing `<!-- /before-first-release -->` marker line. These markers wrap text that must change before the first release. They are matched loosely (in any case, and with any spacing around `<!--`; `xtask/src/release/plan.rs`).
@@ -402,24 +402,25 @@ Not run locally: the arm64 image (it was built and scanned, but there is no emul
 
 ## 6d. The repository and contributions
 
-Grimoire has one maintainer. This section says what the repository's rules, CI and review guarantee today, and what they don't. The settings below were read with the GitHub API on 2026-11-17 and 2026-11-18, and they can change; anyone who can read the repository can see its active rulesets on GitHub. How to contribute is in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
+Grimoire has one maintainer. This section says what the repository's rules, CI and review guarantee today, and what they don't. The settings below were read with the GitHub API on 2026-11-17 and 2026-11-18, and the ruleset again on 2026-11-24, and they can change; anyone who can read the repository can see its active rulesets on GitHub. How to contribute is in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 
 **Who can change `main`:**
 - The repository belongs to a personal account, and its owner is the only collaborator. Everyone else contributes from a fork (their own copy of the repository).
-- A ruleset on every branch requires a pull request with one approval and a code owner's review, allows only merge commits, and blocks deleting branches and force-pushing (overwriting a branch's history). It also requires code-scanning results from CodeQL (GitHub's code analysis) and code-quality results.
-- **Code-scanning results now exist for pull requests into `main`; code-quality results don't.**
-  - When read on 2026-11-17 and 2026-11-18, before `codeql.yml` was added, nothing produced either: no workflow ran CodeQL, and the rule evaluation that refused release-plz's commit said "Code Scanning may not be configured" (COMMUNITY-P7 in `specs.md`, the Phase 7 facts about GitHub's community files and rulesets).
-  - Since `4dd223d` (2026-11-18), `codeql.yml` (below) runs CodeQL on pull requests into `main` and pushes to `main` only, and pull request 1 received a passing `CodeQL` check on 2026-11-19. Whether the `code_scanning` rule then passes wasn't read. On every other branch, such as `release-plz-*`, nothing produces code-scanning results, so that rule still refuses commits there.
-  - Nothing produces code-quality results, and whether Code Quality is on couldn't be read (UNVERIFIED). While that holds, the code-quality rule refuses every merge and every pushed commit, on every branch, except through the bypass. Turning on Code Quality, or dropping that rule, and settling the code-scanning rule for the branches CodeQL doesn't analyze, are the maintainer's decisions (`release.md` §2 A). CodeQL default setup must stay off, because GitHub rejects advanced-setup results while it is on (CODEQL in `specs.md`).
-- **The ruleset blocks release-plz.** It covers the `release-plz-*` branches too, so its pull-request and code-scanning rules refused release-plz's commit there (run 44198210657, `release.md` §2 A). The release pull request, and so every release, depends on the maintainer changing the ruleset.
+- A ruleset on every branch requires a pull request with one approval and a code owner's review, allows only merge commits, and blocks deleting branches and force-pushing (overwriting a branch's history).
+- **CodeQL's results gate nothing.** When read on 2026-11-17 and 2026-11-18, the ruleset also required code-scanning results from CodeQL (GitHub's code analysis) and code-quality results (COMMUNITY-P7 in `specs.md`, the Phase 7 facts about GitHub's community files and rulesets). Read on 2026-11-24, both rules are gone.
+  - `codeql.yml` (below) runs CodeQL on pull requests into `main` and pushes to `main`, and pull request 1 received a passing `CodeQL` check on 2026-11-19.
+  - No ruleset requires that check, so a failed analysis or a new alert doesn't block a merge. Whether to make CodeQL a gate on `main` again is the maintainer's decision (`release.md` §2 A).
+  - CodeQL default setup must stay off, because GitHub rejects advanced-setup results while it is on (CODEQL in `specs.md`).
+- **The ruleset blocks release-plz.** It covers the `release-plz-*` branches too, so its pull-request rule refuses release-plz's commit there (most recently run 45513260333, on 2026-11-24; `release.md` §2 A). Its exclusion for those branches reads `refs/heads/refs/heads/release-plz-*`, with `refs/heads/` twice, and matches none of them. The release pull request, and so every release, depends on the maintainer changing the ruleset.
 - [`.github/CODEOWNERS`](../.github/CODEOWNERS), the file that names who must review changes to each path, makes the maintainer the owner of every path. The security-sensitive paths have lines of their own, so that a future co-maintainer added for every path doesn't also get these:
   - `.github/`, the `Dockerfile` and `.grype.yaml`, `deny.toml`, `packaging/`;
   - `xtask/` and `.cargo/` (the release logic and the `cargo xtask` alias);
   - the installer, resolver, adapter and MCP hardening crates;
   - the skill, tool and MCP server assets;
-  - and the Claude Code marketplace (`plugins/` and `.claude-plugin/`).
+  - the Claude Code marketplace (`plugins/` and `.claude-plugin/`);
+  - and the instructions that coding agents follow in this repository (`.claude/`, `AGENTS.md`, and `CLAUDE.md`), `SECURITY.md`, and `release-plz.toml`.
 - **The ruleset can be bypassed.** The repository's administrator role and some GitHub Apps can bypass it. GitHub doesn't let a pull request's author approve it, so the maintainer's own changes reach `main` through that bypass. **Most changes have no second reviewer**, and nothing in this document means that every change to `main` was reviewed by a second person, or passed CI.
-- A contributor's pull request needs the maintainer's approval. While nothing produces the code-quality results, and while it isn't known whether the code-scanning rule passes, it also needs the maintainer to merge it through the bypass.
+- A contributor's pull request needs the maintainer's approval, as its code owner. With the code-scanning and code-quality rules gone, that approval meets the ruleset, so the merge no longer needs the bypass. This hasn't been seen on GitHub yet.
 
 **What CI checks:**
 - `ci.yml` runs on every pull request and every push to `main`. It checks:
@@ -429,7 +430,7 @@ Grimoire has one maintainer. This section says what the repository's rules, CI a
   - the scaffold templates (which `cargo xtask new` creates assets from) and `claude plugin validate --strict`;
   - unused dependencies and the documentation's links.
 - `security.yml` runs on the same events and weekly: cargo-deny (the dependency policy, below), gitleaks (a secret scanner) over the whole history, zizmor (at its pedantic persona, which reports more than the regular one), actionlint, ShellCheck and `actions.lock` (the record of pinned actions, below). The weekly and manual runs also scan the released image (§6c).
-- `codeql.yml` runs CodeQL (advanced setup, configured by this workflow file) over the Rust, JavaScript and Python code and the workflows, on every pull request to `main`, every push to `main` and weekly, and uploads the results to code scanning.
+- `codeql.yml` runs CodeQL (advanced setup, configured by this workflow file) over the Rust, JavaScript and Python code and the workflows, with its `security-extended` queries, on every pull request to `main`, every push to `main` and weekly, and uploads the results to code scanning.
 - `release.yml` runs the release dry-run on every pull request, summarized by `release checks` (§6b). A pull request's run is always a dry-run: the signing and publishing jobs run only in release mode on `main`, and the signing workflows skip any other caller.
 - **No ruleset requires these checks yet** (`release.md` §2 A lists that step), and the bypass skips them anyway. Until then, a failing check is a signal the maintainer has to read, not a gate.
 

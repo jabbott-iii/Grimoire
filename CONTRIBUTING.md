@@ -163,14 +163,11 @@ These workflows run on every pull request:
   - ShellCheck, a shell-script linter, on the workflow scripts;
   - a check, with gh-actions-lock, that `actions.lock` (the lock file for the GitHub Actions the workflows use) is complete and current.
 - **Release** ([`release.yml`](.github/workflows/release.yml)): a dry-run of the release. It builds four of the six release targets and generates the channel files for them: the npm packages, the PyPI wheels, the Homebrew formula, the Scoop and winget manifests and the install scripts. It runs the install tests, and builds, checks and scans the container image. Its `release checks` job fails unless every dry-run job passed.
+- **CodeQL** ([`codeql.yml`](.github/workflows/codeql.yml)): CodeQL, GitHub's code analysis engine, runs its `security-extended` queries on every pull request to `main`, every push to `main`, and weekly. Its results reach a pull request as the `CodeQL` check.
 
-The ruleset also requires CodeQL code-scanning and code-quality results. CodeQL is GitHub's code analysis engine.
-- **Code scanning:** `.github/workflows/codeql.yml` runs CodeQL on every pull request to `main`, every push to `main` and weekly. Pull request 1 received a passing `CodeQL` check on 2026-11-19. Whether the ruleset's `code_scanning` rule then passes wasn't read.
-- **Code quality:** nothing produces those results yet. Whether GitHub's Code Quality setting is on is UNVERIFIED: the setting couldn't be read.
+The ruleset requires none of these checks (read on 2026-11-24). Adding the CI, Security, and Release checks is a maintainer step in [`docs/release.md`](docs/release.md) §2 A, the repository settings. A pull request is still expected to pass all of them before it is merged.
 
-The ruleset refused release-plz's run 44198210657 on `main` (2026-11-17) when it tried to create a commit on its release branch. That was partly because of the code-scanning rule: GitHub reported that it was waiting for code-scanning results, which "may not be configured". While nothing produces the code-quality results, no pull request can meet the ruleset. A contributor's pull request, like the maintainer's, then merges only through the maintainer's bypass.
-
-The ruleset doesn't require the CI, Security or Release checks yet. Adding them is a maintainer step in [`docs/release.md`](docs/release.md) §2 A, the repository settings. A pull request is still expected to pass all of them before it is merged.
+The ruleset's pull-request rule still refuses the commit that release-plz makes on its `release-plz-*` branch. Run 45513260333 on 2026-11-24 failed with "Changes must be made through a pull request", so no release pull request exists yet ([`docs/release.md`](docs/release.md) §2 A).
 
 ## Language policy
 
