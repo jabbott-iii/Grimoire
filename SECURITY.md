@@ -8,6 +8,7 @@ Report it privately, with GitHub's form: https://github.com/jabbott-iii/Grimoire
 - The form needs a signed-in GitHub account. It opens a private security advisory: a page about the problem that only you, the maintainer and the people the maintainer adds to it can see.
 - Say which Grimoire version you used (`grimoire --version`), how you installed it, your operating system, and the client and asset involved, if any. A client is an AI coding assistant that Grimoire writes files for, such as Claude Code. An asset is an item in Grimoire's catalog, such as a rule or an MCP (Model Context Protocol) server.
 - Give the steps to reproduce the problem, or a proof of concept (a small demonstration of it), and its impact. The form also asks for a summary.
+- Test only on your own machines, projects, and data. Never try a problem out on someone else's project, machine, or MCP server.
 - Keep the details private until the advisory is published.
 
 **Without a GitHub account.** The form needs an account, and so does opening an issue. If you can't use one, ask someone who has an account to open an issue for you with the "Ask for a private contact" form, at https://github.com/jabbott-iii/Grimoire/issues/new/choose.
