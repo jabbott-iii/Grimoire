@@ -18,7 +18,7 @@ Grimoire is a catalog of AI-agent assets (rules, skills, agents, tools, MCP serv
 
 ## Rules and skills adopted from Doctrina
 
-[Doctrina](https://github.com/jabbott-iii/Doctrina) is the maintainer's library of portable rules and skills for coding agents. Grimoire uses five of its rules, in `.claude/rules/`: `writing.md`, `commits.md`, `rust.md`, `testing.md`, and `roadmap-and-docs.md`. Each rule's **Project details** section holds Grimoire's values. All ten of Doctrina's skills are in `.claude/skills/`, unchanged.
+[Doctrina](https://github.com/jabbott-iii/Doctrina) is the maintainer's library of portable rules and skills for coding agents. Grimoire uses five of its rules, in `.claude/rules/`: `writing.md`, `commits.md`, `rust.md`, `testing.md`, and `roadmap-and-docs.md`. Each rule's **Project details** section holds Grimoire's values. All eleven of Doctrina's skills are in `.claude/skills/`, unchanged.
 
 - **Follow the rules as this repository's rules.** Claude Code loads `writing.md`, `commits.md`, and `testing.md` in every session, `rust.md` when it works on Rust files, and `roadmap-and-docs.md` when it works on `PLAN.md`, `AGENTS.md`, `README.md`, `CONTRIBUTING.md`, or files in `docs/`. If you are another agent, read every file in `.claude/rules/` before you start.
 - **This file and the ADRs win** where a rule's general text says otherwise, for example on the shape of a crate README ([ADR-0012](docs/adr/0012-crate-documentation.md)) or of a decision record.
