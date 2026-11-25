@@ -2,3 +2,22 @@
 # insta writes these when a snapshot changes; review with `cargo insta review` or delete.
 *.snap.new
 *.pending-snap
+
+# The folders that the `cargo xtask release` commands in AGENTS.md write when run
+# locally: `--dist dist`, `--work work`, and `--out image`. A release rebuilds them,
+# so they are never committed.
+/dist/
+/work/
+/image/
+
+# Local environment files, which can hold secrets. Grimoire names secrets only as
+# environment variables, so an example file may list names but never values.
+.env
+.env.*
+!.env.example
+
+# Claude Code's personal files, which hold one person's settings and notes, and the
+# Git worktrees that its sessions create.
+.claude/settings.local.json
+CLAUDE.local.md
+.claude/worktrees/
