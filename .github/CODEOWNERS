@@ -23,6 +23,10 @@
 #   machines (a skill can bundle scripts)
 # - plugins/ and .claude-plugin/: the Claude Code marketplace, which users add from this
 #   repository, not from a release
+# - .claude/, AGENTS.md, and CLAUDE.md: the rules, skills, and instructions that coding agents
+#   follow when they work on this repository
+# - SECURITY.md: where vulnerability reports go, and what reporters are promised
+# - release-plz.toml: what release-plz writes into the release pull request (ADR-0009)
 /.github/ @jabbott-iii
 /Dockerfile @jabbott-iii
 /.grype.yaml @jabbott-iii
@@ -39,3 +43,8 @@
 /catalog/mcp-servers/ @jabbott-iii
 /plugins/ @jabbott-iii
 /.claude-plugin/ @jabbott-iii
+/.claude/ @jabbott-iii
+/AGENTS.md @jabbott-iii
+/CLAUDE.md @jabbott-iii
+/SECURITY.md @jabbott-iii
+/release-plz.toml @jabbott-iii
