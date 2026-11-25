@@ -40,4 +40,5 @@ Kind: <!-- rule, skill, agent, tool, mcp-server or bundle -->
 ## Formats and decisions
 
 - [ ] Every external format this relies on was re-read at its source, and its `docs/specs.md` entry updated.
+- [ ] A changed model type comes with the regenerated `schemas/` (`cargo xtask schema`).
 - [ ] A significant or hard-to-reverse decision has an architecture decision record (ADR) in `docs/adr/`.
