@@ -29,7 +29,7 @@ At build time, the validated `catalog/` tree is packed into a deterministic arch
   - Smallest implementation.
 - **Cons:**
   - New or updated assets reach users only through a CLI release, so the catalog can change only as often as the CLI is released. This is mitigated by automated releases.
-  - The binary grows with the catalog. Text assets are small and compress well, but this should be measured in Phase 1. (Phases are the steps of the implementation plan in `PLAN.md`; Phase 1 sets up the workspace, model, validation and CI.)
+  - The binary grows with the catalog. Text assets are small and compress well, but this should be measured in Phase 1. (Phases are the steps of the implementation plan in `roadmap.md`; Phase 1 sets up the workspace, model, validation and CI.)
   - v1 embeds only the latest version of each asset, so a lockfile pinning an older version can't be re-rendered (its files written again) by a newer CLI (see Consequences).
 
 ### (b) Signed remote index fetched on `update`
@@ -59,7 +59,7 @@ A static index plus content blobs (the files themselves), hosted (e.g. on GitHub
 
 Adopt **(a) for v1**, implemented behind a `Source` abstraction so that (b) can be added later without changing the lockfile format.
 
-- `Source` is a small trait (a Rust interface) with: *(Corrected 2026-11-22: in the code, `Source` is a struct, not a trait, in `crates/agent-grimoire-catalog/src/source.rs`. It is the in-memory index of the catalog, built from a pack; a later remote source would build the same type. Phase 2 decided this, because a trait with a single implementation added nothing, as [`architecture.md`](../architecture.md) §4 and [`PLAN.md`](../../PLAN.md) record.)*
+- `Source` is a small trait (a Rust interface) with: *(Corrected 2026-11-22: in the code, `Source` is a struct, not a trait, in `crates/agent-grimoire-catalog/src/source.rs`. It is the in-memory index of the catalog, built from a pack; a later remote source would build the same type. Phase 2 decided this, because a trait with a single implementation added nothing, as [`01-architecture.md`](../01-architecture.md#repository-layout) and [`roadmap.md`](../roadmap.md) record.)*
   - an identity (recorded in the lock as `source`);
   - an index of available `(id, kind, version, manifest)`;
   - read access to an asset's content files by relative path.
@@ -82,5 +82,5 @@ Adopt **(a) for v1**, implemented behind a `Source` abstraction so that (b) can 
   - `apply` fails with a resolution error only if it must write that asset's content, for example because a client was added. The error names the fix: `grimoire update <asset>`, or use a CLI release that contains the pinned version.
   - Serving historical versions is one of the motivations for (b).
 - **Catalog changes need releases.** Release automation (see ADR-0003, which chose release-plz for versions and a hand-written release pipeline) must make frequent catalog-only releases cheap.
-- **Tests and threat model.** CI validates the catalog before packing, so an invalid catalog can't be embedded. `docs/security-model.md` treats the catalog as part of the signed binary.
+- **Tests and threat model.** CI validates the catalog before packing, so an invalid catalog can't be embedded. `docs/01-architecture.md` treats the catalog as part of the signed binary.
 - **Revisiting.** Reconsider (b) once real users need catalog updates faster than the release cadence, or need historical versions. At that point write a new ADR covering index signing (Sigstore/TUF), caching, and the user experience of `update`.

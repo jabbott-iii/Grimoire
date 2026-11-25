@@ -45,7 +45,7 @@ pub(crate) fn render(
         return Err(format!("`{image_digest}` is not a sha256 digest"));
     }
     Ok(format!(
-        "{changes}\n\n---\n\nInstall and verify: [docs/release.md]({REPO_URL}/blob/v{version}/docs/release.md). \
+        "{changes}\n\n---\n\nInstall and verify: [docs/05-release.md]({REPO_URL}/blob/v{version}/docs/05-release.md). \
 Every asset has a SHA-256 in `SHA256SUMS`, a build provenance attestation and a cosign bundle (`<asset>.sigstore.json`).\n\n\
 Container image: `{IMAGE}@{image_digest}` (tags `{version}` and `latest`), for linux/amd64 and linux/arm64. \
 It is pushed after this release, once the registry jobs are approved. Pin it by digest and verify it as \
@@ -84,7 +84,12 @@ mod tests {
         assert!(render(Some(LOG), "0.2.0", "sha256:ABC").is_err());
         let notes = render(Some(LOG), "0.2.0", &digest).unwrap();
         assert!(notes.starts_with("### Added\n\n- a thing\n"), "{notes}");
-        assert!(notes.contains("docs/release.md"));
+        assert!(
+            notes.contains(
+                "(https://github.com/jabbott-iii/Grimoire/blob/v0.2.0/docs/05-release.md)"
+            ),
+            "{notes}"
+        );
         assert!(
             notes.contains(&format!(
                 "`ghcr.io/jabbott-iii/grimoire@{digest}` (tags `0.2.0` and `latest`)"

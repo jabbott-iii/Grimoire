@@ -195,13 +195,13 @@ jobs:
       - name: Log out of GHCR
         if: always()
         run: crane auth logout ghcr.io || true
-      # A new package is private until the maintainer makes it public, once (docs/release.md §2 D).
+      # A new package is private until the maintainer makes it public, once (docs/05-release.md, "During the first release run").
       - name: Check that the image can be pulled anonymously
         run: |
           set -euo pipefail
           code="$(curl -s -o /dev/null -w '%{http_code}' "https://ghcr.io/token?scope=repository:jabbott-iii/grimoire:pull&service=ghcr.io")"
           if [ "${code}" != "200" ]; then
-            echo "::error::${IMAGE} can't be pulled anonymously (HTTP ${code}): make the package public (docs/release.md §2 D), then re-run this job"
+            echo "::error::${IMAGE} can't be pulled anonymously (HTTP ${code}): make the package public (docs/05-release.md, "During the first release run"), then re-run this job"
             exit 1
           fi
           echo "${IMAGE} is public"

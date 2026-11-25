@@ -105,7 +105,7 @@ jobs:
           fi
           if ! digest="$(crane digest "${IMAGE}:${tag#v}" 2>"${err}")"; then
             cat "${err}" >&2
-            echo "::error::${tag} has no image ${IMAGE}:${tag#v} that can be pulled anonymously: finish its publish-image and sign-image jobs (sign-image sets the tag), or make the package public (docs/release.md §2 D)"
+            echo "::error::${tag} has no image ${IMAGE}:${tag#v} that can be pulled anonymously: finish its publish-image and sign-image jobs (sign-image sets the tag), or make the package public (docs/05-release.md, "During the first release run")"
             exit 1
           fi
           cosign verify --certificate-identity "${COSIGN_IDENTITY}" \

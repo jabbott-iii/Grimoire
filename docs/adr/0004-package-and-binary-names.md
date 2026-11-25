@@ -77,14 +77,14 @@ In the table, ADR-0002 is the architecture decision record (ADR) that packages e
 | PyPI | **`agent-grimoire`** (maturin `bindings = "bin"`) |
 | Homebrew | formula **`agent-grimoire`** in tap repository **`jabbott-iii/homebrew-tap`** (`brew install jabbott-iii/tap/agent-grimoire`). A tap is a third-party Homebrew package repository |
 | Scoop | manifest **`agent-grimoire.json`** in bucket repository **`jabbott-iii/scoop-bucket`**. A bucket is Scoop's name for a package repository |
-| winget | identifier in `Publisher.Package` form, e.g. `JAbbottIII.AgentGrimoire`. Exact form validated against schema 1.28 in Phase 5 (the release-pipeline phase of `PLAN.md`) |
+| winget | identifier in `Publisher.Package` form, e.g. `JAbbottIII.AgentGrimoire`. Exact form validated against schema 1.28 in Phase 5 (the release-pipeline phase of `roadmap.md`) |
 | Asset binaries (ADR-0002) | **`grimoire-mcp-<id>`**, **`grimoire-tool-<id>`** (not published to registries) |
 | Container image | **`ghcr.io/jabbott-iii/grimoire`**, lowercase. Settled in Phase 6: lowercase is mandatory, because OCI distribution-spec v1.1.1 allows only lowercase repository names. The name is written out, never built from `github.repository` (`jabbott-iii/Grimoire`) ([ADR-0011](0011-container-image.md)) |
 | Claude Code marketplace | **`grimoire`** (not on the list of names Claude Code reserves, `CC-MKT` in [`../specs.md`](../specs.md)). Plugin names = asset IDs |
 
 ## Consequences
 
-- **Maintainer-only setup.** Claiming names (first publishes, creating the npm organization and the tap and bucket repositories) is done by the maintainer, as listed in `PLAN.md`. Until then a squatter (someone who registers a name before its owner) could take any of these names. Claim them close to the first release.
+- **Maintainer-only setup.** Claiming names (first publishes, creating the npm organization and the tap and bucket repositories) is done by the maintainer, as listed in `roadmap.md`. Until then a squatter (someone who registers a name before its owner) could take any of these names. Claim them close to the first release.
 - **Six crates on crates.io.**
   - The CLI plus 5 libraries means six one-time bootstrap publishes that need credentials, and six trusted-publisher configurations (`CRATES-TP`, the crates.io trusted-publishing entry in `specs.md`). Trusted publishing lets continuous integration (CI) publish with a short-lived identity token instead of a stored one.
   - The alternative is to collapse the libraries into one `agent-grimoire-core` with modules: fewer names, but weaker compile-time boundaries. The proposal keeps separate crates as the brief describes.

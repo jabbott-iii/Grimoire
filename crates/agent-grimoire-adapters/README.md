@@ -24,7 +24,7 @@ What it does:
 Not yet:
 
 - Hooks for `codex`, `cursor`, `gemini-cli` and `copilot`. Those adapters have no `hooks` anchor, because none of those clients can guarantee that a failed hook blocks the action, and none could be tested here. Hooks for them come back once they can be tested against the real clients ([ADR-0008](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0008-phase-4-client-adapters.md)).
-- Tool assets as Claude Code plugins, until a plugin hook is known to fail closed (to block the action when the hook itself fails), because Grimoire never installs the tool's binary ([`docs/architecture.md` §10](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#10-generated-artifacts)).
+- Tool assets as Claude Code plugins, until a plugin hook is known to fail closed (to block the action when the hook itself fails), because Grimoire never installs the tool's binary ([`docs/subsystems/marketplace.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/marketplace.md#which-assets-are-plugins)).
 
 ## How the CLI uses it
 
@@ -90,14 +90,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ## Documentation
 
 - API reference: https://docs.rs/agent-grimoire-adapters
-- Design: [`docs/architecture.md` §8, Client adapters](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#8-client-adapters):
-  - [§8.1, Adapter contract](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#81-adapter-contract): an adapter is pure, and what each one declares;
-  - [§8.2, Client read matrix and cross-client planning](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#82-client-read-matrix-and-cross-client-planning): which client reads which location, the placement rules, and the warnings `plan` reports;
-  - [§8.3, Per-client mapping](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#83-per-client-mapping-client-order-per-adr-0005-amended-by-adr-0008): what each adapter writes, for each asset kind.
+- Design: [`docs/subsystems/adapters.md`, Client adapters](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/adapters.md):
+  - [`docs/subsystems/adapters.md`, Adapter contract](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/adapters.md#adapter-contract): an adapter is pure, and what each one declares;
+  - [`docs/subsystems/adapters.md`, Client read matrix and cross-client planning](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/adapters.md#client-read-matrix-and-cross-client-planning): which client reads which location, the placement rules, and the warnings `plan` reports;
+  - [`docs/subsystems/adapters.md`, Per-client mapping](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/adapters.md#per-client-mapping): what each adapter writes, for each asset kind.
 - [ADR-0005](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0005-client-priority.md), an architecture decision record (ADR), chose the six clients and the order their adapters were built in. [ADR-0008](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0008-phase-4-client-adapters.md) amended it after the formats were checked again: hooks stay Claude Code only, Codex gets no agents, and Cursor and Copilot read shared rules from `AGENTS.md`.
-- The plugin marketplace: [`docs/architecture.md` §10, Generated artifacts](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#10-generated-artifacts).
-- Cross-client leaks, where content installed for one client reaches another: [`docs/security-model.md` §3a](https://github.com/jabbott-iii/Grimoire/blob/main/docs/security-model.md#3a-cross-client-leaks).
-- Versioning: [`docs/versioning.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/versioning.md). Grimoire versions its crates together.
+- The plugin marketplace: [`docs/subsystems/marketplace.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/marketplace.md).
+- Cross-client leaks, where content installed for one client reaches another: [`docs/subsystems/adapters.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/adapters.md#cross-client-leaks).
+- Versioning: [`docs/05-release.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/05-release.md#versioning). Grimoire versions its crates together.
 - Grimoire: https://github.com/jabbott-iii/Grimoire
 
 ## License

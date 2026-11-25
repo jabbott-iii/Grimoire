@@ -24,7 +24,7 @@ so they can fill them in. Until **Git access** is filled in, treat it as "read-o
   starts release-plz, which opens or updates the release pull request (the branch ruleset refuses
   its commit today). Release is a dry-run unless the repository variable `GRIMOIRE_RELEASES` is
   `enabled`, `vX.Y.Z` isn't tagged yet, and `CHANGELOG.md` has a section for X.Y.Z. Then the push
-  tags and publishes the release to every channel, which can't be undone (`docs/release.md` §1).
+  tags and publishes the release to every channel, which can't be undone (`docs/subsystems/release.md`, "How a release flows").
 - **Scopes:** most commits here have none, and a change that spans several areas leaves it out.
   When a change stays in one area, name it: `cli` for `crates/agent-grimoire`; `model`,
   `resolve`, `install`, `adapters`, `mcp`, or `testkit` for the `agent-grimoire-` crate of that
@@ -40,12 +40,13 @@ so they can fill them in. Until **Git access** is filled in, treat it as "read-o
   code written against an external format and that format's entry in `docs/specs.md`; a change
   to planning, applying, or removal and its test in `crates/agent-grimoire/tests/cli.rs`; a
   manifest and `Cargo.lock`; and a changed action pin and `.github/workflows/actions.lock`.
-- **Task IDs:** "none". `PLAN.md` is organized in phases, which have no task IDs.
-- **Breaking changes:** a break in the public API that `docs/versioning.md` §1 defines (the
+- **Task IDs:** `M<milestone>.<task>` from `docs/roadmap.md`, such as `M8.2`. Name the task in
+  the body or a trailer (`Refs: M8.2`) when a commit does one; most commits do none.
+- **Breaking changes:** a break in the public API that "The public API" in `docs/05-release.md` defines (the
   `grimoire` commands, options, and environment variables, the exit codes, the `--json`
   envelope, the diagnostic codes, and the formats of `grimoire.toml`, `grimoire.lock`,
   `asset.toml`, and bundles); a break in a library crate's public Rust API; an MSRV bump while
-  Grimoire is 0.x; and the other changes `docs/versioning.md` §2 lists. Mark each with `!` after
+  Grimoire is 0.x; and the other changes "Grimoire's version" in that file lists. Mark each with `!` after
   the type or a `BREAKING CHANGE:` footer, because release-plz reads the mark to choose the next
   version, and no tool catches an unmarked break. Name the record in `docs/adr/` that decided it,
   when there is one.

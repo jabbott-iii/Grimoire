@@ -4,11 +4,11 @@
 - **Date:** 2026-11-17
 - **Specs:** `BASE-IMAGE-P6`, `BUILD-P6`, `REGISTRY-P6`, `SCAN-P6`, `RUN-P6`, `SIGN-P6` in [`../specs.md`](../specs.md), the register of verified external specs. An ID in parentheses below, such as (`SIGN-P6`), names the entry a fact comes from.
 - **Amends:** [ADR-0002](0002-mcp-server-and-tool-packaging.md) (the image's exact form; `runtime = "docker"` is deferred past v1), [ADR-0004](0004-package-and-binary-names.md) (the image name must be lowercase, which settles its Phase 6 check), [ADR-0009](0009-release-pipeline.md) (a fifth environment, `ghcr`; four new jobs; `sign-files` replaces `attest` and `attest-sbom`, and every signature moves into `sign.yml`, under a new identity (the image's into `sign-image.yml` since 2026-11-18); PR dry-runs also build `aarch64-unknown-linux-musl`) and [ADR-0010](0010-language-policy-exceptions.md) (a seventh exception, `.github/scripts/image-tags.sh`)
-- **Related:** [`docs/container.md`](../container.md) shows how to run and verify the image. [`docs/release.md`](../release.md) is the runbook.
+- **Related:** [`docs/container.md`](../container.md) shows how to run and verify the image. [`docs/05-release.md`](../05-release.md) is the runbook.
 
 ## Context
 
-`PLAN.md` asked Phase 6 (its container-image phase) for a two-platform image (linux/amd64 and linux/arm64) of the static musl binaries, that is, Linux builds that need no system C library.
+`roadmap.md` asked Phase 6 (its container-image phase) for a two-platform image (linux/amd64 and linux/arm64) of the static musl binaries, that is, Linux builds that need no system C library.
 
 - **The base image** was to be `gcr.io/distroless/static-debian13:nonroot`, from Google's distroless project: a minimal Debian-based image with no shell or package manager. It was to be pinned by digest (the SHA-256 of its contents, which can't change under the same name), with the base's signature checked by cosign (the signing and verification tool of Sigstore, an open-source signing service).
 - **The plan also asked for** a non-root user, no shell and OCI annotations (metadata keys that the Open Container Initiative, or OCI, defines, such as the image's source and version), plus:
@@ -39,7 +39,7 @@ Phase 6 researched five topics, each re-checked by a skeptic, a second reviewer 
 - **`anchore/scan-action` pipes an install script to `sh`.**
   - v7.4.2 downloads Grype's `install.sh` and runs it with `sh`. It pins no hash and checks no signature.
   - Its default Grype, v0.118.0, embeds a syft (the tool Grype uses to list packages) below the fix for GHSA-mw2c-m758-9v5q, a GitHub Security Advisory.
-  - `PLAN.md` §1, its Phase 0 findings, had planned to use it.
+  - `roadmap.md`, its Phase 0 findings, had planned to use it.
 - **Dependabot's Docker cooldown fails open for gcr.io.** Dependabot is GitHub's dependency-update bot; its cooldown makes it wait a set number of days before proposing a new release. Failing open means it lets the update through when it can't check.
   - Dependabot dates a Docker update only from Docker Hub's `tag_last_pushed`. For any other registry it allows the update at once, with a `cooldown_date_unavailable` warning.
   - It also opens no security updates for Docker.
@@ -273,7 +273,7 @@ That led to decisions 6 and 7, and to the changes marked "after the review" belo
 
 ### What ran locally, and what didn't
 
-These were checked locally during Phase 6, with rootless Docker 29.9.3, before anything ran on GitHub. (The first Release dry-run there, Release run 44353090397 on 2026-11-18, ran `image`, `verify-image` and the offline signing; PLAN.md has the results.)
+These were checked locally during Phase 6, with rootless Docker 29.9.3, before anything ran on GitHub. (The first Release dry-run there, Release run 44353090397 on 2026-11-18, ran `image`, `verify-image` and the offline signing; roadmap.md has the results.)
 
 - **Reproducibility:** three builds, one with a fresh builder, gave identical platform manifest digests. The index digest differed each time.
 - **`check`** passes on a real build, and refuses a changed binary and a corrupted blob.
@@ -317,7 +317,7 @@ Not run locally: the arm64 image (built and scanned, but there is no emulation h
 - The registry steps that guard the release tags run on every pull request, so they never run for the first time in a release.
 
 **Negative and risks:**
-- **A fifth environment.** `ghcr` needs a required reviewer and deployment branch `main` only, created during the one-time bootstrap ([`docs/release.md`](../release.md) §2). It joins the second approval round. (An environment is a GitHub Actions deployment target whose jobs wait for a reviewer's approval.)
+- **A fifth environment.** `ghcr` needs a required reviewer and deployment branch `main` only, created during the one-time bootstrap ([`docs/05-release.md`](../05-release.md#release-checklist)). It joins the second approval round. (An environment is a GitHub Actions deployment target whose jobs wait for a reviewer's approval.)
 - **Making the package public is a manual, one-time step that can't be undone.**
   - No REST endpoint changes visibility, and GitHub's docs disagree on a workflow-created package's first visibility. Either way, the last step of `sign-image.yml`'s `image` job fails until the package is public. Then a re-run finishes.
   - After the first push, the maintainer also checks that the package is linked to `jabbott-iii/Grimoire`.

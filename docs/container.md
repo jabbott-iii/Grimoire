@@ -53,7 +53,7 @@ Verify the index digest before you use it, then use that digest everywhere.
 
 The image's signature and attestation (a signed statement about the image: here, its build provenance) are made by `sign-image.yml`, Grimoire's image-signing workflow, when `release.yml` on `main` calls it. [ADR-0011](adr/0011-container-image.md) moved every signature into separate signing workflows, so that the publish jobs, and the third-party code they run, can't sign as the release; SIGN-P6 in [`specs.md`](specs.md) is the research on signing from a reusable workflow.
 
-The release files are signed by another workflow, `sign.yml`, under its own identity ([`release.md`](release.md) §5), so don't use the image's commands for them. No release exists yet, so every release is signed this way.
+The release files are signed by another workflow, `sign.yml`, under its own identity ([`05-release.md`](05-release.md#verifying-a-download)), so don't use the image's commands for them. No release exists yet, so every release is signed this way.
 
 **cosign**, version 3.1.3 or later (the workflows use 3.1.4). cosign is Sigstore's signing tool. The image is signed keylessly: Sigstore, a public signing service, gives the signing run a short-lived certificate that names the workflow that signed.
 ```sh
@@ -103,7 +103,7 @@ gh attestation verify oci://ghcr.io/jabbott-iii/grimoire@sha256:<digest> \
 - SLSA v1 provenance in `mode=max`. It records the Dockerfile and every build argument; the only one is `SOURCE_DATE_EPOCH`, the commit time, which the build uses for its timestamps.
   - It holds no GitHub event payload: the workflow turns that off and checks that it is absent. The payload is the data of the event that started the run, and buildx, Docker's build command, would otherwise write it into this public provenance.
 
-To read them, for example: `docker buildx imagetools inspect ghcr.io/jabbott-iii/grimoire@sha256:<digest> --format '{{ json .SBOM }}'`, or `'{{ json .Provenance }}'`. Whether these fields work without a local builder is UNVERIFIED. The CycloneDX SBOM (another standard SBOM format) of each release archive ([`release.md`](release.md) §5) describes the same binaries.
+To read them, for example: `docker buildx imagetools inspect ghcr.io/jabbott-iii/grimoire@sha256:<digest> --format '{{ json .SBOM }}'`, or `'{{ json .Provenance }}'`. Whether these fields work without a local builder is UNVERIFIED. The CycloneDX SBOM (another standard SBOM format) of each release archive ([`05-release.md`](05-release.md#verifying-a-download)) describes the same binaries.
 
 **`sha256-*` tags.** GHCR has no OCI referrers API, the registry API that lists the signatures and attestations attached to an image. So the signature and the provenance attestation are listed in an index tagged `sha256-<index hex>`, and each BuildKit attestation manifest adds a `sha256-<platform hex>` tag. The package page shows them as ordinary tags.
 - Before it tags the version, `sign-image.yml` checks that `sha256-<index hex>` lists both a cosign signature bundle and a SLSA provenance bundle. `cosign verify` alone can't show that, because it falls back silently to legacy signatures.

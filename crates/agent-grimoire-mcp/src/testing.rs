@@ -2,7 +2,7 @@
 //!
 //! Catalog validation requires every server's declared tools to match what it
 //! actually serves
-//! ([`docs/architecture.md` §6.4, Catalog validation](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#64-catalog-validation-cargo-xtask-validate-also-a-ci-gate)).
+//! ([`docs/subsystems/catalog.md`, Catalog validation](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/catalog.md#catalog-validation)).
 //! Each server's tests call
 //! [`declared_tools_match`] with its own `asset.toml` and its live `tools/list`.
 

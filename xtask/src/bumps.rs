@@ -1,4 +1,4 @@
-//! Version-bump enforcement against git history (`architecture.md` §6.4).
+//! Version-bump enforcement against git history (`docs/subsystems/catalog.md`, Catalog validation).
 //!
 //! An asset must get a higher version whenever a file that is *installed or
 //! built* changes: `asset.toml` and anything else in the asset directory,

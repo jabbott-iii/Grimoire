@@ -6,7 +6,7 @@ Grimoire is a catalog of AI-agent assets and a command-line tool (CLI), `grimoir
 
 Each AI coding assistant that reads these assets is a *client*. Grimoire writes each asset in the files and folders that each of the project's clients expects: Claude Code, OpenAI Codex, Cursor, Gemini CLI, GitHub Copilot, or any client that reads `AGENTS.md`. It records everything it writes, so it can check, update and remove exactly that content.
 
-<!-- before-first-release: before the first release, delete everything from this line to the closing /before-first-release line, in a pull request merged ahead of the release PR (docs/release.md §2 C). -->
+<!-- before-first-release: before the first release, delete everything from this line to the closing /before-first-release line, in a pull request merged ahead of the release PR (docs/05-release.md, "Switch releases on (last)"). -->
 > [!IMPORTANT]
 > No version of Grimoire has been released yet, so the install commands below don't work yet. Until the first release, build the CLI from the latest commit on `main`, with Rust 1.96 or later:
 >
@@ -31,12 +31,12 @@ Each AI coding assistant that reads these assets is a *client*. Grimoire writes 
 
 It doesn't install the tool and MCP server binaries that assets configure (see [The catalog](#the-catalog)). It also can't check whether a client has loaded or trusted what it wrote.
 
-Clients also read each other's files, so content installed for one client can reach another. `plan` warns when an agent, a hook or an MCP server, or in some cases an `AGENTS.md` rule, reaches a client it wasn't installed for. Other rules and skills that another client reads aren't reported. The cross-client leaks table in [docs/security-model.md §3a][cross-client] lists every location Grimoire writes that another client is documented as reading, and whether `plan` warns about it.
+Clients also read each other's files, so content installed for one client can reach another. `plan` warns when an agent, a hook or an MCP server, or in some cases an `AGENTS.md` rule, reaches a client it wasn't installed for. Other rules and skills that another client reads aren't reported. The cross-client leaks table in [docs/subsystems/adapters.md, "Cross-client leaks"][cross-client] lists every location Grimoire writes that another client is documented as reading, and whether `plan` warns about it.
 
-The threat model, which says what Grimoire defends against, how, and the gaps it knows about, is in [docs/security-model.md][security-model].
+The threat model, which says what Grimoire defends against, how, and the gaps it knows about, is in the security model of [docs/01-architecture.md][security-model].
 
-[security-model]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/security-model.md
-[cross-client]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/security-model.md#3a-cross-client-leaks
+[security-model]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/01-architecture.md#security-model
+[cross-client]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/adapters.md#cross-client-leaks
 
 ## Install
 
@@ -144,7 +144,7 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1 -InstallDir C:\tools  # o
 - Neither script changes `PATH` or a shell startup file.
 - To pin a version, download the script from `https://github.com/jabbott-iii/Grimoire/releases/download/vX.Y.Z/` instead.
 
-A script is a release file like any other, so verify it before you run it, as [docs/release.md §4, Installing][release-install] describes.
+A script is a release file like any other, so verify it before you run it, as [docs/05-release.md, Installing][release-install] describes.
 
 ### Container image
 
@@ -162,10 +162,10 @@ Every file in a release, except the `.sigstore.json` bundles, comes with:
 
 `SHA256SUMS` lists every release file except the `.sigstore.json` bundles and itself. Every archive also has a CycloneDX SBOM (software bill of materials): a list, in the CycloneDX format, of the software components inside it.
 
-The commands to check them, with the flags that pin who signed, are in [docs/release.md §5, Verifying a download][release-verify].
+The commands to check them, with the flags that pin who signed, are in [docs/05-release.md, Verifying a download][release-verify].
 
-[release-install]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/release.md#4-installing-users
-[release-verify]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/release.md#5-verifying-a-download
+[release-install]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/05-release.md#installing
+[release-verify]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/05-release.md#verifying-a-download
 [container]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/container.md
 
 ## Quick start
@@ -242,12 +242,12 @@ Every exit code is in [docs/cli.md][cli-exit].
 - Tool hooks are commands that a client runs automatically at set points, such as before a tool call. They are written only for Claude Code, because the other clients can't block an action when a hook fails.
 - Agents are never written for Codex, because a Codex agent can't be limited to its tools. Cursor gets only agents whose tools are exactly `read` and `search`, which it runs read-only. [ADR-0008][adr-0008], the decision on what Grimoire writes for Codex, Cursor, Gemini CLI and Copilot, gives the details.
 - Some clients read project files only after you trust the project; `grimoire doctor` says which.
-- Clients read each other's files. `plan` warns when an agent, a hook or an MCP server, or in some cases an `AGENTS.md` rule, reaches a client it wasn't installed for. Other rules and skills that another client reads aren't reported. See the cross-client leaks in [docs/security-model.md §3a][cross-client] and the client read matrix in [docs/architecture.md §8.2][architecture-clients].
+- Clients read each other's files. `plan` warns when an agent, a hook or an MCP server, or in some cases an `AGENTS.md` rule, reaches a client it wasn't installed for. Other rules and skills that another client reads aren't reported. See [the cross-client leaks][cross-client] and [the client read matrix][architecture-clients] in docs/subsystems/adapters.md.
 
 `grimoire.toml`, `grimoire.lock`, permissions and clients are described in [docs/configuration.md][configuration].
 
 [adr-0008]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0008-phase-4-client-adapters.md
-[architecture-clients]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#82-client-read-matrix-and-cross-client-planning
+[architecture-clients]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/adapters.md#client-read-matrix-and-cross-client-planning
 [configuration]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/configuration.md
 
 ## The catalog
@@ -282,18 +282,19 @@ To add or change an asset, read [catalog/README.md][catalog].
 - [docs/cli.md][cli]: the commands, global options, exit codes, JSON output and environment variables.
 - [docs/diagnostics.md][diagnostics]: every diagnostic code a user can see. Every error or warning Grimoire reports has a stable code, such as `plan/cross-client-agent`.
 - [docs/configuration.md][configuration]: `grimoire.toml`, `grimoire.lock`, permissions and clients.
-- [docs/versioning.md][versioning]: the versioning and deprecation policy.
-- [docs/security-model.md][security-model]: the threat model.
 - [docs/container.md][container]: the container image, and running the CLI and MCP servers from it.
-- [docs/release.md][release]: installing, verifying a download, and how a release is made.
-- [docs/architecture.md][architecture]: the design.
+- [docs/05-release.md][release]: the versioning and deprecation policy, installing, verifying a download, and how a release is made.
+- [docs/00-overview.md][overview]: what Grimoire is for, its goals and non-goals. The design follows in [docs/01-architecture.md][architecture], with the threat model, and a spec for each part in [docs/subsystems/][subsystems].
+- [docs/roadmap.md][roadmap]: what is built and what comes next.
 - [docs/adr/][adr]: the architecture decision records (ADRs), which give the reasons behind the design.
 
 [cli]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/cli.md
 [diagnostics]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/diagnostics.md
-[versioning]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/versioning.md
-[release]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/release.md
-[architecture]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md
+[release]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/05-release.md
+[architecture]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/01-architecture.md
+[overview]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/00-overview.md
+[subsystems]: https://github.com/jabbott-iii/Grimoire/tree/main/docs/subsystems
+[roadmap]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/roadmap.md
 [adr]: https://github.com/jabbott-iii/Grimoire/tree/main/docs/adr
 
 ## Contributing

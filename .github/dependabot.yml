@@ -79,7 +79,7 @@ updates:
   # The Dockerfile's base image, pinned by digest (ADR-0011). Dependabot dates Docker updates
   # only from Docker Hub; for gcr.io it can't, and proposes a new digest at once instead of
   # waiting (BASE-IMAGE-P6). Before merging, check that the digest is at least 7 days old:
-  # docs/release.md §6 shows how. Docker images get no Dependabot security updates; the
+  # docs/05-release.md, "Maintaining the image pins" shows how. Docker images get no Dependabot security updates; the
   # weekly image scan in security.yml covers them.
   - package-ecosystem: "docker"
     directory: "/"

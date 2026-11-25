@@ -1,6 +1,6 @@
 //! The lockfile, `grimoire.lock`.
 //!
-//! The design is in [`docs/architecture.md` §6.5, `grimoire.lock`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#65-grimoirelock).
+//! The design is in [`docs/subsystems/model.md`, `grimoire.lock`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/model.md#grimoirelock).
 
 use std::borrow::Cow;
 use std::collections::BTreeSet;
@@ -29,7 +29,7 @@ pub struct Lockfile {
     pub assets: Vec<LockedAsset>,
     /// Content Grimoire itself owns rather than any asset, such as the `CLAUDE.md`
     /// block that imports `AGENTS.md`
-    /// ([`docs/architecture.md` §8.2, Client read matrix and cross-client planning](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#82-client-read-matrix-and-cross-client-planning)).
+    /// ([`docs/subsystems/adapters.md`, Client read matrix and cross-client planning](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/adapters.md#client-read-matrix-and-cross-client-planning)).
     /// Its managed blocks use the reserved name [`Lockfile::PROJECT_OWNER`].
     #[serde(default, rename = "output", skip_serializing_if = "Vec::is_empty")]
     pub outputs: Vec<LockedOutput>,
@@ -120,7 +120,7 @@ pub enum SourceId {
 }
 
 /// One unit of content Grimoire owns
-/// ([`docs/architecture.md` §7.2, Ownership units and merge strategies](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#72-ownership-units-and-merge-strategies)).
+/// ([`docs/subsystems/install.md`, Ownership units and merge strategies](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/install.md#ownership-units-and-merge-strategies)).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields, rename_all = "kebab-case")]
 pub struct LockedOutput {

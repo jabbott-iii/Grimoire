@@ -6,7 +6,7 @@
 // dependency per platform, @agent-grimoire/<os>-<cpu>, and npm installs only
 // the one whose os and cpu match. This script finds that binary and runs it,
 // passing arguments, stdio and the exit status through. No dependencies, no
-// install scripts, no network. See docs/release.md.
+// install scripts, no network. See docs/05-release.md.
 
 "use strict";
 

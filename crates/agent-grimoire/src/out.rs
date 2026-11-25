@@ -5,7 +5,7 @@ use serde_json::{Value, json};
 
 use crate::Context;
 
-/// Exit status ([`docs/architecture.md` §9.3, Exit codes](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#93-exit-codes)).
+/// Exit status ([`docs/subsystems/cli.md`, Exit codes](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/cli.md#exit-codes)).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Exit {

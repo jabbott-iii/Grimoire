@@ -1,5 +1,5 @@
 //! `cargo xtask gen-marketplace [--check]`: the Claude Code plugin marketplace
-//! generated from `catalog/` (`architecture.md` §10; `CC-PLUGIN-P4` and
+//! generated from `catalog/` (`docs/subsystems/xtask.md`, Generated artifacts; `CC-PLUGIN-P4` and
 //! `CC-MKT-P4` in `docs/specs.md`).
 //!
 //! - Every skill, agent and MCP server that supports `claude-code` becomes a
@@ -8,7 +8,7 @@
 //!   its members' plugins, and says which members it leaves out.
 //! - `.claude-plugin/marketplace.json` at the repository root lists them all.
 //!
-//! Rules and tools are left out (PLAN.md, Phase 4 decisions). Users add the
+//! Rules and tools are left out (task M4.7 in docs/roadmap.md). Users add the
 //! marketplace as `owner/repo` or `https://github.com/<owner>/<repo>`: relative
 //! plugin sources don't work when it is added by a raw file URL.
 

@@ -13,7 +13,7 @@ Every box you leave unticked needs a line under "Not run": the check, and why it
 
 - [ ] `cargo fmt --all --check`, `cargo clippy --workspace --all-targets --locked -- -D warnings` and `cargo test --workspace --locked` pass.
 - [ ] The title and every commit message follow Conventional Commits. Pull requests land as merge commits, so each commit reaches `main` as written.
-- [ ] Breaking changes are marked with `!` or a `BREAKING CHANGE:` footer. That includes library API breaks and, while Grimoire is 0.x, raises of the MSRV, the minimum supported Rust version (`docs/versioning.md`).
+- [ ] Breaking changes are marked with `!` or a `BREAKING CHANGE:` footer. That includes library API breaks and, while Grimoire is 0.x, raises of the MSRV, the minimum supported Rust version (`docs/05-release.md`).
 - [ ] The docs are updated for anything users or contributors will notice.
 
 Not run: <!-- each box you left unticked, in any section, and why -->

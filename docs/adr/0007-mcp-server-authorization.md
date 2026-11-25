@@ -6,7 +6,7 @@
 
 ## Context
 
-Grimoire's Model Context Protocol (MCP) servers serve stdio (standard input and output) and Streamable HTTP, MCP's HTTP transport (`architecture.md` §3.5, which describes the MCP server asset kind).
+Grimoire's Model Context Protocol (MCP) servers serve stdio (standard input and output) and Streamable HTTP, MCP's HTTP transport (`subsystems/catalog.md`, "MCP server", which describes the MCP server asset kind).
 
 Over HTTP, MCP 2026-07-28 (the protocol version Grimoire targets) makes authorization optional. But a server that offers it is an OAuth 2.1 resource server: in OAuth terms, the server that holds the protected data and accepts access tokens that a separate authorization server issues. Such a server must:
 - serve RFC 9728 Protected Resource Metadata that names at least one authorization server (RFC 9728, one of the Internet's Request for Comments (RFC) standards, defines a JSON document that tells clients where to get a token);
@@ -61,7 +61,7 @@ Token introspection means asking the authorization server whether each token is 
 
 ### (d) No OAuth in Phase 3
 
-Only loopback HTTP (reachable only from the same machine) with Origin and Host checks, deferring authorization. Phase 3 is the phase of `PLAN.md` that built one example asset of each kind. This option is the cheapest, but it leaves the HTTP transport without the authorization the brief (the maintainer's original requirements) asks for.
+Only loopback HTTP (reachable only from the same machine) with Origin and Host checks, deferring authorization. Phase 3 is the phase of `roadmap.md` that built one example asset of each kind. This option is the cheapest, but it leaves the HTTP transport without the authorization the brief (the maintainer's original requirements) asks for.
 
 ## Decision
 

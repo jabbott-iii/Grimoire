@@ -65,7 +65,7 @@ dist is a release tool for Rust projects that generates CI workflows and install
    3. Pinning its generated workflows is unverified.
    4. Its maintenance is concentrated in one person.
 
-   A **Phase 5 spike** (a short experiment during Phase 5, the release-pipeline phase of `PLAN.md`) checks whether dist's installer generation can be used *without* its CI. If so, its installers may replace our own scripts. Otherwise we write minimal `install.sh` and `install.ps1` (download, verify the SHA-256 checksum, install) under a language-policy exception ADR. They get ShellCheck and PSScriptAnalyzer (linters for shell and PowerShell scripts) and tests on each OS.
+   A **Phase 5 spike** (a short experiment during Phase 5, the release-pipeline phase of `roadmap.md`) checks whether dist's installer generation can be used *without* its CI. If so, its installers may replace our own scripts. Otherwise we write minimal `install.sh` and `install.ps1` (download, verify the SHA-256 checksum, install) under a language-policy exception ADR. They get ShellCheck and PSScriptAnalyzer (linters for shell and PowerShell scripts) and tests on each OS.
 4. **Ordering and approval.**
    - Nothing is published to any registry until every artifact for the release has been built, checksummed, attested and signed.
    - Registry publishing jobs run in one `release` environment with the maintainer as required reviewer. Required reviewers are available because the repository is public (`GHA-SEC`).
@@ -98,7 +98,7 @@ dist is a release tool for Rust projects that generates CI workflows and install
   - one first publish per npm package, using an interactive `npm login` session (2-hour token);
   - PyPI needs no bootstrap (one-time setup).
 
-  [`docs/release.md`](../release.md) §2, the one-time bootstrap, lists these steps (ADR-0009, the release pipeline as built).
+  [`docs/05-release.md`](../05-release.md#release-checklist), the one-time bootstrap, lists these steps (ADR-0009, the release pipeline as built).
 - **Release PRs and CI.** PRs and tags created with `GITHUB_TOKEN` don't trigger other workflows (`RELEASE-PLZ`). Two ways around it:
   - Run the build in the same workflow run after the `release` step, and run CI on the release PR via `workflow_dispatch` (a manual run trigger) or a maintainer push. This keeps zero stored credentials.
   - Use a GitHub App, whose private key is itself a long-lived secret.

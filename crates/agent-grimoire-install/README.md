@@ -23,7 +23,7 @@ What it does:
 - **`apply::next_lock`** builds the next `grimoire.lock` from the plan, and files that were left alone keep their old records. **`apply::verify`** checks every output the lock records against the disk.
 - **`hash::content`** is the hash the lock records. Text is hashed with `\r\n` line endings folded to `\n`, so a checkout that converts line endings is not reported as a change.
 
-Known gaps, as [`docs/security-model.md` §7](https://github.com/jabbott-iii/Grimoire/blob/main/docs/security-model.md#7-known-gaps-and-residual-risks) records them:
+Known gaps, as [`docs/01-architecture.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/01-architecture.md#known-gaps-and-residual-risks) records them:
 
 - Two `grimoire` processes in the same project at once are not locked against each other.
 - A crash can leave a temporary file with a random name in a managed directory, and nothing removes it automatically.
@@ -96,10 +96,10 @@ The same code runs on Linux, macOS and Windows, and continuous integration (CI) 
 ## Documentation
 
 - API reference: https://docs.rs/agent-grimoire-install
-- Design: [`docs/architecture.md` §7, Install model](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#7-install-model): resolve, render, plan and apply ([§7.1](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#71-desired-state-plan-apply)); the three ownership units and how each file format is edited ([§7.2](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#72-ownership-units-and-merge-strategies)); drift, conflicts, `--force` and `--write-new` ([§7.3](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#73-drift-and-conflicts)); and filesystem safety ([§7.4](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#74-filesystem-safety)).
+- Design: [`docs/subsystems/install.md`, Install model](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/install.md): resolve, render, plan and apply ([`docs/subsystems/install.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/install.md#desired-state-plan-apply)); the three ownership units and how each file format is edited ([`docs/subsystems/install.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/install.md#ownership-units-and-merge-strategies)); drift, conflicts, `--force` and `--write-new` ([`docs/subsystems/install.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/install.md#drift-and-conflicts)); and filesystem safety ([`docs/subsystems/install.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/install.md#filesystem-safety)).
 - [ADR-0006](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0006-filesystem-confinement.md), the architecture decision record that chose cap-std for root-confined file access, to close the race in which a directory is swapped for a symbolic link between a check and a write.
-- [`docs/security-model.md` §3, Threats and mitigations](https://github.com/jabbott-iii/Grimoire/blob/main/docs/security-model.md#3-threats-and-mitigations): the threats this crate defends against, such as symbolic links, special files, oversized files, edited managed content and interrupted writes.
-- Versioning: [`docs/versioning.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/versioning.md). Grimoire versions its crates together.
+- [`docs/01-architecture.md`, Threats and mitigations](https://github.com/jabbott-iii/Grimoire/blob/main/docs/01-architecture.md#threats-and-mitigations): the threats this crate defends against, such as symbolic links, special files, oversized files, edited managed content and interrupted writes.
+- Versioning: [`docs/05-release.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/05-release.md#versioning). Grimoire versions its crates together.
 - Grimoire: https://github.com/jabbott-iii/Grimoire
 
 ## License

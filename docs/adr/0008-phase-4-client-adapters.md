@@ -9,7 +9,7 @@
 
 A client is an AI coding tool Grimoire writes files for, and an adapter is the code that writes one client's files. ADR-0005, an earlier architecture decision record (ADR), put four more clients into v1: `codex`, `cursor`, `gemini-cli` and `copilot`.
 
-The Phase 4 research re-checked every format they read, and found three problems with writing everything ADR-0005 listed. (Phase 4 is the phase of `PLAN.md` that added these adapters; its findings are the `*-P4` entries in `specs.md`.)
+The Phase 4 research re-checked every format they read, and found three problems with writing everything ADR-0005 listed. (Phase 4 is the phase of `roadmap.md` that added these adapters; its findings are the `*-P4` entries in `specs.md`.)
 
 **1. No new client can keep a fail-closed hook closed.** A fail-closed hook blocks the action when the hook itself fails. (Cursor has an opt-in `failClosed: true`, in the table below, but it couldn't be tested here.) Grimoire's guard hooks, such as `secret-guard`, which blocks tool calls and prompts that contain likely secrets, rely on Claude Code's `onFailure: "block"`, so a missing or broken binary blocks the event.
 

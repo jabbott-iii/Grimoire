@@ -55,7 +55,7 @@ fn target_paths(table: &toml::Table, package: &toml::Table, file: &str, out: &mu
 }
 
 /// Core crates that asset crates must not depend on
-/// ([`docs/architecture.md` §4, Repository layout](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#4-repository-layout)).
+/// ([`docs/01-architecture.md`, Repository layout](https://github.com/jabbott-iii/Grimoire/blob/main/docs/01-architecture.md#repository-layout)).
 const CORE_CRATES: [&str; 7] = [
     "agent-grimoire",
     "agent-grimoire-adapters",

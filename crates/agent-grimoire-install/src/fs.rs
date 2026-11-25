@@ -1,7 +1,7 @@
 //! Root-confined, symlink-refusing, atomic filesystem access.
 //!
 //! The design is in
-//! [`docs/architecture.md` §7.4, Filesystem safety](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#74-filesystem-safety),
+//! [`docs/subsystems/install.md`, Filesystem safety](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/install.md#filesystem-safety),
 //! and [ADR-0006](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0006-filesystem-confinement.md)
 //! chose `cap-std` to confine every access to the project root.
 //!

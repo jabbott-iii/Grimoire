@@ -1,159 +1,281 @@
-# Releasing and installing Grimoire
+# 05 — Release
 
-- **Status:** **No release exists yet**, so no command in this file has been run against a real release.
-  - **What has run.** The image's build, checks, scan, push to a local registry and the tag script's cases were run locally with rootless Docker (the Docker daemon running as an ordinary user, not as root). They also ran on GitHub in the first Release dry-run (a run that builds and checks everything but publishes nothing): Release run 44353090397, on 2026-11-18. None of it has run against the GitHub Container Registry (GHCR).
-  - **History.** Written in Phase 5 (2026-11-17), before the first release. Revised:
-    - after the Phase 5 review;
-    - in Phase 6 (2026-11-17), for the container image;
-    - after the Phase 6 review, which moved every signature and attestation into `.github/workflows/sign.yml`;
-    - in Phase 7 (2026-11-17), for the before-first-release markers, the README's channels and vulnerability reporting;
-    - after the Phase 7 review (2026-11-18), when the repository's ruleset (the rules GitHub enforces on its branches) refused the first GitHub run of release-plz, the tool that opens the release pull request (§2 A);
-    - again on 2026-11-18, when GitHub refused to start `release.yml` and the image's signing moved into `.github/workflows/sign-image.yml`;
-    - on 2026-11-24, when the ruleset, read again, had no code-scanning or code-quality rule left, and its exclusion for release-plz's branches matched none of them (§2 A).
-- **Decisions** (architecture decision records, ADRs): [ADR-0009](adr/0009-release-pipeline.md) (the pipeline and channels), [ADR-0010](adr/0010-language-policy-exceptions.md) (the code that isn't Rust) and [ADR-0011](adr/0011-container-image.md) (the container image).
-- **Facts:** the `*-P5` and `*-P6` entries in [`specs.md`](specs.md), the verified research of Phases 5 and 6; SIGN-P6, the research on signing from a reusable workflow, for the signing identity.
+This document says how Grimoire is versioned, built and released: the versioning and deprecation policy, the build profiles, the maintainer's release checklist and recovery steps, and how users install and verify a release. How the release pipeline works, job by job, is in its spec, [`subsystems/release.md`](subsystems/release.md), and the container image's design is in [`subsystems/container-image.md`](subsystems/container-image.md).
 
-This file has six parts:
-1. how a release flows, for the maintainer;
-2. the one-time bootstrap, also for the maintainer;
-3. recovering from a failed release;
-4. installing, for users;
-5. verifying a download, for users;
-6. maintaining the image pins, for the maintainer.
+- **Status:** **No release exists yet.** No part of this policy has been applied to a real release, and no command in this file has been run against one. The image's build, checks, scan, push to a local registry and the tag script's cases ran locally with rootless Docker (the Docker daemon running as an ordinary user, not as root), and on GitHub in the first Release dry-run (a run that builds and checks everything but publishes nothing), Release run 44353090397 on 2026-11-18. None of it has run against the GitHub Container Registry (GHCR).
+- **Decisions** (architecture decision records, ADRs): [ADR-0001](adr/0001-catalog-delivery.md) (the catalog is built into each release), [ADR-0003](adr/0003-release-tooling.md) (release-plz and a hand-written pipeline), [ADR-0009](adr/0009-release-pipeline.md) (the pipeline and its channels), [ADR-0010](adr/0010-language-policy-exceptions.md) (the code that isn't Rust) and [ADR-0011](adr/0011-container-image.md) (the container image). The maintainer's Phase 7 choices, which set the deprecation window and what counts as breaking, are noted on task M7.1 in [`roadmap.md`](roadmap.md).
+- **Facts:** the `*-P5` and `*-P6` entries in [`specs.md`](specs.md), the verified research of Phases 5 and 6, and SIGN-P6, the research on signing from a reusable workflow. The sources of the versioning policy are listed at the end of [Versioning](#sources).
 
-## 1. How a release flows
+## Versioning
 
-1. **Changes land on `main`** through pull requests, as usual.
-2. **release-plz opens or updates the release pull request.**
-   - release-plz is a release tool for Rust projects. Here its only job is the release pull request (release-plz calls it the release PR): one pull request that sets the next version and writes the changelog.
-   - `.github/workflows/release-plz.yml` runs `release-plz release-pr` on every push to `main`.
-   - A manual run works only on `main`: on another branch, release-plz would rebuild the release pull request from that branch.
-   - Runs queue one at a time and are never canceled.
-   - The pull request bumps the shared workspace version: the one version that the `grimoire` command-line interface (CLI) and its five library crates share. It adds a section for the new version to `CHANGELOG.md`, written from the Conventional Commits since the last release: commit messages that start with a type, such as `feat:` or `fix:`.
-   - It is labeled `release`.
-   - release-plz is configured never to tag, create releases or publish. The release workflow does those instead, so that it tags the exact commit it built and signed ([ADR-0009](adr/0009-release-pipeline.md)). release-plz's token could still do the first two; [`security-model.md`](security-model.md) §6b, on releases and distribution, says what still protects users.
-   - **Today it can't open the pull request.** The ruleset's pull-request rule still applies to the `release-plz-*` branches, so it refuses release-plz's commit there (most recently run 45513260333, on 2026-11-24). No release pull request exists until you change the ruleset (§2 A).
-3. **Approve the release pull request's continuous integration (CI) runs.**
-   - The pull request is opened with `GITHUB_TOKEN`, the token GitHub Actions gives each job. So its `pull_request` runs (CI, Security and the release dry-run) wait for approval.
-   - Open the pull request's checks and approve the workflows to run, or push a commit to the branch yourself.
-   - Do the same after every update release-plz makes to the pull request.
-   - Running the checks with `workflow_dispatch` (a manual run) doesn't help: those checks don't count toward the ruleset's required status checks (the checks that must pass before a pull request can merge).
-4. **Review and merge the release pull request.**
-   - **Check the version.** The pull request's version must be the next 0.y, such as 0.1.4 → 0.2.0, if either of these holds:
-     - the new `CHANGELOG.md` section has a breaking entry, a change marked breaking ([`versioning.md`](versioning.md) §2 lists what counts);
-     - `rust-version` in the root `Cargo.toml`, the minimum supported Rust version (MSRV), rose since the last release's tag ([`versioning.md`](versioning.md) §3).
-   - If either holds and the version isn't the next 0.y, correct the version before you merge, through a pull request to `main`, not on the release pull request's branch (§2 C says why).
-   - How release-plz bumps the shared version in Grimoire's setup is UNVERIFIED (VERSIONING-P7 in [`specs.md`](specs.md)), so this review is the only check on it.
-   - **Check that every advisory is named.**
-     - A security fix merged from an advisory's temporary private fork (a private copy of the repository, which GitHub creates so that the fix for a reported vulnerability can be prepared out of public view) names the advisory's GHSA ID, its GitHub Security Advisory identifier, in the first line of its commit message ([`SECURITY.md`](../SECURITY.md), "What happens to a report").
-     - release-plz carries that line into the `CHANGELOG.md` section, and the release notes come from the section. Check that the section names each such advisory.
-     - If one is missing, add it to the GitHub Release's notes once the release is published. An immutable release (one whose tag and files GitHub locks once it is published, §2 A) keeps its notes editable.
-   - **Approve it before you merge.** The ruleset needs one approving review from a code owner, and you are the only one (read on 2026-11-24, §2 A). release-plz opens the pull request, not you, so your approval meets the rule without the administrator bypass, your administrator role's permission to merge past the ruleset. A push that changes the pull request dismisses the approval, so approve it again after each update. This hasn't been seen on GitHub yet, because no release pull request exists.
-5. **The release run starts.**
-   - The merge's push to `main` starts `.github/workflows/release.yml`.
-   - **Release mode or dry-run.** The `plan` job chooses release mode, the mode that tags and publishes, only when the repository variable `GRIMOIRE_RELEASES` is `enabled`, `vX.Y.Z` isn't tagged, and `CHANGELOG.md` has a section for X.Y.Z.
-     - Only the merged release pull request adds that section.
-     - Any other push to `main` stays a dry-run. When releases are enabled and `vX.Y.Z` isn't tagged, `plan` also prints a warning that release mode waits for the release pull request.
-   - **A stale catalog pack.** In release mode, `plan` fails at once while the checked-in `crates/agent-grimoire-catalog/catalog.pack` isn't exactly what `cargo xtask pack-catalog` makes from `catalog/`.
-     - Why: the CLI embeds that file, while the asset binaries (the programs that the catalog's tools and Model Context Protocol servers ship) are built from `catalog/`. So a stale pack would ship an older catalog beside newer binaries.
-     - CI's catalog job fails on a stale pack in every pull request and push to `main`, but no ruleset requires it yet ([`security-model.md`](security-model.md) §6d, on the repository and contributions). So a stale pack can still be merged; this check keeps it out of a release.
-     - Fix it in a pull request to `main`: run `cargo xtask pack-catalog` and commit the result. Its merge starts the release again, from that commit (§3, "The run failed before the `release` approval").
-   - **An asset that needs a newer grimoire.** In release mode, `plan` also fails while an asset in the embedded catalog (`crates/agent-grimoire-catalog/catalog.pack`) has a `min-cli-version` above X.Y.Z. That field names the oldest CLI that can install the asset, so grimoire X.Y.Z would refuse it with `resolve/cli-too-old`.
-     - CI's tests fail on such an asset in every pull request and push to `main`, but no ruleset requires them yet, so this check keeps it out of a release.
-     - Fix it in a pull request to `main`, whose merge starts the release again. Either lower the asset's `min-cli-version` (with an asset version bump and an entry in the asset's own `CHANGELOG.md`, then `cargo xtask pack-catalog`), or release a version at least that new through a release pull request (step 4 says how to correct its version).
-     - See [`versioning.md`](versioning.md) §4, on asset versions.
-   - **GitHub's limits.** `plan` fails at once if the catalog has grown past GitHub's limits: 256 jobs in the SBOM attestation matrix, and 1000 assets in one release.
-     - The matrix is one job definition that GitHub expands into one job per archive. Each job attests the archive's software bill of materials (SBOM), the list of components it contains.
-     - The 1000 assets are release assets, the files attached to one GitHub Release. With today's channels, that limit is reached at 39 asset binaries.
-   - The run builds all six targets (Linux, macOS and Windows, each for x86-64 and arm64), packages every channel (each way to install Grimoire, §4) and runs the verification jobs. Then `sign-files` signs every file (below).
-   - Every release-mode job downloads the release files by artifact ID, the ID of the package job's upload within the run. Before it attests, signs or publishes anything, it checks `SHA256SUMS` against the hash the package job recorded, and that the files are exactly the ones `SHA256SUMS` lists. So an artifact of the same name that another job uploaded is never what gets signed.
-   - **Signing.** Every signature and attestation is made in one of two reusable workflows (workflows that another workflow calls, much as a program calls a function):
-     - `.github/workflows/sign.yml` for the release files, which only `sign-files` calls;
-     - `.github/workflows/sign-image.yml` for the image, which only `sign-image` calls.
-   - An attestation is a signed statement about a file, such as a record of how it was built. Signing is keyless: Sigstore, a public signing service, issues a short-lived certificate for each signing, and the certificate names the workflow that signed.
-     - The two workflows' certificates name `https://github.com/jabbott-iii/Grimoire/.github/workflows/sign.yml@refs/heads/main` and `…/sign-image.yml@refs/heads/main`, which no job in `release.yml` can get.
-     - So the publish jobs, and the third-party container that the PyPI (Python Package Index) upload action runs, can't sign as the release.
-     - The signing workflows' jobs run only when `release.yml` on `main` in this repository calls them.
-   - **Why two files.** GitHub checks every job of a called workflow against the calling job's permissions when the run starts, even a job that its `if:` would skip. With one file for both, the files call didn't grant what the image job asks for, so GitHub refused to start any Release run (`SIGN-P6` in [`specs.md`](specs.md)). The xtask test `every_reusable_workflow_call_grants_what_its_jobs_ask_for` checks every call's grant (xtask, in `xtask/`, is the repository's own build tooling).
-   - `sign-files` makes:
-     - one provenance attestation (a signed record of the run that built the files) over every file;
-     - an SBOM attestation for each archive (one matrix job each);
-     - a cosign bundle for each file. cosign is Sigstore's signing tool, and a bundle holds a signature with what is needed to verify it. `sign-files` verifies each bundle at once with the identity and the caller pins (§5 explains both).
-   - **The container image.** The `image` job builds it from the two Linux musl archives (static Linux builds, linked with the musl C library), for linux/amd64 and linux/arm64. It writes the image as an OCI layout, a directory in the Open Container Initiative's image format, with an SBOM and provenance for each platform.
-     - It verifies the base image's signatures first.
-     - It then checks the layout with `cargo xtask release image check` and scans each platform with Grype, a vulnerability scanner. Any medium, high or critical match fails the job (§3).
-   - `verify-image` pushes the layout to a local registry, pulls it on an amd64 and an arm64 runner (the machines GitHub runs jobs on), and runs every binary in it.
-   - Pull requests run both jobs too. They also sign the image with a throwaway key, offline, and run the release's tag script, `.github/scripts/image-tags.sh`, against the local registry, including the cases it must refuse.
-   - **Where the image digest comes from.** The `image` job prints the layout's index digest: the SHA-256 of the image index, the file that lists each platform's image.
-     - `publish` writes it into the release notes in step 6, before anything is pushed.
-     - `publish-image` pushes exactly that index in step 7, and `sign-image` signs it before it gets a tag.
-     - `verify-image` and `publish-image` download the layout by artifact ID and check that it is the index the `image` job checked.
-6. **Approve the first deployment, `release`.**
-   - The `publish` job waits in the `release` environment. An environment is a gate in GitHub: with the required reviewer that §2 A sets up, a job that names it waits until you approve. Check that every earlier job passed, then approve.
-   - It verifies `SHA256SUMS`, every cosign bundle and the provenance of `SHA256SUMS`, each with `sign.yml`'s identity and the caller pins (§5).
-   - It also checks fields that no flag of cosign or gh (GitHub's command-line tool) can pin: that the provenance certificate's Build Config URI is `https://github.com/jabbott-iii/Grimoire/.github/workflows/release.yml@refs/heads/main`, the calling workflow, and that its repository and owner IDs are Grimoire's (`1460666977`, `84321953`). The Build Config URI (uniform resource identifier) is the certificate field that names the workflow file that started the run.
-   - It then tags `vX.Y.Z` at the commit it built, and publishes the GitHub Release: it creates a draft, uploads the files, then publishes it.
-   - It has no `id-token` permission, so it can't get a registry token. A job needs that permission to request an OpenID Connect (OIDC) token: GitHub's short-lived proof of which workflow and job is running, which registries accept instead of a stored token.
-   - The notes name the container image by digest, `ghcr.io/jabbott-iii/grimoire@sha256:…`, with the tags `X.Y.Z` and `latest`, and say that it is pushed once the registry jobs are approved.
-   - It then prints the release's `immutable` field, and only warns if it isn't `true`. Check that line before going on; §3 says what to do if it is `false`.
-7. **Approve the registry deployments, `crates-io`, `npm`, `pypi` and `ghcr`.**
-   - Four jobs now wait at once, each in its own environment. Approve them together.
-   - `publish-crates` gets a token with `crates-io-auth-action` and runs `cargo publish --locked -p <crate>` for each crate whose version isn't on crates.io (Rust's package registry) yet, in dependency order.
-   - `publish-npm` stages the six platform tarballs, then the launcher.
-     - npm is the JavaScript package registry. A staged version is uploaded, but it can't be installed until you approve it (step 8).
-     - The launcher is the `agent-grimoire` package, which runs the binary from a platform package (§4).
-   - `publish-pypi` uploads the wheels (Python's package files) with `pypa/gh-action-pypi-publish` (`skip-existing: true`).
-   - `publish-image` pushes the checked layout to `ghcr.io/jabbott-iii/grimoire` by digest, untagged, with the job's `GITHUB_TOKEN` (`image-tags.sh push`).
-     - An existing `X.Y.Z` that names another digest stops the job; the tag is never overwritten.
-     - It has no OIDC token and runs no cargo. [ADR-0011](adr/0011-container-image.md) keeps cargo out of every job that can push or get an OIDC token, because a dependency's build script could use either.
-   - **Then `sign-image` runs, with no approval of its own.** A job that calls a reusable workflow can't name an environment, so the `ghcr` approval of the push is the approved step.
-     - It calls `sign-image.yml`, which signs the index digest with cosign (keyless) and adds a build provenance attestation with `actions/attest`.
-     - It then checks that both are listed in the `sha256-<index hex>` tag, and verifies both. GHCR has no referrers API (the registry API that lists the signatures and attestations of an image), so they are listed under that tag instead.
-   - Only then does the image get its tags: `X.Y.Z`, then `latest` (`image-tags.sh tag` and `latest`). So the release never gives either tag to an image before it is signed, attested and verified.
-     - `latest` moves to this release unless it names a newer version.
-     - It stays on a newer release that carries the image's release signature, and if the newer version doesn't verify, the job stops (§3).
-   - `sign-image`'s last step fails while the package can't be pulled anonymously. That can happen only in the first release, before you make the package public (§2 D).
-   - **One environment per registry.** Each job's OIDC token names its own environment, and each registry's trusted publisher (its setting that names the repository, workflow and environment allowed to publish) accepts only its own. So no job can publish to another registry.
-     - `publish-image` has no OIDC token.
-     - `publish-crates`, `publish-npm` and `publish-pypi` can still get Sigstore certificates, but those name `release.yml`, and no verifier accepts that identity.
-8. **Approve the npm versions with two-factor authentication (2FA), platform packages first.**
-   - Approve the six `@agent-grimoire/*` versions, then `agent-grimoire`. Use `npm stage approve <stage-id>`, or the Staged Packages tab on npmjs.com.
-   - Batch approval on npmjs.com takes up to 100 versions (one per package) with one 2FA challenge.
-   - Each approval is independent and isn't rolled back if another fails, so approve the platform packages before the launcher.
-   - npm scans every new version before it can be installed. That typically takes about 5 minutes, sometimes 15 or more, so `npm i -g agent-grimoire` may fail for a while after approval.
-9. **Submit the winget manifests by hand.**
-   - winget is the Windows Package Manager. A manifest is the set of files that describes one version of a package; Microsoft collects them in the `microsoft/winget-pkgs` repository.
-   - Fork `microsoft/winget-pkgs` (once).
-   - Add the three YAML files from the release (YAML is a configuration file format) under `manifests/j/jabbott-iii/agent-grimoire/X.Y.Z/`.
-   - Open one pull request per version. A first submission is titled `New package: jabbott-iii.agent-grimoire version X.Y.Z`.
-   - Sign the Microsoft Contributor License Agreement (CLA) yourself the first time.
-   - On a Windows machine, run `winget validate --manifest <dir>`, without `--ignore-warnings`, which would hide unknown fields. Validation needs no extra setting.
-     - `winget --version` must be v1.28.190 or newer. Older clients don't know schema 1.28.0, so they warn on every manifest's schema header and exit with -1978335192 (`MANIFEST_VALIDATION_WARNING`).
-   - Then test the install.
-     - Windows Sandbox, an isolated Windows desktop that is thrown away when you close it, is the simplest place: run `Tools\SandboxTest.ps1 <dir>` from your winget-pkgs fork.
-     - Otherwise, `winget install --manifest <dir>` needs local manifests turned on first: run `winget settings --enable LocalManifestFiles` in an elevated shell (one run as administrator), and turn the setting off again afterward.
-     - Group Policy (the settings an organization applies to the Windows machines it manages) can block that setting on a managed machine; use the Sandbox there.
-   - winget-pkgs then runs its 10-step validation, and a moderator approves.
-10. **Merge the tap and bucket sync pull requests.**
-    - The tap, `jabbott-iii/homebrew-tap`, is the repository that Homebrew (a package manager for macOS and Linux) installs Grimoire from. The bucket, `jabbott-iii/scoop-bucket`, is the same for Scoop (a command-line installer for Windows).
-    - In each, the sync workflow runs daily, or when you start it from the Actions tab. It downloads `agent-grimoire.rb` or `agent-grimoire.json` from the latest release, checks its attestation, and opens a pull request when the file differs from `Formula/agent-grimoire.rb` or `bucket/agent-grimoire.json`.
-    - GitHub turns off scheduled workflows in a public repository after 60 days without activity. The tap and bucket get commits only when a sync pull request merges, so a quiet spell between releases can turn the schedule off.
-    - If no sync pull request appears, enable the workflow again (Actions tab → "Enable workflow", or `gh workflow enable sync-formula.yml --repo jabbott-iii/homebrew-tap` and `gh workflow enable sync-manifest.yml --repo jabbott-iii/scoop-bucket`), then start it with `gh workflow run`.
-    - Those pull requests are opened with each repository's `GITHUB_TOKEN`, so any checks they have wait for your approval, as in step 3. Review and merge them.
+This section says what Grimoire's version numbers promise, how they are chosen, and how things are retired, in six parts: [the public API](#the-public-api), [Grimoire's version](#grimoires-version), [the minimum supported Rust version](#the-minimum-supported-rust-version) (MSRV), [asset versions](#asset-versions), [deprecation and removal](#deprecation-and-removal), and [build metadata](#build-metadata).
 
-## 2. One-time bootstrap (maintainer)
+### Terms
 
-This checklist is the source for the bootstrap (the one-time setup) of Phases 5 to 7; `PLAN.md` §6, the list of actions only you can take, points here. Do the parts in order:
-- **A:** the items marked "now", "before you merge the Phase 7 change" or "after you merge the Phase 7 change" at that time, and the rest at any time before the first release;
-- **B:** close to the first release, because PyPI's pending publisher expires after 30 days;
-- **C:** last;
-- **D:** during the first release run.
+Versions are [SemVer 2.0.0](https://semver.org/spec/v2.0.0.html) numbers. Semantic versioning (SemVer) is a specification of what a version number promises. A version has three numbers, MAJOR.MINOR.PATCH, such as 1.4.2. In this file:
+- a **patch release** raises only the last number: 0.3.0 → 0.3.1, or 1.4.2 → 1.4.3;
+- a **minor release** raises the middle number: 0.3.1 → 0.4.0, or 1.4.2 → 1.5.0;
+- a **major release** raises the first number: 1.4.2 → 2.0.0.
+
+A **breaking change** is one that can make something that worked before stop working; [the public API](#the-public-api) lists them, and [Grimoire's version](#grimoires-version) lists the other changes Grimoire marks as breaking.
+
+A patch release never counts as a minor release. While Grimoire is 0.x (its version starts with 0), there are no major releases, and a breaking change ships in the next minor release instead ([Grimoire's version](#grimoires-version)).
+
+SemVer itself says that in 0.y.z anything may change at any time (rule 4 of the specification). Grimoire still uses its 0.x numbers to say when something breaks, as below.
+
+### The public API
+
+SemVer asks a project to declare its public API (rule 1): the parts that users may rely on, and that the version numbers make promises about. Grimoire's is:
+
+- **The commands** of the `grimoire` command-line interface (CLI), their arguments and options, the global options `--json`, `--no-input` and `-C` ([`cli.md`](cli.md)), and the environment variables the CLI reads ([`cli.md`](cli.md#environment)). That includes value syntax such as `bundle:ID`, `tag:TAG` and the permission names `--allow` takes.
+- **The exit codes**, 0 to 6 ([`cli.md`](cli.md#exit-codes)).
+- **The `--json` envelope, format 1**, the one JSON document a command prints with `--json`: its keys `format`, `command`, `ok`, `exit`, `result` and `diagnostics`; each diagnostic's keys `severity`, `code`, `message`, `file` and `field`; and the `result` keys that [`cli.md`](cli.md#json-output) documents for each command.
+- **The diagnostic codes** listed in [`diagnostics.md`](diagnostics.md), the stable names, such as `resolve/permission`, of each error and warning the CLI reports. A code keeps its meaning. Its message text is not part of the API.
+- **`grimoire.toml` and `grimoire.lock`, format 1** ([`configuration.md`](configuration.md)).
+- **For catalog authors, the `asset.toml` and bundle formats, format 1** ([`catalog/README.md`](../catalog/README.md)). An `asset.toml` describes one asset, and a bundle file names a list of assets.
+
+The JSON Schemas in `schemas/` describe the four file formats. The `--json` envelope has no schema.
+
+**Not part of the public API:**
+- **The library crates' Rust APIs.** A crate is a Rust package. `agent-grimoire-model`, `-catalog`, `-resolve`, `-install` and `-adapters` are internal to the CLI. They are published only so that `cargo install agent-grimoire` can build it, so don't depend on them. A change that breaks one is still marked breaking ([Grimoire's version](#grimoires-version)), so that it ships as the next 0.y (the next minor version, such as 0.2.0 after any 0.1.z), which the CLI's requirements on its libraries exclude.
+- **The `agent-grimoire` crate's library target:** `run`, `Context` and `Exit`, the library part of the crate rather than the `grimoire` binary. It exists so that the CLI's tests can drive the CLI with a fixture catalog (a small catalog made for tests). Nothing else depends on it, so a change to it isn't breaking. Use the binary.
+- **The catalog pack**, the archive of the catalog that is built into the binary (`grimoire catalog pack v1`).
+- **Human output:** help text, messages on standard output and standard error (stdout and stderr), diagnostic message text, and the layout of `plan`'s diffs. Scripts should use `--json` and the diagnostic codes.
+- **`result` content that `cli.md` doesn't document.** A result may gain keys in any release, so ignore keys you don't know.
+- **Codes that only `cargo xtask validate` prints** for catalog authors, such as `manifest/…` and `catalog/…`.
+
+Two more things change on their own terms:
+- **Assets**, the catalog entries Grimoire installs (rules, skills, agents, tools and Model Context Protocol (MCP) servers), have versions of their own ([asset versions](#asset-versions)). The catalog changes in many releases, and those changes follow the asset rules, not the CLI's version.
+- **What Grimoire writes for each client** (each AI coding tool it writes for) follows that client's documented format ([ADR-0008](adr/0008-phase-4-client-adapters.md)), and changes when the client's format changes. After an upgrade, `grimoire plan` shows such a change before `apply` makes it.
+
+**Breaking changes to the public API** include:
+- removing or renaming a command, option or argument, or changing what one does;
+- changing what an exit code means, or which exit code an outcome gets;
+- removing or renaming a key of the envelope, of a diagnostic, or a documented `result` key, or changing its type;
+- removing or renaming a diagnostic code, or using it for another condition;
+- making a valid `grimoire.toml`, `grimoire.lock`, `asset.toml` or bundle file invalid, or changing what it means;
+- a new `format` number, the number that names the version of a file format or of the `--json` envelope ([deprecation and removal](#deprecation-and-removal)).
+
+New commands, options, envelope and `result` keys, diagnostic codes and optional file fields are not breaking. Older CLIs refuse fields they don't know, so a project that uses a new field needs a CLI that has it.
+
+### Grimoire's version
+
+- **One version** covers the CLI (`agent-grimoire`) and its five libraries. It is set once, as `version` in `[workspace.package]` of the root `Cargo.toml`: 0.1.0 today.
+- **The npm packages and the PyPI wheels carry the same version.** npm is the JavaScript package registry, PyPI (the Python Package Index) is Python's, and a wheel is a prebuilt Python package. PyPI spells a pre-release (a test version before a release, such as `1.0.0-rc.1`) in its own form (`1.0.0-rc.1` becomes `1.0.0rc1`), so a pre-release must be `-alpha.N`, `-beta.N` or `-rc.N`.
+- **The tag is `vX.Y.Z`.** The release workflow creates this Git tag at the commit it built and signed ([ADR-0009](adr/0009-release-pipeline.md)). The version itself is `X.Y.Z`, without the `v`, and `grimoire --version` prints `grimoire X.Y.Z`.
+- **release-plz chooses the next version** from the commits since the last release, which follow Conventional Commits (a message format that starts with a type, such as `feat:` or `fix:`). It also writes the new `CHANGELOG.md` section, in the release pull request ([How a release flows](subsystems/release.md#how-a-release-flows)). The libraries' commits go into the CLI's changelog. With release-plz 0.4.3, while the version is 0.x:
+  - a `feat:` or `fix:` commit raises the patch number: 0.1.0 → 0.1.1;
+  - only a commit marked breaking, with `!` after the type (`feat!:`) or a `BREAKING CHANGE:` footer, raises the middle number: 0.1.1 → 0.2.0.
+
+  From 1.0, a commit marked breaking raises the first number.
+
+  These are release-plz's rules for one package. How it applies them to Grimoire's shared version is UNVERIFIED, meaning it wasn't confirmed from a primary source:
+  - only `agent-grimoire` writes a changelog;
+  - a commit that changes only files outside `crates/`, such as an MSRV raise ([the MSRV](#the-minimum-supported-rust-version)), may count for no package;
+  - a release-plz test suggests that a breaking commit in any package that inherits the workspace version (takes its version from the root `Cargo.toml`) sets the next version for all of them.
+
+  So the maintainer checks the release pull request's version before merging it ([How a release flows](subsystems/release.md#how-a-release-flows)).
+- **So breaking changes must be marked.** `release-plz.toml` turns `semver_check` off. That option would check the crates' public Rust APIs with cargo-semver-checks, and the comment in `release-plz.toml` gives the reason it is off: the tool would be one more unverified download. So no tool detects an unmarked break; review has to. Mark a commit breaking when it:
+  - breaks the public API ([the public API](#the-public-api));
+  - breaks the public Rust API of one of the five library crates. The CLI and the libraries depend on each other with Cargo requirements such as `0.1.0`, which Cargo reads as `>=0.1.0, <0.2.0`: every 0.1.z counts as compatible. Released as 0.1.z, such a break could let Cargo build an older CLI against a library it doesn't compile with. It is marked breaking so that it ships as the next 0.y, which those requirements exclude;
+  - raises the MSRV, while Grimoire is 0.x ([the MSRV](#the-minimum-supported-rust-version));
+  - introduces a new `format` number ([deprecation and removal](#deprecation-and-removal)).
+
+  [`CONTRIBUTING.md`](../CONTRIBUTING.md) has the commit conventions.
+- **A released version is never changed** (SemVer rule 3). A mistake is fixed in a new release, never by reusing a version ([Recovery](#recovery)).
+  - crates.io, Rust's package registry, refuses a version that differs from a published one only in build metadata (the part after a `+`, [build metadata](#build-metadata)).
+  - Once immutable releases are enabled (a GitHub repository setting), GitHub locks each release's tag and files.
+
+### The minimum supported Rust version
+
+- **The MSRV**, the oldest Rust release that Grimoire supports, is `rust-version` in the root `Cargo.toml`: **1.96**. Continuous integration (CI), the checks that run on every pull request and every push to `main`, has an MSRV job that runs `cargo +1.96.0 check --workspace --all-targets --locked`. Development uses the Rust toolchain (the compiler and its tools) pinned in `rust-toolchain.toml`, 1.100.0.
+- **The policy** (the maintainer's answer to open question Q6 on 2026-11-16, noted on task M1.1 in [`roadmap.md`](roadmap.md)): the MSRV is set four minor Rust releases behind the latest stable one, about six months: 1.96 when stable was 1.100. It moves only by a deliberate change, and never in a patch release.
+- **While Grimoire is 0.x,** the commit that raises `rust-version` is marked breaking, so that it ships in the next minor release.
+  - That is stricter than Cargo's SemVer guide. The guide recommends treating an MSRV raise as a minor change, and in 0.x it counts a change to the last number (0.y.Z) as minor.
+  - The commit changes files outside `crates/`, such as the root `Cargo.toml` and `ci.yml`. How release-plz counts such a commit is UNVERIFIED ([Grimoire's version](#grimoires-version)), so the release pull request's version is checked ([How a release flows](subsystems/release.md#how-a-release-flows)).
+- **From 1.0,** an MSRV raise ships in a minor release, which is how Cargo's SemVer guide recommends treating it, and still never in a patch release.
+  - Its commit is then typed `feat:` and not marked breaking, because marked breaking it would make a major release.
+  - That release-plz raises the middle number for a `feat:` from 1.0 is UNVERIFIED: the release-plz rules that were read cover 0.x, and breaking commits from 1.0.
+- **For users:** building from crates.io needs Rust 1.96 or later. Install with `cargo install agent-grimoire --locked`. `Cargo.lock` is a lockfile: it records the exact version of every dependency.
+  - **On Cargo 1.96 to 1.99,** `--locked` makes Cargo use the `Cargo.lock` published in the crate. It holds the dependency versions CI checks on Rust 1.96, and the versions of Grimoire's libraries and catalog that the release was built with.
+  - **On those versions without `--locked`,** Cargo resolves the dependencies again (chooses their versions afresh) without regard to `rust-version`. It may pick versions that need a newer compiler, and a later release of each Grimoire library within the same 0.y. `--version X.Y.Z` then pins only the `agent-grimoire` crate. The catalog is built into `agent-grimoire-catalog`, so such a build can carry newer assets than its version says ([asset versions](#asset-versions)).
+  - **On Cargo 1.100,** Cargo uses the published `Cargo.lock` by default, and `--locked` changes nothing. Later Cargo releases are UNVERIFIED.
+  - **On a Rust older than the MSRV,** Cargo stops with an error. It doesn't fall back to an older Grimoire.
+
+### Asset versions
+
+Each asset and each bundle (a named list of assets) has its own SemVer version, in its `asset.toml` or bundle file, independent of the CLI's ([the model spec](subsystems/model.md#identifiers-and-versions)). These versions carry no build metadata. A tool's or MCP server's crate has the same version as its asset, and catalog validation checks it (`crate/version`).
+
+#### How a new version reaches a project
+
+- **Each CLI release holds one version of each asset** ([ADR-0001](adr/0001-catalog-delivery.md)). A changed asset reaches users only in a CLI release. The exception is a build from crates.io without the published lockfile (Cargo 1.96 to 1.99 without `--locked`, [the MSRV](#the-minimum-supported-rust-version)), which can hold a later release's catalog.
+- **`grimoire add` writes a caret requirement**, one that starts with `^`, for the catalog's version, such as `^0.2.0`. Requirements work as in Cargo: `^0.2.0` accepts 0.2.0 and any later 0.2.z, and `^1.4.0` accepts 1.4.0 and any later 1.y.z.
+- **`grimoire.lock` pins the installed version.** After an upgrade to a CLI whose catalog has another version, `plan` and `apply` stop with `resolve/locked-version-unavailable` until you run `grimoire update`.
+- **A new version must meet the requirement.** If it doesn't meet the requirement in `grimoire.toml`, resolution (working out which asset versions to install) fails with `resolve/version` until you change the requirement.
+
+So the version number tells a project what an update means, for each asset it lists under `[assets]`: a version within the requirement arrives through `grimoire update`, and a breaking one needs a decision first.
+
+An asset that a tag, a bundle or another asset's `requires` (its list of dependencies) selects has no requirement from the project. A tag sets none, and catalog validation (`cargo xtask validate`, called validate below) makes each bundle's and each `requires` entry's requirement match the catalog's version. So the next `grimoire update` moves such an asset to whatever version the new grimoire carries, a breaking one included.
+- To review the change first, run `grimoire update --no-apply`, then `grimoire plan`, before `apply` makes it.
+- To hold an asset back, list it under `[assets]` with a requirement: a version outside it then stops resolution with `resolve/version`.
+
+#### What needs a new version (checked)
+
+`cargo xtask validate --base <rev>` compares the catalog with the merge base of `<rev>`, the newest commit that `<rev>` and the current commit both have in their history. CI passes the pull request's base branch, or, for a push, the branch's previous tip (its latest commit before the push). It refuses:
+- a change to `asset.toml`, or to any other file in the asset directory except `README.md`, `CHANGELOG.md`, `evals/` and `tests/`, without a higher version (`version/not-bumped`);
+- an asset version lower than the base's (`version/decreased`);
+- a change to a bundle file without a higher version, a lower one included (`version/not-bumped`).
+
+The catalog checks also require a `CHANGELOG.md` heading for the asset's current version, `## 1.2.3` or `## [1.2.3]` (`catalog/changelog`).
+
+Removing a bundle gives a warning, `version/bundle-removed`: projects that select it stop resolving. Removing or renaming an asset has rules of its own ([deprecation and removal](#deprecation-and-removal)).
+
+Projects select a bundle by its id alone, with no version requirement, so a bundle's version tells readers that something changed but doesn't hold back an update.
+
+#### Tool and MCP server binaries (not checked)
+
+Every CLI release builds every tool and MCP server binary again, and names each archive after the asset's version (`<binary>-<asset version>-<target>`, where the target names the platform, such as `x86_64-unknown-linux-musl`).
+
+A binary can change while nothing in its asset directory does: through `agent-grimoire-mcp` (the shared library that hardens MCP servers), a dependency update in the root `Cargo.lock`, or a new toolchain. validate doesn't see those changes, so two releases can ship different binaries under one asset version, and the binary's `--version` doesn't tell them apart.
+
+The rule, which review checks: a change that alters what a tool or MCP server binary does, and every security fix to one, raises the asset's version (and its crate's, `crate/version`) and adds a CHANGELOG entry, in the same pull request. Users identify a build by the release it comes from and its SHA-256 in that release's `SHA256SUMS` file ([`SECURITY.md`](../SECURITY.md#supported-versions)).
+
+#### Which number to raise (a guideline)
+
+validate checks only that the version went up. Which number goes up is a guideline, and review checks it. It follows the caret rule, because projects' requirements use it: a requirement accepts every later version with the same left-most non-zero number.
+
+| Change | From 1.0.0 | Before 1.0.0 |
+|---|---|---|
+| Breaking (below) | first number: 1.4.2 → 2.0.0 | middle number: 0.2.1 → 0.3.0 |
+| Compatible addition | middle number: 1.4.2 → 1.5.0 | last number: 0.2.1 → 0.2.2 |
+| Fix | last number: 1.4.2 → 1.4.3 | last number: 0.2.1 → 0.2.2 |
+
+Don't raise more than the change needs. A project's `^0.2.1` doesn't accept 0.3.0, so an unneeded breaking bump makes every project change its requirement.
+
+**Breaking for an asset**, as a guideline, since validate can't tell:
+- removing a client's table, or an output a client gets;
+- moving an output: a new destination or file name, or a renamed MCP server, tool binary or skill file;
+- letting the asset do more: a new permission or environment variable, a new hook binding, or a wider agent tool list. Where that needs a permission the project hasn't accepted, its next `grimoire update` stops with `resolve/permission` until someone accepts it;
+- a new `requires` or `conflicts` entry, which can stop a project that resolves today from resolving;
+- for tools and MCP servers: removing or renaming a subcommand, option, MCP tool or tool argument, or changing exit codes or output that hooks, clients or scripts rely on;
+- changing what a rule, skill or agent tells the model to do so that it contradicts what it said before. Rewording, clarifying or extending the text is not breaking.
+
+#### Maturity
+
+Every asset has a `maturity`, and `grimoire list --maturity` filters on it:
+- **`experimental`** may change incompatibly in any release. Its version still says so: a breaking change raises the left-most non-zero number, so that requirements catch it.
+- **`stable`** follows SemVer strictly, with the rules above.
+- **`deprecated`** means the asset is being retired, and it names its replacement. It is kept for projects that list it under `[assets]`, or get it through another asset's `requires` or a bundle that still lists it. Tags don't select it, so a project that has it only through `tags` loses it ([deprecation and removal](#deprecation-and-removal)).
+
+#### `min-cli-version`
+
+Each `asset.toml` names the oldest CLI that can install the asset. When the running CLI is older, resolution fails with `resolve/cli-too-old`. Raise it when the asset needs a CLI feature that older releases lack.
+
+Today every CLI reads only the catalog built into it, and a release's own catalog needs no newer CLI unless the value is set too high. The check still has two uses:
+- A CLI built from crates.io without the published lockfile (Cargo 1.96 to 1.99 without `--locked`, [the MSRV](#the-minimum-supported-rust-version)) can be built with a newer `agent-grimoire-catalog` than its release had. It then meets assets newer than itself, and this check guards it.
+- It is also there for a catalog source outside the binary, which ADR-0001 leaves for later.
+
+`min-cli-version` must be at most the CLI version the asset ships in, because an asset whose `min-cli-version` is above its own release can't be installed from that release. A pre-release sorts before its release, so X.Y.Z-rc.N can't install an asset whose `min-cli-version` is X.Y.Z.
+
+CI checks this on every pull request and push: `crates/agent-grimoire/tests/builtin.rs` fails with `resolve/cli-too-old` when an embedded asset needs a newer grimoire than the workspace version. Between releases that is the last release's version. So an asset that needs a CLI feature that isn't released yet lands after the release that ships the feature, with that release's version.
+
+`release.yml` runs no tests, so `cargo xtask release plan` checks the release itself: a run that releases fails while an asset in the embedded catalog needs a newer grimoire than the version it releases ([How a release flows](subsystems/release.md#how-a-release-flows)).
+
+### Deprecation and removal
+
+To deprecate something is to mark it for removal while it still works. The deprecation window, how long a deprecated thing stays available, is one release (the maintainer's decision):
+- a deprecated asset ships in at least one CLI release before it is removed;
+- a deprecated command or option warns for at least one minor release;
+- the CLI reads the previous format of a file for at least one more minor release.
+
+For an asset, the window protects projects that list it under `[assets]`, and those that get it through another asset's `requires` or a bundle that still lists it. It doesn't protect a project that selects the asset only through `tags` (step 2 below).
+
+#### Assets
+
+1. **Deprecate it.** Set `maturity = "deprecated"` and `deprecated = { replacement = "<id>", reason = "<why>" }` in `asset.toml`, raise the version (a compatible change), and add the CHANGELOG entry.
+   - validate refuses a `deprecated` table without that maturity, or that maturity without the table, or an asset that replaces itself (`manifest/deprecation`).
+   - The replacement must be in the catalog and of the same kind (`catalog/replacement-missing`, `catalog/replacement-kind`).
+   - validate warns when the replacement is deprecated too (`catalog/replacement-deprecated`), and when an asset or a bundle still uses the deprecated one (`catalog/requires-deprecated`, `bundle/member-deprecated`).
+   - **A bundle keeps a deprecated member for the window,** and review checks it. `bundle/member-deprecated` is only a warning, but dropping the member removes the asset from every project that has it only through the bundle, with no `resolve/deprecated` warning. The member leaves the bundle when the asset is removed (step 3).
+2. **While it is deprecated:**
+   - Resolving a project that uses it warns with `resolve/deprecated`, which names the replacement and the reason.
+   - `tags` in `grimoire.toml` no longer select it. So a project that has the asset only through `tags` loses it at its first `apply` or `update` after the release that deprecates it: `plan` shows it as `delete`, and no `resolve/deprecated` warning names the replacement. Before upgrading, such a project should add the asset, or its replacement, under `[assets]`.
+   - If it is a marketplace plugin (Grimoire also generates Claude Code plugins for eligible assets, [the marketplace spec](subsystems/marketplace.md)), the plugin's description starts by saying it is deprecated and naming the replacement.
+3. **Remove it only after it has shipped deprecated in at least one CLI release.** Any release counts, a patch release included. validate refuses a removal unless the asset was deprecated at the comparison base, the merge base of the `--base` revision and the current commit (`version/removed-without-deprecation`), but it can't see releases. So review checks that a release tag has the asset deprecated: `git show vX.Y.Z:catalog/<kind>/<id>/asset.toml`.
+4. **After removal,** a project that still selects the asset fails with `resolve/unknown-asset` until it drops it.
+
+Renaming an asset counts as removing it. Add the asset under its new id, deprecate the old id with the new one as its replacement, and remove the old id later.
+
+#### Commands and options
+
+A deprecated command or option keeps working, with a warning, in at least one minor release before a breaking release removes it. With the terms above:
+- a deprecation first released in 0.3.0 can be removed in 0.4.0;
+- one first released in 0.3.1, a patch release, can't be removed before 0.5.0, because 0.4.0 is the first minor release that warns.
+
+From 1.0, the removal needs a major release, after at least one minor release that warned, as SemVer's FAQ describes.
+
+**There is no tooling for this yet.** clap 4.6.8, which parses Grimoire's command line, has no way to mark an argument or a subcommand deprecated. The procedure:
+1. Keep the old name working as its own hidden argument or subcommand (`hide = true`) that does what the new one does, or detect it in the raw arguments before clap parses them. A hidden `alias` alone won't do: clap reports a match under the original name, so the CLI can't tell that the old name was used.
+2. When the old name is used, report a warning diagnostic with a stable code of its own that names the replacement. A diagnostic goes to stderr, or into the `--json` envelope, so scripts see it too.
+   - No such code exists yet. List the new one in [`diagnostics.md`](diagnostics.md), and mark the old name deprecated in [`cli.md`](cli.md).
+   - The docs test in `crates/agent-grimoire/src/docs_check.rs` counts hidden arguments and subcommands: list a hidden argument in its command's option table, and give a hidden subcommand its own `## grimoire <name>` section.
+   - A name detected before clap parses the arguments isn't clap's, so describe it in prose, outside the option tables, or the test fails.
+3. Test in `crates/agent-grimoire/tests/cli.rs` that the old name still works and warns, with and without `--json`.
+4. Say in the commit message what is deprecated and what replaces it, so that it reaches the CHANGELOG.
+5. Remove it later, once the window has passed, in a commit marked breaking.
+
+#### File formats
+
+`grimoire.toml`, `grimoire.lock`, `asset.toml` and bundle files start with `format = 1`, and the `--json` envelope with `"format": 1`. Only format 1 exists. Grimoire refuses any other number in the four files ("this version of Grimoire supports only format 1").
+- **A change that leaves every valid file valid, with the same meaning, keeps the number**, for example a new optional field.
+- **Any other change needs a new format number.** That is breaking, because older CLIs refuse the new number. Its commit is marked breaking, and the CHANGELOG says how to migrate.
+- **`grimoire.toml` and `grimoire.lock` live in users' repositories,** so the CLI keeps reading the previous format for at least one more minor release after the one that introduces the new format. Format 2 in 0.5.0 means 0.6.0 still reads format 1, and 0.7.0 is the first release that may not. Dropping the old format is itself a breaking change.
+- **`asset.toml` and bundle files live only in this repository's catalog,** which is packed into each build, so the change that introduces a new format for them converts the whole catalog.
+- **The `--json` envelope** is written by the CLI and never read by it, so the reading window doesn't cover it. A new envelope format number is a breaking change for scripts. A script should check `format` before it reads anything else.
+
+### Build metadata
+
+SemVer allows build metadata after a `+`, as in `1.2.3+abc`. SemVer and Cargo both ignore it when they compare versions.
+- **Grimoire's own versions never carry it:** not the CLI's, the libraries', an asset's or a bundle's, and not `min-cli-version`. The model (the `agent-grimoire-model` crate, which defines Grimoire's file formats) refuses it, because the `semver` crate gives build metadata an order that SemVer says it doesn't have. crates.io also refuses a version that differs from a published one only in build metadata.
+- **Marketplace plugins carry it.** Grimoire generates a Claude Code plugin marketplace from the catalog. Each generated `plugin.json` version is the asset's or bundle's version plus the first 12 hex digits of a SHA-256 over the plugin's files, such as `0.2.0+28df06dba97e`.
+  - The reason: Claude Code keeps a user on its cached copy of a plugin until the version string changes, and a plugin's files depend on the generator as well as on the catalog ([the marketplace spec](subsystems/marketplace.md)). The hash makes the string change whenever the files do.
+  - It doesn't order two builds of one version, since SemVer and Cargo treat them as equal. Whether Claude Code compares plugin versions or only their strings is UNVERIFIED.
+
+### Sources
+
+Each was read on 2026-11-17.
+
+| Source | Version | Used for |
+|---|---|---|
+| [SemVer 2.0.0](https://semver.org/spec/v2.0.0.html) | 2.0.0 | Rules 1, 3, 4 and 10; the FAQ on deprecation and on the `v` prefix |
+| Cargo Book: [specifying dependencies](https://github.com/rust-lang/cargo/blob/3acc79c0c841844675bc53a605922dbfc441e750/doc/book/src/reference/specifying-dependencies.md), [SemVer compatibility](https://github.com/rust-lang/cargo/blob/3acc79c0c841844675bc53a605922dbfc441e750/doc/book/src/reference/semver.md), [`rust-version`](https://github.com/rust-lang/cargo/blob/3acc79c0c841844675bc53a605922dbfc441e750/doc/book/src/reference/rust-version.md), [`cargo install`](https://github.com/rust-lang/cargo/blob/3acc79c0c841844675bc53a605922dbfc441e750/doc/man/cargo-install.md) | Cargo 1.100.0 (`3acc79c0`) | Caret requirements and 0.x; the MSRV as a minor change; installing with the packaged lockfile |
+| [`cargo install` source](https://github.com/rust-lang/cargo/blob/30a34c6821b57de0aaec83a901aca39f88f6778c/src/cargo/ops/cargo_install.rs) and the man pages of Cargo 1.96 to 1.99 | Cargo 1.96.0 (`30a34c68`) to 1.99.1 | The packaged lockfile is ignored without `--locked` |
+| [Rust 1.100.0 release notes](https://github.com/rust-lang/rust/blob/1.100.0/RELEASES.md) | 1.100.0 | `cargo install` uses the packaged lockfile by default |
+| [crates.io: unique versions without build metadata](https://github.com/rust-lang/crates.io/blob/dfefd631824936145a24e16b0dd3447dc6a113a0/migrations/2024-10-25-112826_make-unique-version-unique/up.sql) | `dfefd631` | A version that differs only in build metadata is refused |
+| [release-plz `next_version`](https://github.com/release-plz/release-plz/blob/92e907a14715182c99c26eb734a4b3d7b3775a0b/crates/next_version/src/lib.rs) | 0.4.3 | How a 0.x version is bumped |
+| [clap](https://github.com/clap-rs/clap/tree/v4.6.8), [`ArgMatches`](https://github.com/clap-rs/clap/blob/v4.6.8/clap_builder/src/parser/matches/arg_matches.rs) | 4.6.8 | No deprecation support; aliases can't be told apart |
+
+## Build profiles
+
+Release binaries are built with the `dist` profile in the root `Cargo.toml`. It inherits from `release` and sets `lto = "fat"` (link-time optimization across every crate), `codegen-units = 1`, `debug = false`, `strip = "debuginfo"` and `panic = "unwind"`. `cargo xtask release build` builds each package on its own with `cargo auditable build --locked --profile dist`, which embeds the dependency list in the binary for later auditing. Every release build also remaps the workspace and Cargo home paths (`--remap-path-prefix`), so binaries don't embed the runner's directories, and links the C runtime statically on Windows (`-Ctarget-feature=+crt-static`), so no Visual C++ runtime is needed. `xtask/src/release/build.rs` holds these flags. Everyday builds use Cargo's default `dev` and `release` profiles.
+
+## Packaging and channels
+
+One release publishes the CLI to crates.io, npm, PyPI, Homebrew, Scoop and winget, as install scripts and release archives, and as a container image. Each channel carries the same binary. How each channel's files are generated, signed and checked is in [the release spec](subsystems/release.md); what users run to install from each one is in [Installing](#installing).
+
+## Release checklist
+
+This checklist is the source for the bootstrap, the one-time setup before the first release. Tasks M8.3 to M8.7 in [`roadmap.md`](roadmap.md) point here. Do the parts in order:
+- **Repository settings:** the items marked "now", "before you merge the Phase 7 change" or "after you merge the Phase 7 change" at that time, and the rest at any time before the first release;
+- **Registries and repositories:** close to the first release, because PyPI's pending publisher expires after 30 days;
+- **Switch releases on:** last;
+- **During the first release run:** while the release workflow runs.
 
 Never store a token in GitHub at any step.
 
-### A. Repository settings
+### Repository settings
 
-- [ ] **Now: let release-plz commit to its branch.** Until you do, release-plz can't open the release pull request, so no release can start (§1).
+- [ ] **Now: let release-plz commit to its branch.** Until you do, release-plz can't open the release pull request, so no release can start ([How a release flows](subsystems/release.md#how-a-release-flows)).
   - **What happened.** The Release PR workflow's run 44198210657 failed in both attempts, on 2026-11-17 and 2026-11-18 (recorded under RELEASE-PLZ in [`specs.md`](specs.md)). Each attempt created a `release-plz-<timestamp>` branch, and then GitHub refused its commit there: "Repository rule violations found … Changes must be made through a pull request … Waiting for Code Scanning results. Code Scanning may not be configured for the target branch." All 11 runs up to 2026-11-24 have failed. The most recent, run 45513260333, was refused with only "Changes must be made through a pull request".
   - **Why.** The ruleset `BestBranch` covers every branch (`~ALL`), the `release-plz-*` branches included. In the first runs, its pull-request rule and its code-scanning rule both refused the commit. Read on 2026-11-24, the code-scanning rule is gone (the next item), and the pull-request rule alone still refuses it.
   - **Your decision.** Either target the ruleset at the default branch only (`~DEFAULT_BRANCH`), or keep `~ALL` and exclude `refs/heads/release-plz-*`.
@@ -178,7 +300,7 @@ Never store a token in GitHub at any step.
   - `release-plz.yml` runs on the next push to `main` and opens the release pull request (`chore: release`).
   - With the setting off, each run creates a `release-plz-<timestamp>` branch and then fails to open the pull request. The ruleset leaves such branches too (the first item). Delete any `release-plz-*` branch that has no pull request.
   - Leave the release pull request unmerged until the rest of this bootstrap is done. release-plz updates it on every push.
-  - Keep the default `GITHUB_TOKEN` permissions read-only (`PLAN.md` §6).
+  - Keep the default `GITHUB_TOKEN` permissions read-only.
 - [ ] **Before you merge the Phase 7 change, watch the repository for security alerts.**
   - It is needed as soon as [`SECURITY.md`](../SECURITY.md) is on `main`, because it promises an acknowledgment within 7 days from then.
   - On the repository page, choose Watch → Custom → Security alerts, or All Activity, and keep notifications on. For email, also select Email under Subscriptions → Watching in your notification settings.
@@ -201,18 +323,18 @@ Never store a token in GitHub at any step.
   - If an environment already exists, configure it the same way. A run that references a missing environment creates it without protection rules.
   - Each release then needs two approval rounds: `release` for the tag and the GitHub Release, then `crates-io`, `npm`, `pypi` and `ghcr` together.
   - `ghcr` approves `publish-image`, the push. `sign-image` follows without an approval of its own, because a job that calls a reusable workflow can't name an environment.
-  - `sign-files` has no environment either, and runs before the `release` approval ([`security-model.md`](security-model.md) §6b, "Signing comes before approval").
+  - `sign-files` has no environment either, and runs before the `release` approval ([the release spec](subsystems/release.md), "Signing comes before approval").
 - [ ] **Enable immutable releases** (Settings → Releases → "Enable release immutability").
   - It applies only to releases published afterward.
   - `GITHUB_TOKEN` can't read this setting, so the `publish` job only warns when a release comes out mutable. Check it with your own login: `gh api repos/jabbott-iii/Grimoire/immutable-releases` should show `"enabled": true`.
-  - A mutable release gets no release attestation (GitHub's own signed statement that a file belongs to the release), so the tap and bucket syncs can't take it (§3).
-- [ ] **The CI ruleset on `main`** (`PLAN.md` §6): require the CI, Security and `release checks` checks.
+  - A mutable release gets no release attestation (GitHub's own signed statement that a file belongs to the release), so the tap and bucket syncs can't take it ([Recovery](#recovery)).
+- [ ] **The CI ruleset on `main`** (task M8.4 in [`roadmap.md`](roadmap.md)): require the CI, Security and `release checks` checks.
   - `release checks` is the release workflow's summary job. On a pull request it fails unless every dry-run job passed.
   - A skipped job counts as a failure, because a required check whose job is skipped would otherwise count as passed.
   - The release pull request's checks then come from the runs you approve.
   - A ruleset on every branch already requires pull requests, with one approval and code-owner review ([`.github/CODEOWNERS`](../.github/CODEOWNERS)), but no status checks (read on 2026-11-17, and again on 2026-11-24). The administrator role, Dependabot (GitHub's dependency-update bot) and two other GitHub Apps can bypass it; GitHub Actions can't.
 
-### B. Registries and repositories, close to the first release
+### Registries and repositories, close to the first release
 
 **npm.** The npm research left several points UNVERIFIED; they are marked below. Trusted publishing is configured later, in part D, because a new configuration expires after 48 hours.
 
@@ -271,7 +393,7 @@ The READMEs next to the two templates ([tap](../packaging/homebrew-tap/README.md
   - A package linked after its first push doesn't inherit the repository's access.
   - This case hasn't been tried.
 
-### C. Switch releases on (last)
+### Switch releases on (last)
 
 - [ ] **Clear the before-first-release markers.**
   - Text to change before the first release sits between an opening line, `<!-- before-first-release: … -->`, which says what to do, and a closing line, `<!-- /before-first-release -->`.
@@ -288,15 +410,15 @@ The READMEs next to the two templates ([tap](../packaging/homebrew-tap/README.md
 - From then on, a push to `main` runs in release mode when its version isn't tagged and `CHANGELOG.md` has a section for it. Other pushes, Dependabot merges included, stay dry-runs.
 - The first release starts when you merge the release pull request. Before you merge it, check that it is current (release-plz updates it on each push) and that its checks passed.
 
-### D. During the first release run
+### During the first release run
 
 - Trusted publishing can't create a crate, so you publish the first version of each crate yourself, from the commit the run tagged.
 - npm's trusted publishing is set up here too, so that its 48-hour window starts as late as possible.
 - The container image's package is created by the run itself, and you make it public at the end.
 
 1. **Wait for the `release` approval.** Check that the run's commit (the `GITHUB_SHA` shown in the run) is the release pull request's merge commit, and that every earlier job passed. If not, reject it.
-   - The one other commit to accept is the merge commit of a fix pull request merged after the release pull request's run failed before this approval (§3), once you've checked that `main` gained only that fix since the release pull request's merge.
-2. **Approve `release`.** The `publish` job tags `vX.Y.Z` and publishes the GitHub Release. Check that its log says the release is immutable (§3 if not).
+   - The one other commit to accept is the merge commit of a fix pull request merged after the release pull request's run failed before this approval ([Recovery](#recovery)), once you've checked that `main` gained only that fix since the release pull request's merge.
+2. **Approve `release`.** The `publish` job tags `vX.Y.Z` and publishes the GitHub Release. Check that its log says the release is immutable ([Recovery](#recovery) if not).
 3. **The run now waits for `crates-io`, `npm`, `pypi` and `ghcr`.** Don't approve yet.
 4. **Check out the tag `vX.Y.Z`** in a clean clone, with the pinned toolchain from `rust-toolchain.toml`.
 5. **Create a crates.io API token** that expires soon and can only publish these crates. Which scopes (limits on what a token may do) crates.io offers was not re-checked in Phase 5.
@@ -318,16 +440,16 @@ The READMEs next to the two templates ([tap](../packaging/homebrew-tap/README.md
     - The crates.io job finds all six versions published and skips them.
     - The npm job stages the seven packages, and the PyPI job uploads the wheels and creates the project.
     - `publish-image` creates the GHCR package with its first push, and `sign-image` follows without another approval.
-12. **Approve the npm versions** (§1 step 8).
+12. **Approve the npm versions** ([How a release flows](subsystems/release.md#how-a-release-flows), step 8).
 13. **Check the new package before you make it public.** `sign-image` (not `publish-image`) signs, attests, tags `X.Y.Z` and moves `latest`, then fails at its last step if the package can't be pulled anonymously.
     - GitHub's docs disagree on whether a package that a workflow creates starts private or takes the repository's visibility. If the last step passed, the package is already public: do the checks below and skip steps 14 and 15.
     - On the package's page on GitHub, check that it is linked to `jabbott-iii/Grimoire`. The image's `org.opencontainers.image.source` label and annotations name the repository; which of them GHCR reads is UNVERIFIED.
     - The package also shows `sha256-<hex>` tags, because GHCR has no referrers API. `sha256-<index hex>` lists the cosign signature and the provenance attestation, and each `sha256-<platform hex>` lists that platform's BuildKit attestation manifest (the SBOM and provenance that BuildKit, Docker's build engine, adds for each platform).
-    - Never delete them (§3): deleting one removes what it lists, and verification then fails.
+    - Never delete them ([Recovery](#recovery)): deleting one removes what it lists, and verification then fails.
 14. **Make the package public, in its package settings.** **This can't be undone**: a public package can never be made private again. No API changes a package's visibility, so this step is manual.
-15. **Re-run `sign-image`** (Actions → the run → Re-run failed jobs). It has no environment, so it waits for no approval. The signature and the attestation are skipped because they are done, the tags already name this digest, and the last step now passes (§3).
+15. **Re-run `sign-image`** (Actions → the run → Re-run failed jobs). It has no environment, so it waits for no approval. The signature and the attestation are skipped because they are done, the tags already name this digest, and the last step now passes ([Recovery](#recovery)).
 
-## 3. Recovery
+## Recovery
 
 - **A job failed.**
   - Re-run the failed jobs of the same run (Actions → the run → Re-run failed jobs). GitHub allows that for 30 days after the run, and a re-run uses the run's own commit.
@@ -350,7 +472,7 @@ The READMEs next to the two templates ([tap](../packaging/homebrew-tap/README.md
   - **A Grype finding, or a coverage failure.**
     - Every platform is scanned before the step fails, so the `image-scan` artifact holds each platform's JSON and CycloneDX reports (CycloneDX is a standard SBOM format).
     - A coverage failure (Grype detected no Debian 13 or no Debian packages, or a binary shows no Rust packages) means Grype couldn't see part of the image: investigate it, never ignore it.
-    - If a fix exists, take it: a base digest bump (§6) or a crate update.
+    - If a fix exists, take it: a base digest bump ([Maintaining the image pins](#maintaining-the-image-pins)) or a crate update.
     - If none exists, add an ignore rule to `.grype.yaml` that names the vulnerability and the package and gives a reason. Do it in a pull request reviewed like the exceptions in `deny.toml`, the configuration of cargo-deny, which checks Rust dependencies.
     - Never lower the threshold or drop `--fail-on`.
   - Grype's database is rebuilt daily, so a re-run can fail where the pull request passed.
@@ -359,7 +481,7 @@ The READMEs next to the two templates ([tap](../packaging/homebrew-tap/README.md
   - `X.Y.Z` is never overwritten.
   - `latest` moves to this release unless it already names a newer version. It stays on a newer release that verifies with the image's signing identity, so it never moves back to an older signed release. If the newer version doesn't verify, the job stops and `latest` stays where it is.
   - `.github/scripts/image-tags.sh` makes these steps, and its errors mean:
-    - **`already points at <digest>, not at <digest>`** (`publish-image` or `sign-image`): `X.Y.Z` already names another digest. Stop and investigate. Never overwrite the tag and never delete it. Check whether that digest verifies with the image's identity, `sign-image.yml` (§5, "The container image").
+    - **`already points at <digest>, not at <digest>`** (`publish-image` or `sign-image`): `X.Y.Z` already names another digest. Stop and investigate. Never overwrite the tag and never delete it. Check whether that digest verifies with the image's identity, `sign-image.yml` ([Verifying a download](#verifying-a-download), "The container image").
     - **`cannot tell whether <ref> exists`:** a tag lookup failed for a reason other than the registry's "unknown" answer, and the error of crane (the command-line registry tool that the script uses) is printed just before it. The script never treats a tag it couldn't read as absent. Fix the cause, then re-run the failed job.
     - **`crane pushed <ref>, not <image>@<digest>`:** the push didn't keep the digest of the checked layout. Stop and investigate before you re-run.
     - **`latest is <version>, newer than X.Y.Z; leaving it`** is expected when you re-run an older release.
@@ -369,7 +491,7 @@ The READMEs next to the two templates ([tap](../packaging/homebrew-tap/README.md
     - **The warning `latest named <digest>, which has no release version; moving it`** means `latest` named an image without an `org.opencontainers.image.version` annotation, which no release makes. The script moves `latest` to this release. Find out who tagged that image.
     - **`is not a sha256 digest`, `is not a release version`, a usage line, or `sign-image.yml`'s `unexpected version … or digest`:** the workflow passed bad input. That is a bug in the workflow, so a re-run can't fix it (below, "A re-run can't finish the release").
 - **The weekly image scan failed** (`security.yml`, job `image-scan`). It has one of two causes:
-  - the latest release's image isn't pushed, tagged, signed or public yet (finish its `publish-image` and `sign-image`, §2 D), which the job's error names;
+  - the latest release's image isn't pushed, tagged, signed or public yet (finish its `publish-image` and `sign-image`, [During the first release run](#during-the-first-release-run)), which the job's error names;
   - or a new advisory (a newly published vulnerability) matches it.
   - A released image is never changed, so if a fix exists, take it as for the `image` job and release a new patch version.
   - If none exists, an ignore rule with a reason in `.grype.yaml` on `main` also clears the weekly scan.
@@ -382,7 +504,7 @@ The READMEs next to the two templates ([tap](../packaging/homebrew-tap/README.md
   - The failed run's signatures and attestations stay in the public logs (Rekor, Sigstore's public transparency log, and GitHub's attestations), but its files were never released.
 - **The release isn't immutable** (`publish` warned `release vX.Y.Z is not immutable`).
   - GitHub created no release attestation, so the tap and bucket syncs can't take this version. Enabling the setting later doesn't change a release that is already published.
-  - Before you approve the registry round, reject it. Enable immutable releases (§2 A). Delete the release but keep the tag: `gh release delete vX.Y.Z --repo jabbott-iii/Grimoire`, without `--cleanup-tag`.
+  - Before you approve the registry round, reject it. Enable immutable releases ([Repository settings](#repository-settings)). Delete the release but keep the tag: `gh release delete vX.Y.Z --repo jabbott-iii/Grimoire`, without `--cleanup-tag`.
   - Then re-run the `publish` job (Actions → the run → the job → Re-run). It finds the tag at the same commit and no release, so it publishes the release again, now immutable. GitHub re-runs the registry jobs after it; approve them.
   - This path hasn't been tried.
 - **A re-run can't finish the release.** That happens when the run is more than 30 days old, or when the fix needs a change to the code or the workflow, because a re-run uses the run's commit.
@@ -394,25 +516,25 @@ The READMEs next to the two templates ([tap](../packaging/homebrew-tap/README.md
     4. The next push to `main`, or a manual run, releases X.Y.Z from the fixed commit.
   - **If any registry already has X.Y.Z,** never reuse the version. Release a new patch version.
 - **npm trusted publishing failed** (npm/cli#9969, "package not found": an npm bug, open when checked on 2026-11-17, that affects repositories like this one, whose OIDC tokens carry GitHub's immutable subject; [ADR-0009](adr/0009-release-pipeline.md)):
-  1. Download the seven `.tgz` files from the GitHub Release and verify them (§5).
+  1. Download the seven `.tgz` files from the GitHub Release and verify them ([Verifying a download](#verifying-a-download)).
   2. Run `npm login`.
   3. Check which versions are already there: `npm stage list` (an interactive session can list stages) and `npm view <package>@X.Y.Z version`. Skip every package that has a staged or published X.Y.Z.
   4. Run `npm stage publish <file>.tgz --access public --ignore-scripts` for the remaining platform tarballs, then for the launcher.
   5. Approve them in the same order.
   - These versions have no npm provenance (npm's signed link from a version to the workflow run that published it). No token is stored at any point.
-- **An npm trusted-publisher configuration expired.** It fails with "package not found" too. An expired configuration can't be edited: delete and create it again (§2 D step 10), then re-run `publish-npm`. That keeps the OIDC path, unlike the fallback above.
+- **An npm trusted-publisher configuration expired.** It fails with "package not found" too. An expired configuration can't be edited: delete and create it again ([During the first release run](#during-the-first-release-run), step 10), then re-run `publish-npm`. That keeps the OIDC path, unlike the fallback above.
 - **A release turns out to be wrong after it was published.**
   - Release a new patch version.
   - Never delete or move a published tag, and don't try to reuse its version. Immutable releases lock the tag and the assets, and the tag name can never be reused.
 
-## 4. Installing (users)
+## Installing
 
 Install the package `agent-grimoire`, then run the command `grimoire`. The only exception is winget, where the command is `agent-grimoire` (below). Every prebuilt channel installs the same binary; `cargo install` builds it from source. [`cli.md`](cli.md) has the commands.
 
 | Channel | Install | Notes |
 |---|---|---|
 | crates.io, from source | `cargo install agent-grimoire --locked` | Builds on your machine |
-| crates.io, prebuilt | `cargo binstall agent-grimoire` | Downloads the release archive. It relies on HTTPS for the archive and checks only the crate's checksum, not the archive (§5) |
+| crates.io, prebuilt | `cargo binstall agent-grimoire` | Downloads the release archive. It relies on HTTPS for the archive and checks only the crate's checksum, not the archive ([Verifying a download](#verifying-a-download)) |
 | npm | `npm install -g agent-grimoire` | Needs Node.js 18 or later. The launcher runs the binary from a platform package |
 | npm, without installing | `npx agent-grimoire --version` | CI tests only `npx grimoire` in a project that already has the package installed |
 | PyPI | `pipx install agent-grimoire` or `uv tool install agent-grimoire` | The wheel holds the binary and no Python code. CI tests only `pip install` in a venv (a Python virtual environment) |
@@ -463,11 +585,11 @@ What the scripts do:
 
 The `releases/latest/download/` address is GitHub's redirect to the newest release. The redirect itself isn't covered by the Phase 5 research (UNVERIFIED).
 
-Only `release.yml` is meant to create releases here: release-plz is configured to create none, but its token could ([`security-model.md`](security-model.md) §6b).
+Only `release.yml` is meant to create releases here: release-plz is configured to create none, but its token could ([the release spec](subsystems/release.md)).
 
-**Verify a script before you run it.** It is a release asset like any other. Download `install.sh` (or `install.ps1`) with its `.sigstore.json` bundle, and check it with cosign or `gh attestation verify` as in §5. They show that a release run on `main` signed it. `gh release verify-asset` alone shows only that the file belongs to a release. Then read it.
+**Verify a script before you run it.** It is a release asset like any other. Download `install.sh` (or `install.ps1`) with its `.sigstore.json` bundle, and check it with cosign or `gh attestation verify` as in [Verifying a download](#verifying-a-download). They show that a release run on `main` signed it. `gh release verify-asset` alone shows only that the file belongs to a release. Then read it.
 
-## 5. Verifying a download
+## Verifying a download
 
 Every file in a release, except the `.sigstore.json` bundles themselves, has:
 - a build provenance attestation (a signed record of the run that built the file), stored on the repository rather than on the release page;
@@ -565,9 +687,9 @@ gh attestation verify oci://ghcr.io/jabbott-iii/grimoire@sha256:<index digest> \
 - The signature names a digest, not a version. The index's `org.opencontainers.image.version` annotation, which the signature covers, says which version it is.
 - `gh attestation verify` needs gh 2.102.0 or later, a gh login, and a registry login for the `oci://` lookup.
 
-What each package manager checks on your machine, and what it doesn't, is in [`security-model.md`](security-model.md) §6b; the image is in §6c.
+What each package manager checks on your machine, and what it doesn't, is in [the release spec](subsystems/release.md); the image's is in [the container image spec](subsystems/container-image.md).
 
-## 6. Maintaining the image pins (maintainer)
+## Maintaining the image pins
 
 A pin fixes the exact version and checksum, or the digest, of a tool or image that the workflows use, so that every run uses the same bytes.
 
@@ -588,7 +710,7 @@ A pin fixes the exact version and checksum, or the digest, of a tool or image th
   - `.manifest["sha256:<new digest>"].tag` lists the index's tags. The newest index carries `nonroot`.
 - **Then let the pull request's checks run.** The release dry-run verifies distroless's signature on the new index and both platform manifests, then builds, checks and scans the image. Merge only when they pass.
 - The pull request has no release notes, because distroless sets no labels.
-- Dependabot opens no security updates for Docker images. The weekly `image-scan` job in `security.yml` scans the latest release's image instead (§3).
+- Dependabot opens no security updates for Docker images. The weekly `image-scan` job in `security.yml` scans the latest release's image instead ([Recovery](#recovery)).
 - **Today's pin** is `sha256:aafe9936…`, which `nonroot` still pointed to on 2026-11-20. It was first uploaded 2026-11-12T21:16:35Z.
   - It met the rule at 2026-11-19T21:16:35Z. Dependabot's pull request 1 moved the pin to it and was merged on 2026-11-20, after that time.
   - It differs from the previous pin, `sha256:25ac8f0c…` (first uploaded 2026-10-31), only in the mode (the file permissions) of `/usr/lib/os-release`, to which `/etc/os-release` links.
@@ -634,3 +756,7 @@ A pin fixes the exact version and checksum, or the digest, of a tool or image th
   - A rule may use only `vulnerability`, `package` (`name`, `version`), `reason` and `include-aliases`; widen the test in the same pull request if a rule needs more.
   - Ignore rules have no expiry: review every rule when you bump the base image or Grype, and remove the ones that no longer match.
 - **Known follow-ups.** BuildKit v0.35.0 and buildx v0.39.0 (Docker's build plugin), both from 2026-11-11, have met the 7-day rule since 2026-11-18, but the workflows still pin v0.34.2 and 0.38.2. A CI check of the base digest's age doesn't exist yet.
+
+## Crash reporting
+
+Grimoire has none. The install path contains no network code ([ADR-0001](adr/0001-catalog-delivery.md)), and the CLI sends no telemetry or crash reports. Users report problems through the issue forms in `.github/ISSUE_TEMPLATE/`, and vulnerabilities privately, as [`SECURITY.md`](../SECURITY.md) says.

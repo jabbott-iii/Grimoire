@@ -42,7 +42,7 @@ Data files that `cargo xtask` generates are not code and aren't exceptions. Exam
   - Replace the binary atomically (never leaving a half-written binary): copy it next to the old one, check that it runs, then rename it over the old one.
   - Fail closed (stop with an error instead of skipping the check) when no SHA-256 tool exists or the embedded value is empty.
   - No PATH or shell rc-file edits (startup files such as `~/.bashrc`), no telemetry, receipts, tokens or updater.
-- **Size:** one template, 263 lines after the Phase 5 review (the review of the release-pipeline phase of `PLAN.md`).
+- **Size:** one template, 263 lines after the Phase 5 review (the review of the release-pipeline phase of `roadmap.md`).
   - `cargo xtask release channels` renders it, filling in only the version and the archive SHA-256s.
   - Growth beyond the scope above needs a change to this ADR.
 - **Checks:**

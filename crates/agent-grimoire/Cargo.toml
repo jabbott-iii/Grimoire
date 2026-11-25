@@ -36,7 +36,7 @@ workspace = true
 
 # `cargo binstall agent-grimoire` downloads the release archive for the host
 # (BINSTALL in docs/specs.md). binstall checks the crate's checksum but not the
-# archive's: see docs/release.md for verifying with SHA256SUMS, attestations or cosign.
+# archive's: see docs/05-release.md for verifying with SHA256SUMS, attestations or cosign.
 # xtask's test `binstall_metadata_names_the_release_archives` checks these URLs against the archives.
 [package.metadata.binstall]
 pkg-url = "{ repo }/releases/download/v{ version }/agent-grimoire-{ version }-{ target }.tar.gz"

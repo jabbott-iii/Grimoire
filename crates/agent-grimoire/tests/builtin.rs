@@ -101,7 +101,7 @@ fn the_catalog_holds_one_exemplar_per_kind_and_two_bundles() {
 }
 
 /// An asset's `min-cli-version` is at most the workspace version, so the CLI that
-/// embeds the asset can install it (`docs/versioning.md` §4). Between releases
+/// embeds the asset can install it (`docs/05-release.md`, Asset versions). Between releases
 /// that version is the last release's, and on the release PR it is the one being
 /// released. `cargo xtask release plan` checks the release itself.
 #[test]

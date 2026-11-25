@@ -24,8 +24,8 @@
 //!   exists only for Grimoire's own tests: every crate that uses it lists it
 //!   under `[dev-dependencies]` only, so no published crate's library or
 //!   binary depends on it. `cargo publish --workspace` skips it at release time
-//!   ([`docs/release.md` §2 D, During the first release run][release-2d]).
-//! - **Design.** [`docs/architecture.md` §4, Repository layout][architecture-4]
+//!   ([`docs/05-release.md`, During the first release run, During the first release run][release-2d]).
+//! - **Design.** [`docs/01-architecture.md`, Repository layout, Repository layout][architecture-4]
 //!   places the fixtures in this crate (its Phase 2 notes) and explains why
 //!   the CLI is a library plus a binary.
 //!
@@ -166,8 +166,8 @@
 //! - Each [`FixtureCatalog`] and [`Project`] deletes its directory when it is
 //!   dropped, so keep it alive while a test uses its paths.
 //!
-//! [architecture-4]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#4-repository-layout
-//! [release-2d]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/release.md#d-during-the-first-release-run
+//! [architecture-4]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/01-architecture.md#repository-layout
+//! [release-2d]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/05-release.md#during-the-first-release-run
 
 #![allow(
     clippy::unwrap_used,

@@ -1,6 +1,6 @@
-//! The release targets and every name derived from them (PLAN.md §4, ADR-0009).
+//! The release targets and every name derived from them (docs/03-platforms.md, "Targets", and ADR-0009).
 
-/// The GitHub repository. The maintainer kept this spelling (PLAN.md C8); trusted
+/// The GitHub repository. The maintainer kept this spelling (task M1.1 in docs/roadmap.md); trusted
 /// publishers and cosign identities match it exactly, case included.
 pub(crate) const REPO_URL: &str = "https://github.com/jabbott-iii/Grimoire";
 /// The CLI package and the name it has on every registry (ADR-0004).

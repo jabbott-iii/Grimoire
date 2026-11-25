@@ -56,10 +56,10 @@ Only the latest release gets security fixes. A fix ships in a new release: a pub
 - **The CLI** (the `grimoire` command-line tool): upgrade to the release with the fix.
 - **An asset:** its fixed version ships in that release too, but upgrading `grimoire` doesn't change your project. Run `grimoire update <id>`, which moves the pin in `grimoire.lock` and applies the fixed content. Until then, the project keeps the old content.
 - **A tool or MCP server:** Grimoire never installs their binaries, so also install the binary from that release's archives or container image.
-  - A rebuilt binary can keep its asset version, and so its `--version`. Every release builds every binary again, and a binary can change while nothing in its asset directory does (§4 of the versioning policy, https://github.com/jabbott-iii/Grimoire/blob/main/docs/versioning.md).
+  - A rebuilt binary can keep its asset version, and so its `--version`. Every release builds every binary again, and a binary can change while nothing in its asset directory does ("Tool and MCP server binaries" in the versioning policy, https://github.com/jabbott-iii/Grimoire/blob/main/docs/05-release.md#tool-and-mcp-server-binaries-not-checked).
   - Identify the fixed one by the release it comes from and its archive's SHA-256 in that release's `SHA256SUMS`. For the image, identify it by the digest (the image's SHA-256 identifier) in that release's notes.
 
-<!-- before-first-release: before the first release, delete everything from this line to the closing /before-first-release line, in a pull request merged ahead of the release PR (docs/release.md §2 C). -->
+<!-- before-first-release: before the first release, delete everything from this line to the closing /before-first-release line, in a pull request merged ahead of the release PR (docs/05-release.md, "Switch releases on (last)"). -->
 **No release exists yet.** Until the first one, report problems in the `main` branch.
 <!-- /before-first-release -->
 
@@ -84,4 +84,4 @@ Report these elsewhere:
 
 ## Threat model
 
-The security model, https://github.com/jabbott-iii/Grimoire/blob/main/docs/security-model.md, describes what Grimoire defends against, how, and the gaps it knows about. A report that a documented gap is worse than described is in scope.
+The security model, https://github.com/jabbott-iii/Grimoire/blob/main/docs/01-architecture.md#security-model, describes what Grimoire defends against, how, and the gaps it knows about. Each part's own threats are in its spec, and https://github.com/jabbott-iii/Grimoire/tree/main/docs/subsystems lists the specs. A report that a documented gap is worse than described is in scope.

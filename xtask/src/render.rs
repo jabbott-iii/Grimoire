@@ -2,7 +2,7 @@
 //! declares, through the real adapters, so that a refusal only an adapter makes
 //! fails here rather than in a user's `grimoire apply`. Examples are a Cursor agent
 //! whose tools aren't exactly `read` and `search`, a comma in a Cursor glob, or an
-//! MCP tool name a client would rename (`architecture.md` §6.4).
+//! MCP tool name a client would rename (`docs/subsystems/catalog.md`, Catalog validation).
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;

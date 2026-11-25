@@ -9,7 +9,7 @@ The bucket has one manifest, `bucket/agent-grimoire.json`. It installs the prebu
 - Every Grimoire release attaches a generated `agent-grimoire.json`, attested and signed like every other asset. An attestation is a signed record of which workflow run produced a file.
 - `sync-manifest.yml` copies that file from the latest release, after verifying it, and opens a pull request.
 
-The design is in [ADR-0009](../../docs/adr/0009-release-pipeline.md), the architecture decision record (ADR) for the release pipeline and its distribution channels. The release runbook, the step-by-step guide to a release, is [`docs/release.md`](../../docs/release.md).
+The design is in [ADR-0009](../../docs/adr/0009-release-pipeline.md), the architecture decision record (ADR) for the release pipeline and its distribution channels. The release runbook, the step-by-step guide to a release, is [`docs/05-release.md`](../../docs/05-release.md).
 
 ## Create the repository (maintainer, once)
 
@@ -26,7 +26,7 @@ The design is in [ADR-0009](../../docs/adr/0009-release-pipeline.md), the archit
 5. **Protect the default branch** with a ruleset (a set of GitHub branch rules) that requires a pull request. Checks on a pull request opened with `GITHUB_TOKEN` wait for approval: approve them from the pull request.
 6. **In `jabbott-iii/Grimoire`, enable immutable releases** (Settings → Releases → "Enable release immutability"). With the setting on, GitHub locks each release's tag and files once it is published.
    - `gh release verify-asset` needs the release attestation that immutable releases create.
-   - A release published while the setting was off has none, so the sync fails for it and opens nothing. [`docs/release.md`](../../docs/release.md) §3, on recovery, says how to publish it again.
+   - A release published while the setting was off has none, so the sync fails for it and opens nothing. [`docs/05-release.md`](../../docs/05-release.md#recovery), on recovery, says how to publish it again.
 7. **The workflow then runs daily**, and whenever you start it from the Actions tab (*Run workflow*). Until the first Grimoire release exists, each run ends with a notice that there is nothing to sync.
 8. **Keep the schedule alive.** GitHub turns off scheduled workflows in a public repository after 60 days without activity, and this repository gets commits only when a sync pull request merges.
    - If a Grimoire release brings no sync pull request, enable the workflow again (Actions tab → "Enable workflow", or `gh workflow enable sync-manifest.yml --repo jabbott-iii/scoop-bucket`).

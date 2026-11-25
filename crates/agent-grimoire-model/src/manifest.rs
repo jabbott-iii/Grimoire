@@ -1,6 +1,6 @@
 //! The asset manifest, `catalog/<kind>/<id>/asset.toml`.
 //!
-//! The design is in [`docs/architecture.md` §6.1, `asset.toml`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#61-assettoml).
+//! The design is in [`docs/subsystems/model.md`, `asset.toml`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/model.md#assettoml).
 
 use std::collections::BTreeMap;
 

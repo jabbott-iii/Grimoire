@@ -2,7 +2,7 @@
 
 - **Status:** Accepted (maintainer approved all Phase 0 proposals, 2026-11-16); amended by [ADR-0008](0008-phase-4-client-adapters.md) (2026-11-17): hooks stay Claude Code only, Codex gets no agents, and Cursor and Copilot read shared rules from `AGENTS.md`
 - **Date:** 2026-11-16
-- **Specs:** `CC-*`, `AGENTSMD`, `SKILLS`, `CODEX-*`, `CURSOR-*`, `GEMINI-*`, `COPILOT-*` in [`../specs.md`](../specs.md), the register of verified external specs; the read matrix (which client reads which file) in [`../architecture.md`](../architecture.md) §8.2
+- **Specs:** `CC-*`, `AGENTSMD`, `SKILLS`, `CODEX-*`, `CURSOR-*`, `GEMINI-*`, `COPILOT-*` in [`../specs.md`](../specs.md), the register of verified external specs; the read matrix (which client reads which file) in [`../subsystems/adapters.md`](../subsystems/adapters.md#client-read-matrix-and-cross-client-planning)
 
 ## Context
 
@@ -33,10 +33,10 @@ A client is an AI coding tool that Grimoire writes files for, and an adapter is 
 | 2 | `agents-md` (portable) | 2 | rules as `AGENTS.md` blocks (marked sections that Grimoire owns inside a shared file); skills in `.agents/skills/` (the cross-client convention in `SKILLS`). No agents, MCP or hooks, because there is no portable format for them |
 | 3 | `codex` | 4 | rules and skills via the shared locations; MCP as `[mcp_servers.<id>]` in `.codex/config.toml` (the first adapter that writes entries into a TOML file, a configuration file format); agents as `.codex/agents/<id>.toml` only when the restriction is enforceable; hooks |
 | 4 | `cursor` | 4 | rules as `.cursor/rules/<id>.mdc`; skills via shared locations; MCP in `.cursor/mcp.json` (`${env:}` syntax); agents whose restrictions `readonly` can express; hooks |
-| 5 | `gemini-cli` | 4 | rules as `GEMINI.md` blocks; skills in `.agents/skills/`; MCP in `.gemini/settings.json` (`httpUrl`) *(Corrected 2026-11-22: for Streamable HTTP, Grimoire writes `url` with `"type": "http"`, not `httpUrl`, in `crates/agent-grimoire-adapters/src/gemini_cli.rs` and as [`architecture.md`](../architecture.md) §8.3 says. No ADR records this choice; ADR-0008 settled only the file. It follows GEMINI-P4 in [`specs.md`](../specs.md), which found that `gemini mcp add --transport http` writes this form and that Gemini CLI treats `httpUrl` as deprecated.)*; agents (preview); hooks |
+| 5 | `gemini-cli` | 4 | rules as `GEMINI.md` blocks; skills in `.agents/skills/`; MCP in `.gemini/settings.json` (`httpUrl`) *(Corrected 2026-11-22: for Streamable HTTP, Grimoire writes `url` with `"type": "http"`, not `httpUrl`, in `crates/agent-grimoire-adapters/src/gemini_cli.rs` and as [`subsystems/adapters.md`](../subsystems/adapters.md#per-client-mapping) says. No ADR records this choice; ADR-0008 settled only the file. It follows GEMINI-P4 in [`specs.md`](../specs.md), which found that `gemini mcp add --transport http` writes this form and that Gemini CLI treats `httpUrl` as deprecated.)*; agents (preview); hooks |
 | 6 | `copilot` | 4 | rules as `.github/instructions/*.instructions.md`; skills via shared locations; agents as `.github/agents/<id>.agent.md`; MCP in `.mcp.json` (shared with Claude Code); hooks as `.github/hooks/grimoire.json` |
 
-This keeps the maintainer's order. The Phase column refers to the phases of the implementation plan in `PLAN.md`.
+This keeps the maintainer's order. The Phase column refers to the phases of the implementation plan in `roadmap.md`.
 
 - **Phase 2** (the resolver, installer and CLI core) builds the full install engine against the two clients that exercise:
   - every output unit: a whole file, a block in a shared file, and an entry in a JSON file;
@@ -58,8 +58,8 @@ This keeps the maintainer's order. The Phase column refers to the phases of the 
 
 ## Consequences
 
-- **Snapshot tests by combination.** Adapter snapshot tests (tests that compare output with a reviewed, stored copy) must cover client *combinations*, not just single clients, because outputs depend on the selected set (`architecture.md` §8.2).
+- **Snapshot tests by combination.** Adapter snapshot tests (tests that compare output with a reviewed, stored copy) must cover client *combinations*, not just single clients, because outputs depend on the selected set (`subsystems/adapters.md`, "Client read matrix and cross-client planning").
 - **Duplicates and leaks.**
   - Where reaching every selected client once is impossible, `plan` reports the duplicates.
-  - Cross-client permission leaks, where content installed for one client grants something in another, are documented in `docs/security-model.md` (Phase 7, the documentation phase). For example, Cursor reads `.claude/agents/` without enforcing tools.
+  - Cross-client permission leaks, where content installed for one client grants something in another, are documented in `docs/subsystems/adapters.md`, "Cross-client leaks" (written in Phase 7, the documentation phase). For example, Cursor reads `.claude/agents/` without enforcing tools.
 - **Re-verification.** Every adapter re-verifies its `specs.md` entries at the start of its phase, because these formats change monthly.

@@ -1,4 +1,4 @@
-//! Keeps `docs/cli.md` true to the command line (`PLAN.md`, Phase 7).
+//! Keeps `docs/cli.md` true to the command line (task M7.2 in `docs/roadmap.md`).
 //!
 //! The test reads only the structure that `docs/cli.md` defines for it:
 //! - one `## grimoire <command>` section per subcommand except `help`, in the

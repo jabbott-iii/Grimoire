@@ -60,7 +60,7 @@ impl JsonSchema for Format {
     }
 }
 
-/// An asset kind ([`docs/architecture.md` §3, Asset kinds](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#3-asset-kinds)).
+/// An asset kind ([`docs/subsystems/catalog.md`, Asset kinds](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/catalog.md#asset-kinds)).
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema,
 )]

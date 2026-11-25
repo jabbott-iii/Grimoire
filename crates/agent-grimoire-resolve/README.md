@@ -103,13 +103,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ## Documentation
 
 - API reference: https://docs.rs/agent-grimoire-resolve
-- Design: [`docs/architecture.md` §7.5, Resolution errors](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#75-resolution-errors): the errors resolution reports, and why a version pinned in the lock that differs from the catalog's stops planning even when no file would change. Also:
-  - [§6.2, `grimoire.toml`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#62-grimoiretoml-user-repo): the selection this crate reads, including `exclude`, the `[assets]` options and the `[allow]` table;
-  - [§6.3, Permission consent](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#63-permission-consent): the grant names, and that resolution fails on any permission the project hasn't accepted;
-  - [§7.1, Desired state, plan, apply](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#71-desired-state-plan-apply): resolution is the first step of every install, and the lock's pins hold unless `update` moves them;
+- Design: [`docs/subsystems/resolve.md`, Resolution errors](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/resolve.md#resolution-errors): the errors resolution reports, and why a version pinned in the lock that differs from the catalog's stops planning even when no file would change. Also:
+  - [`docs/subsystems/model.md`, `grimoire.toml`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/model.md#grimoiretoml): the selection this crate reads, including `exclude`, the `[assets]` options and the `[allow]` table;
+  - [`docs/subsystems/resolve.md`, Permission consent](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/resolve.md#permission-consent): the grant names, and that resolution fails on any permission the project hasn't accepted;
+  - [`docs/subsystems/install.md`, Desired state, plan, apply](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/install.md#desired-state-plan-apply): resolution is the first step of every install, and the lock's pins hold unless `update` moves them;
   - the architecture decision records (ADRs) [ADR-0001](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0001-catalog-delivery.md), which builds the catalog into the CLI with one version of each asset, behind the `Source` type; [ADR-0005](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0005-client-priority.md), which chose the six clients and their order; and [ADR-0008](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0008-phase-4-client-adapters.md), which keeps hooks to Claude Code and gives Codex no agents.
 - Diagnostics: [`docs/diagnostics.md`, Resolution](https://github.com/jabbott-iii/Grimoire/blob/main/docs/diagnostics.md#resolution-resolve) lists every `resolve/` code, what raises it and what to do about it.
-- Versioning: [`docs/versioning.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/versioning.md). Grimoire versions its crates together.
+- Versioning: [`docs/05-release.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/05-release.md#versioning). Grimoire versions its crates together.
 - Grimoire: https://github.com/jabbott-iii/Grimoire
 
 ## License

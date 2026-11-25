@@ -4,7 +4,7 @@ Grimoire is a catalog of AI-agent assets and `grimoire`, the Rust command-line t
 
 - [`AGENTS.md`](AGENTS.md) holds the working rules for everyone who changes this repository, people and coding agents alike, and the everyday commands.
 - [`catalog/README.md`](catalog/README.md) is the reference for assets.
-- [`docs/architecture.md`](docs/architecture.md) has the design, and [`docs/adr/`](docs/adr/) the decisions with their reasons.
+- [`docs/01-architecture.md`](docs/01-architecture.md) has the design, and [`docs/adr/`](docs/adr/) the decisions with their reasons.
 
 ## What to contribute
 
@@ -99,7 +99,7 @@ An asset lives entirely under `catalog/`, in `catalog/<kind>/<id>/`. Tools and M
    - After that, any change to an installed or built file needs a SemVer (semantic versioning) bump in `asset.toml`: a higher major, minor or patch number, depending on the kind of change. It also needs a matching `## <version>` entry in the asset's own `CHANGELOG.md`.
    - A change only to `README.md`, `CHANGELOG.md`, `evals/` or `tests/` needs neither.
    - Asset changelogs are written by hand; release-plz, the tool that writes the root changelog ([Commits](#commits)), doesn't touch them.
-8. **Removing an asset takes two changes.** First mark it `maturity = "deprecated"` with a named replacement, then remove it in a later change. [`docs/versioning.md`](docs/versioning.md) says how long a deprecated asset keeps shipping.
+8. **Removing an asset takes two changes.** First mark it `maturity = "deprecated"` with a named replacement, then remove it in a later change. [`docs/05-release.md`](docs/05-release.md#versioning) says how long a deprecated asset keeps shipping.
 
 ## Changing the CLI or the libraries
 
@@ -116,6 +116,7 @@ An asset lives entirely under `catalog/`, in `catalog/<kind>/<id>/`. Tools and M
 - **Diagnostics have stable codes**, such as `init/no-client`. A diagnostic is an error or warning that Grimoire reports. Tests assert on codes, not on message text.
 - **Model types reject unknown fields.** Constrained values are newtypes validated while parsing, so errors carry the TOML location. (A newtype is a type that wraps a single value, such as a string, so that only valid values can be built. TOML is the configuration file format of `grimoire.toml` and `asset.toml`.) After changing a model type, run `cargo xtask schema`.
 - **The filesystem is hostile input:** treat what you find there as untrusted. Never follow symbolic links (symlinks) in the catalog or in a user's project. In a user's project, writing through a link would put content somewhere the user didn't expect ([ADR-0006](docs/adr/0006-filesystem-confinement.md), which confines every write to the project root). Use the `RelPath` type, a relative path that can't name anything outside the project root, for every path that is written or installed.
+- **Keep the design documents in step with the code.** A change to a part's behavior or design updates its spec in [`docs/subsystems/`](docs/subsystems/) in the same change. A finished task in [`docs/roadmap.md`](docs/roadmap.md) is ticked there, and the status lines agree with it. `AGENTS.md`, under "Documentation", lists which document each kind of change updates.
 - **Write an ADR** in [`docs/adr/`](docs/adr/) for a significant or hard-to-reverse decision.
 
 ## Verify external formats first
@@ -133,9 +134,9 @@ If you see a client change but can't fix it yourself, open a client format chang
 - **[`.claude/rules/commits.md`](.claude/rules/commits.md) lists the scopes**, such as `cli`, `catalog`, and `xtask`, and the changes that must land in the same commit, such as a model type and its regenerated `schemas/`. [`.claude/rules/writing.md`](.claude/rules/writing.md) covers the text of commit messages, docs, and comments.
 - **release-plz reads them.** It writes the root `CHANGELOG.md` from these messages and picks the next version from them. [ADR-0003](docs/adr/0003-release-tooling.md) chose release-plz for versions and changelogs, and [ADR-0009](docs/adr/0009-release-pipeline.md), the release pipeline, limited it to opening the release pull request, which carries the new version and changelog. The release workflow tags and publishes.
 - **Every commit message counts.** Pull requests are merged with merge commits only, so each commit on your branch reaches `main` as you wrote it. Before you ask for review, squash fixups (fold each fix-up commit into the commit it fixes) and reword unclear messages.
-- **Mark every breaking change** with `!` after the type (`feat!:`) or a `BREAKING CHANGE:` footer, as [`docs/versioning.md`](docs/versioning.md) requires. Two kinds are easy to miss:
+- **Mark every breaking change** with `!` after the type (`feat!:`) or a `BREAKING CHANGE:` footer, as [`docs/05-release.md`](docs/05-release.md#versioning) requires. Two kinds are easy to miss:
   - **A break in any library crate's public Rust API.** The six published crates depend on each other with `^0.1.0` requirements, which accept any version from 0.1.0 up to, but not including, 0.2.0. So if the break shipped as a patch release, Cargo could build an older CLI against the new library.
-  - **An MSRV bump**, that is, a higher `rust-version`, while Grimoire is 0.x. From 1.0 it is a minor change: a `feat:` commit, not marked breaking ([`docs/versioning.md`](docs/versioning.md) §3, the MSRV policy).
+  - **An MSRV bump**, that is, a higher `rust-version`, while Grimoire is 0.x. From 1.0 it is a minor change: a `feat:` commit, not marked breaking ([`docs/05-release.md`](docs/05-release.md#the-minimum-supported-rust-version), the MSRV policy).
 - **Why the mark matters.** While Grimoire is at 0.x, release-plz bumps only the patch version for `feat:` and `fix:` commits. Only a commit marked breaking moves the version to the next 0.y. Nothing else catches an unmarked break: `semver_check`, release-plz's automatic check for API breaks, is off in [`release-plz.toml`](release-plz.toml).
 
 ## Pull requests
@@ -165,9 +166,9 @@ These workflows run on every pull request:
 - **Release** ([`release.yml`](.github/workflows/release.yml)): a dry-run of the release. It builds four of the six release targets and generates the channel files for them: the npm packages, the PyPI wheels, the Homebrew formula, the Scoop and winget manifests and the install scripts. It runs the install tests, and builds, checks and scans the container image. Its `release checks` job fails unless every dry-run job passed.
 - **CodeQL** ([`codeql.yml`](.github/workflows/codeql.yml)): CodeQL, GitHub's code analysis engine, runs its `security-extended` queries on every pull request to `main`, every push to `main`, and weekly. Its results reach a pull request as the `CodeQL` check.
 
-The ruleset requires none of these checks (read on 2026-11-24). Adding the CI, Security, and Release checks is a maintainer step in [`docs/release.md`](docs/release.md) §2 A, the repository settings. A pull request is still expected to pass all of them before it is merged.
+The ruleset requires none of these checks (read on 2026-11-24). Adding the CI, Security, and Release checks is a maintainer step in [`docs/05-release.md`](docs/05-release.md#repository-settings), the repository settings. A pull request is still expected to pass all of them before it is merged.
 
-The ruleset's pull-request rule still refuses the commit that release-plz makes on its `release-plz-*` branch. Run 45513260333 on 2026-11-24 failed with "Changes must be made through a pull request", so no release pull request exists yet ([`docs/release.md`](docs/release.md) §2 A).
+The ruleset's pull-request rule still refuses the commit that release-plz makes on its `release-plz-*` branch. Run 45513260333 on 2026-11-24 failed with "Changes must be made through a pull request", so no release pull request exists yet ([`docs/05-release.md`](docs/05-release.md#repository-settings)).
 
 ## Language policy
 

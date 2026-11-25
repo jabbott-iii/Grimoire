@@ -42,10 +42,10 @@
 //!   MCP server assets link it, and ADR-0002 keeps those off crates.io too:
 //!   every new published crate needs a first publish with the maintainer's
 //!   credentials, and crates.io stays limited to the CLI and its core crates.
-//! - **Design.** [`docs/architecture.md` §3.5, MCP server][architecture-3.5]
+//! - **Design.** [`docs/subsystems/catalog.md`, MCP server, MCP server][architecture-3.5]
 //!   sets the bar every server meets. [ADR-0007] chose how servers check
 //!   authorization and made this crate mandatory.
-//!   [`docs/security-model.md` §4, MCP servers][security-4] lists the threats
+//!   [`docs/subsystems/mcp.md`, Security of MCP servers, MCP servers][security-4] lists the threats
 //!   it answers, M1 to M12.
 //!
 //! # The parts
@@ -351,7 +351,7 @@
 //!
 //! `cargo xtask validate` checks three things that tie every MCP server asset
 //! to this crate
-//! ([`docs/architecture.md` §6.4, Catalog validation][architecture-6.4]):
+//! ([`docs/subsystems/catalog.md`, Catalog validation, Catalog validation][architecture-6.4]):
 //! - a `[dependencies]` entry on this crate (`crate/hardening`);
 //! - no direct use of rmcp's stdio or Streamable HTTP transports in `src/`
 //!   (`crate/raw-transport`);
@@ -396,14 +396,14 @@
 //! checks the rule instead: a change that alters what a server binary does,
 //! and every security fix, raises each affected asset's version and adds a
 //! CHANGELOG entry in the same pull request
-//! ([`docs/versioning.md`, Tool and MCP server binaries][versioning-binaries]).
+//! ([`docs/05-release.md`, Tool and MCP server binaries][versioning-binaries]).
 //!
 //! [ADR-0002]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0002-mcp-server-and-tool-packaging.md
 //! [ADR-0007]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0007-mcp-server-authorization.md
-//! [architecture-3.5]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#35-mcp-server
-//! [architecture-6.4]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#64-catalog-validation-cargo-xtask-validate-also-a-ci-gate
-//! [security-4]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/security-model.md#4-mcp-servers
-//! [versioning-binaries]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/versioning.md#tool-and-mcp-server-binaries-not-checked
+//! [architecture-3.5]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/catalog.md#mcp-server
+//! [architecture-6.4]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/catalog.md#catalog-validation
+//! [security-4]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/mcp.md#security-of-mcp-servers
+//! [versioning-binaries]: https://github.com/jabbott-iii/Grimoire/blob/main/docs/05-release.md#tool-and-mcp-server-binaries-not-checked
 
 pub mod auth;
 mod http;

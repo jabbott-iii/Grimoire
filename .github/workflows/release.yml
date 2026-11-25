@@ -1113,7 +1113,7 @@ jobs:
   #     install.ps1, Homebrew, Scoop and winget download from. No OIDC.
   #   publish-crates (crates-io), publish-npm (npm), publish-pypi (pypi): after it, approved together.
   # Every step skips what is already done, so "Re-run failed jobs" on this run finishes a partial
-  # release (see docs/release.md for staged npm versions). A new run would see the tag and plan `skip`.
+  # release (see docs/05-release.md for staged npm versions). A new run would see the tag and plan `skip`.
   # Only release mode names the environments: a run that names a missing environment creates it
   # without protection rules.
   publish:

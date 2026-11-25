@@ -14,7 +14,7 @@
 //! | MCP server | `.mcp.json` with the stdio entry |
 //!
 //! Rules and tools are not plugins: Claude Code loads no instructions from a
-//! plugin, and plugin hooks aren't known to fail closed (PLAN.md, Phase 4).
+//! plugin, and plugin hooks aren't known to fail closed (task M4.7 in docs/roadmap.md).
 
 use agent_grimoire_catalog::SourceAsset;
 use agent_grimoire_model::{

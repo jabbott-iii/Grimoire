@@ -76,7 +76,7 @@ so they can fill them in.
   servers in `catalog/mcp-servers/`, which run each tool's blocking work through
   `limits::Limits` (ADR-0007, MCP server authorization).
 - **Public API:** the Rust APIs of the six published crates are internal to the CLI
-  (`docs/versioning.md`): users rely on the `grimoire` command and its file formats, not on the
+  ("The public API" in `docs/05-release.md`): users rely on the `grimoire` command and its file formats, not on the
   libraries. A break in a library crate's public API is still marked breaking, because the crates
   depend on each other with `0.1.0` requirements. No tool catches one: `semver_check` is off in
   `release-plz.toml`, so review has to.
@@ -85,9 +85,9 @@ so they can fill them in.
   each with a `README.md` of its own. Their crate docs and READMEs follow ADR-0012 (crate
   documentation), whose README shape replaces `## Usage` with `## How the CLI uses it` and wins
   over "Crate READMEs" below; `xtask/src/crate_docs.rs` checks the shapes.
-- **Design docs:** `docs/architecture.md`, by section, such as §7 for the install model and §8
-  for the client adapters; the records in `docs/adr/`; and `docs/security-model.md`, for threats
-  and their defenses. No crate has a design document of its own.
+- **Design docs:** the spec for each part in `docs/subsystems/`, such as `install.md` for the
+  install model and `adapters.md` for the client adapters; `docs/01-architecture.md`, for the
+  layers, the control flow, and the threats that cross parts; and the records in `docs/adr/`.
 - **Test layout:** unit tests in a `#[cfg(test)] mod tests` beside the code; integration tests in
   each crate's `tests/`, including the installer's end-to-end tests in
   `crates/agent-grimoire/tests/cli.rs`; property tests with proptest, in the files that end in

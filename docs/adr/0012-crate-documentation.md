@@ -2,13 +2,13 @@
 
 - **Status:** Accepted (the maintainer asked for each crate's documentation to be created and maintained the way their Nadir project does it, 2026-11-22)
 - **Date:** 2026-11-22
-- **Related:** [`../versioning.md`](../versioning.md), which makes the library crates internal to the CLI; [ADR-0004](0004-package-and-binary-names.md), which named the packages
+- **Related:** [`../05-release.md`](../05-release.md#the-public-api), which makes the library crates internal to the CLI; [ADR-0004](0004-package-and-binary-names.md), which named the packages
 
 ## Context
 
 Grimoire's workspace has eight crates under `crates/`. (A crate is a Rust package.)
 - Six are published to crates.io, the Rust package registry: the `agent-grimoire` CLI and its five library crates, `-model`, `-catalog`, `-resolve`, `-install` and `-adapters`.
-- The libraries are internal to the CLI, published only so that `cargo install agent-grimoire` can build it ([`versioning.md`](../versioning.md)).
+- The libraries are internal to the CLI, published only so that `cargo install agent-grimoire` can build it ([`05-release.md`](../05-release.md#versioning)).
 - `agent-grimoire-mcp` and `agent-grimoire-testkit` are never published (`publish = false`).
 
 Each published crate has two pages that people read:
@@ -17,7 +17,7 @@ Each published crate has two pages that people read:
 
 Before this decision:
 - Each library's README was about 20 lines. It said what the crate holds and that it is internal, with no example.
-- Each crate's crate docs were 5 to 17 lines, with bare references such as `architecture.md §7`.
+- Each crate's crate docs were 5 to 17 lines, with bare references to sections of the old design document, such as §7.
 - Nothing checked that either kept up with the code. CI never built the API docs, and one broken intra-doc link already existed. (An intra-doc link is a ``[`Name`]`` link in a doc comment that rustdoc resolves to an item.) It was in `xtask/src/release/archive.rs`, where ``[`write`]`` named both a function and a macro.
 
 The maintainer's Nadir project documents each crate in two layers (its ADR-0039):
@@ -101,7 +101,7 @@ Out of scope:
 ## Alternatives considered
 
 - **The README as the crate docs** (`#![doc = include_str!("../README.md")]`): one text to keep. But a README is a landing page, and crates.io shows an intra-doc link as its bracketed text, not as a link. Nadir rejected it because the README's shape is a landing page's.
-- **Nadir's "Usage" section with a `[dependencies]` line:** it would invite the dependency that [`versioning.md`](../versioning.md) says not to take.
+- **Nadir's "Usage" section with a `[dependencies]` line:** it would invite the dependency that [`05-release.md`](../05-release.md#versioning) says not to take.
 - **No checks:** the old docs had already drifted (the broken link above).
 
 **Revisit when:**

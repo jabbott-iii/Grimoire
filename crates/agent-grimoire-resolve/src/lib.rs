@@ -48,19 +48,19 @@
 //! It is internal to the CLI. It is published only so that `cargo install
 //! agent-grimoire` can build the CLI from crates.io, and its API changes
 //! whenever the CLI needs it to, so don't depend on it. The
-//! [versioning policy](https://github.com/jabbott-iii/Grimoire/blob/main/docs/versioning.md)
+//! [versioning policy](https://github.com/jabbott-iii/Grimoire/blob/main/docs/05-release.md#versioning)
 //! says why a break is still released as a new 0.y version.
 //!
-//! The design is in `docs/architecture.md`:
+//! The design is in:
 //!
-//! - [§7.1, Desired state, plan, apply](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#71-desired-state-plan-apply):
+//! - [`docs/subsystems/install.md`, Desired state, plan, apply](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/install.md#desired-state-plan-apply):
 //!   resolution is the first step of every install, and the lock's pins hold
 //!   unless `update` moves them;
-//! - [§7.5, Resolution errors](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#75-resolution-errors):
+//! - [`docs/subsystems/resolve.md`, Resolution errors](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/resolve.md#resolution-errors):
 //!   the errors it reports;
-//! - [§6.2, `grimoire.toml`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#62-grimoiretoml-user-repo):
+//! - [`docs/subsystems/model.md`, `grimoire.toml`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/model.md#grimoiretoml):
 //!   the selection it reads;
-//! - [§6.3, Permission consent](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#63-permission-consent):
+//! - [`docs/subsystems/resolve.md`, Permission consent](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/resolve.md#permission-consent):
 //!   that it fails on any permission the project hasn't accepted.
 //!
 //! # The parts
@@ -189,7 +189,7 @@
 //!   <id>`. They are raised even when no file would change, because telling
 //!   whether content is needed would mean rendering the pinned version, which
 //!   this build doesn't have
-//!   ([§7.5](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#75-resolution-errors)).
+//!   ([`docs/subsystems/resolve.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/resolve.md#resolution-errors)).
 //!   An asset that the lock doesn't pin takes the catalog's version.
 //! - [`Request::cli_version`] must be at least the asset's `min-cli-version`
 //!   (`resolve/cli-too-old`).
@@ -231,7 +231,7 @@
 //! An asset's manifest declares the permissions it needs, and resolution fails
 //! with `resolve/permission` for any that `grimoire.toml` doesn't accept: the
 //! declaration is not just documentation
-//! ([§6.3](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#63-permission-consent)).
+//! ([`docs/subsystems/resolve.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/resolve.md#permission-consent)).
 //! The check runs against the catalog's manifest every time, so a new version
 //! that needs more permissions stops `update` and `apply` until the user
 //! accepts them: there is no silent escalation. Each environment variable is its own grant,

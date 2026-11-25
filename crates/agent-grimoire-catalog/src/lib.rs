@@ -35,10 +35,10 @@
 //! The crate is internal to the CLI. It is published only so that
 //! `cargo install agent-grimoire` can build the CLI, and its API changes
 //! whenever the CLI needs it to, so don't depend on it
-//! ([`docs/versioning.md` §1, The public API](https://github.com/jabbott-iii/Grimoire/blob/main/docs/versioning.md#1-the-public-api)).
+//! ([`docs/05-release.md`, The public API](https://github.com/jabbott-iii/Grimoire/blob/main/docs/05-release.md#the-public-api)).
 //!
 //! The design is in
-//! [`docs/architecture.md` §6.4, Catalog validation](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#64-catalog-validation-cargo-xtask-validate-also-a-ci-gate),
+//! [`docs/subsystems/catalog.md`, Catalog validation](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/catalog.md#catalog-validation),
 //! which lists the checks per asset, per kind and across the catalog, and in
 //! [ADR-0001, Catalog delivery](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0001-catalog-delivery.md),
 //! which builds the catalog into the binary behind a `Source` (below, "Why the
@@ -267,7 +267,7 @@
 //! with `cargo install agent-grimoire --locked`: on Cargo 1.96 to 1.99, a build
 //! without `--locked` can take a later version of this crate within the same
 //! 0.y, and so newer assets than the CLI version it reports
-//! ([`docs/versioning.md` §3](https://github.com/jabbott-iii/Grimoire/blob/main/docs/versioning.md#3-the-minimum-supported-rust-version)).
+//! ([`docs/05-release.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/05-release.md#the-minimum-supported-rust-version)).
 //!
 //! [`Source`] is where a later remote catalog would plug in. ADR-0001 leaves
 //! that to a future decision. Such a source would build the same index, so

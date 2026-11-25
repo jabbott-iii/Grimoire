@@ -60,8 +60,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ## Documentation
 
 - API reference: https://docs.rs/agent-grimoire-catalog
-- Design: [`docs/architecture.md` §6.4, Catalog validation](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#64-catalog-validation-cargo-xtask-validate-also-a-ci-gate), the checks per asset, per kind and across the catalog; [ADR-0001, Catalog delivery](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0001-catalog-delivery.md), which builds the catalog into the binary, behind a `Source`, so that installing needs no network code and the catalog is covered by the binary's own checksums and signatures; and [`docs/specs.md`, SKILLS](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#skills-agent-skills-specification), the Agent Skills specification as verified at its source.
-- Versioning: [`docs/versioning.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/versioning.md). Grimoire versions its crates together.
+- Design: [`docs/subsystems/catalog.md`, Catalog validation](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/catalog.md#catalog-validation), the checks per asset, per kind and across the catalog; [ADR-0001, Catalog delivery](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0001-catalog-delivery.md), which builds the catalog into the binary, behind a `Source`, so that installing needs no network code and the catalog is covered by the binary's own checksums and signatures; and [`docs/specs.md`, SKILLS](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#skills-agent-skills-specification), the Agent Skills specification as verified at its source.
+- Versioning: [`docs/05-release.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/05-release.md#versioning). Grimoire versions its crates together.
 - Grimoire: https://github.com/jabbott-iii/Grimoire
 
 ## License

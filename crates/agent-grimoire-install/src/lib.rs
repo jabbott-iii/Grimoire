@@ -43,11 +43,11 @@
 //! It is internal to the CLI. It is published only so that
 //! `cargo install agent-grimoire` can build the CLI, and its API changes
 //! whenever the CLI needs it to, so don't depend on it
-//! ([versioning policy](https://github.com/jabbott-iii/Grimoire/blob/main/docs/versioning.md#1-the-public-api)).
+//! ([versioning policy](https://github.com/jabbott-iii/Grimoire/blob/main/docs/05-release.md#the-public-api)).
 //! The design is in
-//! [`docs/architecture.md` §7, Install model](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#7-install-model),
+//! [`docs/subsystems/install.md`, Install model](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/install.md),
 //! and the threats it defends against are in
-//! [`docs/security-model.md` §3, Threats and mitigations](https://github.com/jabbott-iii/Grimoire/blob/main/docs/security-model.md#3-threats-and-mitigations).
+//! [`docs/01-architecture.md`, Threats and mitigations](https://github.com/jabbott-iii/Grimoire/blob/main/docs/01-architecture.md#threats-and-mitigations).
 //!
 //! # The parts
 //!
@@ -159,7 +159,7 @@
 //!
 //! Grimoire treats every file in a user's project as hostile input, and the
 //! directory tree as something that may change while it works
-//! ([trust boundaries](https://github.com/jabbott-iii/Grimoire/blob/main/docs/security-model.md#2-trust-boundaries)).
+//! ([trust boundaries](https://github.com/jabbott-iii/Grimoire/blob/main/docs/01-architecture.md#trust-boundaries)).
 //! So [`fs::Root`] is the only way this crate, and the CLI, reach the
 //! project, and it makes these checks:
 //!
@@ -221,10 +221,10 @@
 //! applied ([`Action::Adopt`](plan::Action::Adopt)), so the run converges on
 //! the desired state instead of reporting drift, managed content on disk that
 //! differs from what the lock records
-//! ([§7.1](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#71-desired-state-plan-apply)).
+//! ([`docs/subsystems/install.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/install.md#desired-state-plan-apply)).
 //! A temporary file can still be left behind by a crash, and nothing removes
 //! it automatically
-//! ([`docs/security-model.md` §7](https://github.com/jabbott-iii/Grimoire/blob/main/docs/security-model.md#7-known-gaps-and-residual-risks)).
+//! ([`docs/01-architecture.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/01-architecture.md#known-gaps-and-residual-risks)).
 //! Two `grimoire` processes in one project at once are not locked against
 //! each other either.
 //!

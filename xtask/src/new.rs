@@ -1,7 +1,7 @@
 //! `cargo xtask new <kind> <id>`: scaffold a catalog asset or bundle.
 //!
 //! The templates under `xtask/templates/<kind>/` follow the Phase 3 exemplars
-//! (`architecture.md` §4). Each one validates cleanly as generated, so a new
+//! (`docs/01-architecture.md`, Repository layout). Each one validates cleanly as generated, so a new
 //! asset starts from a passing state and the author fills in its content.
 //! Placeholders: `@@ID@@` (the kebab-case id), `@@SNAKE@@` (the id with `_`),
 //! `@@BINARY@@` (`grimoire-tool-<id>` or `grimoire-mcp-<id>`) and
@@ -87,7 +87,7 @@ fn substitute(text: &str, id: &AssetId, kind: Kind, maintainer: &GithubLogin) ->
 }
 
 /// Whether `id` is already taken by any asset or bundle: ids are unique across
-/// the whole catalog (`architecture.md` §5).
+/// the whole catalog (`docs/subsystems/model.md`, Identifiers and versions).
 fn taken(catalog: &Path, id: &AssetId) -> Option<PathBuf> {
     let mut candidates: Vec<PathBuf> = [
         Kind::Rule,

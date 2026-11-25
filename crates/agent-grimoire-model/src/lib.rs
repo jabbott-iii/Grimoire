@@ -39,13 +39,13 @@
 //! `cargo install agent-grimoire` can build the CLI from crates.io, and its
 //! Rust API changes whenever the CLI needs it to, so don't depend on it. A
 //! change that breaks it still ships as a new 0.y version, as the
-//! [versioning policy](https://github.com/jabbott-iii/Grimoire/blob/main/docs/versioning.md)
+//! [versioning policy](https://github.com/jabbott-iii/Grimoire/blob/main/docs/05-release.md#versioning)
 //! explains.
 //!
-//! The design is in `docs/architecture.md`:
-//! [§5, Identifiers and versions](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#5-identifiers-and-versions),
-//! [§3.6, Bundle](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#36-bundle-not-an-asset-kind),
-//! and [§6, Manifests and configuration](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#6-manifests-and-configuration),
+//! The design is in:
+//! [`docs/subsystems/model.md`, Identifiers and versions](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/model.md#identifiers-and-versions),
+//! [`docs/subsystems/catalog.md`, Bundle](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/catalog.md#bundle-not-an-asset-kind),
+//! and [`docs/subsystems/model.md`, Manifests and configuration](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/model.md#manifests-and-configuration),
 //! which specifies `asset.toml`, `grimoire.toml` and `grimoire.lock`, each
 //! with an annotated example.
 //!
@@ -227,7 +227,7 @@
 //! write through one (architecture decision record
 //! [ADR-0006](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0006-filesystem-confinement.md),
 //! which confines every write to the project root). The design is in
-//! [`docs/architecture.md` §7.4, Filesystem safety](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#74-filesystem-safety).
+//! [`docs/subsystems/install.md`, Filesystem safety](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/install.md#filesystem-safety).
 //!
 //! # The lockfile
 //!
@@ -242,7 +242,7 @@
 //!   and then key, and each list of clients and selectors, with repeats
 //!   removed. A canonical lock serializes the same way every time, so it
 //!   diffs cleanly
-//!   ([§6.5](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#65-grimoirelock)).
+//!   ([`docs/subsystems/model.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/model.md#grimoirelock)).
 //! - **Content Grimoire owns for itself**, rather than for an asset, is in
 //!   [`Lockfile::outputs`], under the reserved owner name
 //!   [`Lockfile::PROJECT_OWNER`], `grimoire`.

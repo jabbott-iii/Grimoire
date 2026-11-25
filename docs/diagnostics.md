@@ -38,7 +38,7 @@ With `--json`, the diagnostics go into the one JSON document on stdout ([`cli.md
 
 All five keys are always present.
 
-**Codes are stable.** Scripts and tests should match on `code`, not on `message`. The codes are part of the interface that the versioning policy, [`versioning.md`](versioning.md), covers: a code keeps its meaning, and removing or renaming one is a breaking change.
+**Codes are stable.** Scripts and tests should match on `code`, not on `message`. The codes are part of the interface that the versioning policy, [`05-release.md`](05-release.md#versioning), covers: a code keeps its meaning, and removing or renaming one is a breaking change.
 
 **Severity and exit status.** A command that reports an error exits with a non-zero status. A warning never changes the exit status. The tables give the status each error leads to.
 
@@ -87,7 +87,7 @@ Problems with `grimoire.toml` and `grimoire.lock` as files. Both are written in 
 ### The filesystem (`fs/`)
 
 Grimoire reads and writes only inside the project directory. It refuses a symbolic link at or above any path it touches, and a special file at the path itself, such as a FIFO (a named pipe).
-- [`architecture.md`](architecture.md) §7.4, on filesystem safety, has the design.
+- [`subsystems/install.md`](subsystems/install.md#filesystem-safety), on filesystem safety, has the design.
 - [ADR-0006](adr/0006-filesystem-confinement.md), the architecture decision record (ADR) on filesystem confinement, explains why every access goes through a handle on the project root. With plain path-based calls, someone who can write in the project could swap a directory for a symbolic link between Grimoire's check and its write, and send the write outside the project.
 
 If one of these refusals stops an applying command partway, the files already written are recorded in `grimoire.lock`, and running the command again continues from there. After `add --apply` or `remove --apply`, `grimoire.toml` has already been changed.
@@ -188,7 +188,7 @@ Each output record in the lock describes one unit of content Grimoire owns: a wh
 
 ### Resolution (`resolve/`)
 
-Resolution turns the selection in `grimoire.toml`, and the pins in `grimoire.lock`, into the assets to install. A pin is what the lock records for an installed asset: its exact version, and the hash of its manifest (`asset.toml`, the file that describes the asset). [`architecture.md`](architecture.md) §7.1, on resolving, planning and applying, and §7.5, on resolution errors, have the design.
+Resolution turns the selection in `grimoire.toml`, and the pins in `grimoire.lock`, into the assets to install. A pin is what the lock records for an installed asset: its exact version, and the hash of its manifest (`asset.toml`, the file that describes the asset). [`subsystems/install.md`](subsystems/install.md#desired-state-plan-apply), on resolving, planning and applying, and §7.5, on resolution errors, have the design.
 
 Resolution reports every problem at once. `add`, `remove` and the planning commands raise these codes, except the two `resolve/locked-…` codes, which only the planning commands raise, because `add` and `remove` check their selection without the lock. Each error exits 3.
 
@@ -209,16 +209,16 @@ Resolution reports every problem at once. `add`, `remove` and the planning comma
 | `resolve/unsupported-client` | error, exit 3 | `add`, `remove`, planning commands | The asset can't be installed for the clients asked: its `clients` names one it doesn't support, or it supports none of the project's clients. | List only clients it supports. To skip an asset that a bundle brings in, add it to `exclude`, as the message says; an asset that another one requires can't be excluded. |
 | `resolve/client-skipped` | warning | `add`, `remove`, planning commands | The asset doesn't support one of the project's clients, so it is installed only for the others. | Nothing, unless that client matters. For an `[assets]` entry, listing the clients you want in its `clients` silences it. |
 | `resolve/client-not-covered` | warning | `add`, `remove`, planning commands | One of the project's clients has no place for this kind of asset: Grimoire writes hooks (commands a client runs on events, such as before a tool call) only for Claude Code, and a Codex agent can't be limited to its tools. [ADR-0008](adr/0008-phase-4-client-adapters.md) records why: no other client can keep a fail-closed hook closed (blocking the action when the hook fails), and a Codex agent inherits its parent session's sandbox, approvals, MCP servers and web search. `agents-md` never gets this warning, because by design it holds no agents, MCP servers or hooks. | Nothing: the asset is installed for the other clients. |
-| `resolve/permission` | error, exit 3 | `add`, `remove`, planning commands | A selected asset needs permissions that `grimoire.toml` doesn't accept ([`architecture.md`](architecture.md) §6.3, on permission consent). The message gives the command, or the `allow` entry, that accepts them. | Review them with `grimoire show <id>`, then accept them as the message says. |
+| `resolve/permission` | error, exit 3 | `add`, `remove`, planning commands | A selected asset needs permissions that `grimoire.toml` doesn't accept ([`subsystems/resolve.md`](subsystems/resolve.md#permission-consent), on permission consent). The message gives the command, or the `allow` entry, that accepts them. | Review them with `grimoire show <id>`, then accept them as the message says. |
 | `resolve/conflict` | error, exit 3 | `add`, `remove`, planning commands | Two selected assets conflict. The message gives the reason and what selected each. | Keep only one of them. Use `exclude` if a bundle or a tag brings one in. |
 | `resolve/allow-unused` | warning | `add`, `remove`, planning commands | An `[allow]` entry names an asset that isn't selected, so it has no effect. | Remove the entry. |
 | `resolve/client-unavailable` | error, exit 3 | `add`, `remove`, planning commands | `clients` names a client this build has no adapter for. In this version every client has an adapter, so it isn't raised. | Use a grimoire release that supports the client. |
 
 ### Adapters (`adapter/`)
 
-An adapter is the code that writes one client's files: it renders each resolved asset into the content that client reads ([`architecture.md`](architecture.md) §8, on client adapters). The planning commands raise these codes, and each error exits 3.
+An adapter is the code that writes one client's files: it renders each resolved asset into the content that client reads ([`subsystems/adapters.md`](subsystems/adapters.md), on client adapters). The planning commands raise these codes, and each error exits 3.
 
-Catalog validation renders every catalog asset for each client it lists ([`architecture.md`](architecture.md) §6.4, on catalog validation). So an error that depends only on the asset can't come from the embedded catalog. The rows below say which errors those are.
+Catalog validation renders every catalog asset for each client it lists ([`subsystems/catalog.md`](subsystems/catalog.md#catalog-validation), on catalog validation). So an error that depends only on the asset can't come from the embedded catalog. The rows below say which errors those are.
 
 | Code | Severity | Commands | Meaning | What to do |
 |---|---|---|---|---|
@@ -234,9 +234,9 @@ Catalog validation renders every catalog asset for each client it lists ([`archi
 
 ### Planning (`plan/`)
 
-The planner compares what the adapters want on disk with `grimoire.lock` and the files there ([`architecture.md`](architecture.md) §7, the install model). It works in units: a unit is a whole file, a managed block (the text between Grimoire's marker lines) in a shared Markdown file, or one entry in a configuration file.
+The planner compares what the adapters want on disk with `grimoire.lock` and the files there ([`subsystems/install.md`](subsystems/install.md), the install model). It works in units: a unit is a whole file, a managed block (the text between Grimoire's marker lines) in a shared Markdown file, or one entry in a configuration file.
 
-Many `plan/` warnings are about clients reading each other's files. Where several clients read one location, Grimoire writes it once, and a client can then read content that wasn't installed for it. [`architecture.md`](architecture.md) §8.2 has the table of which client reads which location, and [ADR-0008](adr/0008-phase-4-client-adapters.md) records where Grimoire puts each client's rules, skills, agents and MCP servers. Warnings don't change what Grimoire writes.
+Many `plan/` warnings are about clients reading each other's files. Where several clients read one location, Grimoire writes it once, and a client can then read content that wasn't installed for it. [`subsystems/adapters.md`](subsystems/adapters.md#client-read-matrix-and-cross-client-planning) has the table of which client reads which location, and [ADR-0008](adr/0008-phase-4-client-adapters.md) records where Grimoire puts each client's rules, skills, agents and MCP servers. Warnings don't change what Grimoire writes.
 
 | Code | Severity | Commands | Meaning | What to do |
 |---|---|---|---|---|
@@ -254,7 +254,7 @@ Many `plan/` warnings are about clients reading each other's files. Where severa
 | `plan/case-collision` | error, exit 3 | planning commands | Two outputs differ only in letter case, which makes them one file on macOS and Windows. Or `grimoire.lock` records a file that the new plan renames only in case. | For a rename in case, remove the asset and apply, then add it again. Otherwise report it. |
 | `plan/conflicts` | error, exit 4 | `plan` | Applying would stop on a conflict. The plan printed before it shows which. | Resolve the conflicts, or apply with `--force` or `--write-new`. A file the plan shows as `cannot be edited` must be fixed by hand first, because neither option helps it. |
 | `plan/changes` | error, exit 5 | `plan --check` | Applying would change files or `grimoire.lock`. | Run `grimoire apply`. |
-| `plan/conflict` | error, explains the exit 4 that follows | applying commands, `update --no-apply` | One unit conflicts ([`architecture.md`](architecture.md) §7.3, on drift and conflicts): content Grimoire wrote was edited or removed since, a file Grimoire doesn't manage is where it would write, or comments were added inside an entry. `file` names the file. | Merge or undo the change by hand, or use `--force` to overwrite it or `--write-new` to write `<path>.new` (`uninstall` takes `--force` only). For a file Grimoire would delete, `--write-new` writes no `.new` and only leaves the file alone. |
+| `plan/conflict` | error, explains the exit 4 that follows | applying commands, `update --no-apply` | One unit conflicts ([`subsystems/install.md`](subsystems/install.md#drift-and-conflicts), on drift and conflicts): content Grimoire wrote was edited or removed since, a file Grimoire doesn't manage is where it would write, or comments were added inside an entry. `file` names the file. | Merge or undo the change by hand, or use `--force` to overwrite it or `--write-new` to write `<path>.new` (`uninstall` takes `--force` only). For a file Grimoire would delete, `--write-new` writes no `.new` and only leaves the file alone. |
 | `plan/unreadable` | error, explains the exit 4 that follows | applying commands, `update --no-apply` | Grimoire can't edit a file it must change. For example, it isn't UTF-8, its managed-block markers are broken, it doesn't parse as JSON or TOML, or `grimoire.lock` records a different kind of content there. `--force` can't help, because Grimoire never guesses what it owns in such a file. | Fix the file by hand, then run again. |
 
 ### Applying (`apply/`)
@@ -271,7 +271,7 @@ The applying commands raise these, and each exits 4.
 ## Not listed here
 
 - **Catalog-author codes:** `manifest/…`, `bundle/…`, `catalog/…`, `skill/…`, `rule/…`, `agent/…`, `crate/…`, `pack/…` and `version/…`. A CLI user never sees these codes:
-  - They come from checking the catalog before it is embedded in a build, and continuous integration (CI) runs each check: `cargo xtask validate` ([`catalog/README.md`](../catalog/README.md)), `cargo xtask validate --base` for the `version/…` codes ([`versioning.md`](versioning.md)), and `cargo xtask pack-catalog` for the `pack/…` codes.
+  - They come from checking the catalog before it is embedded in a build, and continuous integration (CI) runs each check: `cargo xtask validate` ([`catalog/README.md`](../catalog/README.md)), `cargo xtask validate --base` for the `version/…` codes ([`05-release.md`](05-release.md#versioning)), and `cargo xtask pack-catalog` for the `pack/…` codes.
   - Each build parses its embedded catalog again when it starts, and re-checks each manifest and bundle on its own. The checks across the catalog aren't run again, which is why some rows above say **report it**.
   - A build whose catalog fails at start-up stops before any command with `error: this grimoire build is broken: …` and exit 1, without a code.
 - **`plugin/asset`:** it comes from generating the Claude Code plugin marketplace (`cargo xtask gen-marketplace`). The CLI never raises it.

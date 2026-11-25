@@ -1,6 +1,6 @@
 //! Bundles, `catalog/bundles/<id>.toml`.
 //!
-//! The design is in [`docs/architecture.md` §3.6, Bundle (not an asset kind)](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#36-bundle-not-an-asset-kind).
+//! The design is in [`docs/subsystems/catalog.md`, Bundle (not an asset kind)](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/catalog.md#bundle-not-an-asset-kind).
 
 use std::collections::BTreeMap;
 

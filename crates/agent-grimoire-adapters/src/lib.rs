@@ -38,10 +38,10 @@
 //! The crate is internal to the CLI. It is published only so that
 //! `cargo install agent-grimoire` can build the CLI from crates.io, and its
 //! API changes whenever the CLI needs it to, so don't depend on it
-//! ([the versioning policy](https://github.com/jabbott-iii/Grimoire/blob/main/docs/versioning.md#1-the-public-api)).
+//! ([the versioning policy](https://github.com/jabbott-iii/Grimoire/blob/main/docs/05-release.md#the-public-api)).
 //!
 //! The design is
-//! [`docs/architecture.md` §8, Client adapters](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#8-client-adapters).
+//! [`docs/subsystems/adapters.md`, Client adapters](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/adapters.md).
 //!
 //! # The parts
 //!
@@ -146,7 +146,7 @@
 //! the architecture decision record (ADR) for the Codex, Cursor, Gemini CLI
 //! and Copilot adapters, and the read matrix (which client reads which
 //! location) is in
-//! [`docs/architecture.md` §8.2](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#82-client-read-matrix-and-cross-client-planning).
+//! [`docs/subsystems/adapters.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/adapters.md#client-read-matrix-and-cross-client-planning).
 //!
 //! - **Rules.** When `agents-md` or `codex` puts a rule in `AGENTS.md`, the
 //!   other selected clients get no rule file of their own, and the block is
@@ -202,7 +202,7 @@
 //! and `plan/codex-override`. Every code is described in
 //! [`docs/diagnostics.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/diagnostics.md#planning-plan),
 //! and the leaks between clients in
-//! [`docs/security-model.md` §3a](https://github.com/jabbott-iii/Grimoire/blob/main/docs/security-model.md#3a-cross-client-leaks).
+//! [`docs/subsystems/adapters.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/adapters.md#cross-client-leaks).
 //!
 //! # Errors
 //!
@@ -239,7 +239,7 @@
 //! manifest validation (`manifest/anchor-client`) before an adapter sees it.
 //! The reasons are in ADR-0008, and the mapping for each client and asset
 //! kind is in
-//! [`docs/architecture.md` §8.3](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#83-per-client-mapping-client-order-per-adr-0005-amended-by-adr-0008).
+//! [`docs/subsystems/adapters.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/adapters.md#per-client-mapping).
 //!
 //! - **Hooks are Claude Code only.** Grimoire's guard hooks rely on a failed
 //!   hook blocking the action (`onFailure: "block"`). None of the other
@@ -313,7 +313,7 @@
 //!   `claude plugin validate --strict` enforces.
 //!
 //! The layout, versions and dependencies of the marketplace are in
-//! [`docs/architecture.md` §10](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#10-generated-artifacts).
+//! [`docs/subsystems/marketplace.md`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/marketplace.md).
 
 pub mod agents_md;
 pub mod claude_code;
@@ -347,7 +347,7 @@ use agent_grimoire_resolve::{Resolution, Resolved};
 /// the second with a narrower set. Narrowing this again, for a client the model
 /// knows before its adapter exists, means updating those two codes' rows in
 /// `docs/diagnostics.md`, `init`'s exit codes in `docs/cli.md` and
-/// [`docs/architecture.md` §9.1, Commands](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#91-commands),
+/// [`docs/subsystems/cli.md`, Commands](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/cli.md#commands),
 /// deciding whether `init`'s detection should look
 /// only at these clients, and testing both codes end to end in
 /// `crates/agent-grimoire/tests/cli.rs`.

@@ -2,7 +2,7 @@
 #
 # This file is generated for each release by `cargo xtask release channels`
 # from the template packaging/install/install.ps1, which fills in the version
-# and the SHA-256 of each archive. See docs/release.md and
+# and the SHA-256 of each archive. See docs/05-release.md and
 # docs/adr/0010-language-policy-exceptions.md.
 #
 # It downloads one archive over HTTPS, checks its SHA-256 against the value

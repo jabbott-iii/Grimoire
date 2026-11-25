@@ -1,8 +1,8 @@
 //! Clients, anchors and the per-client output map of a manifest.
 //!
-//! The design is in `docs/architecture.md`, in
-//! [§6.1, `asset.toml`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#61-assettoml) and
-//! [§8.3, Per-client mapping](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#83-per-client-mapping-client-order-per-adr-0005-amended-by-adr-0008).
+//! The design is in
+//! [`docs/subsystems/model.md`, `asset.toml`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/model.md#assettoml) and
+//! [`docs/subsystems/adapters.md`, Per-client mapping](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/adapters.md#per-client-mapping).
 
 use std::borrow::Cow;
 use std::fmt;
@@ -62,7 +62,7 @@ impl ClientId {
     }
 
     /// Whether this client has a destination for `anchor`
-    /// ([`docs/architecture.md` §8.3, Per-client mapping](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#83-per-client-mapping-client-order-per-adr-0005-amended-by-adr-0008)).
+    /// ([`docs/subsystems/adapters.md`, Per-client mapping](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/adapters.md#per-client-mapping)).
     ///
     /// Hooks are Claude Code only, and Codex has no agents: no other client can
     /// keep a failed hook from letting the action through, and a Codex agent
@@ -156,8 +156,8 @@ impl fmt::Display for Anchor {
 }
 
 /// How an output is written
-/// ([`docs/architecture.md` §6.1, `asset.toml`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#61-assettoml) and
-/// [§7.2, Ownership units and merge strategies](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#72-ownership-units-and-merge-strategies)).
+/// ([`docs/subsystems/model.md`, `asset.toml`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/model.md#assettoml) and
+/// [`docs/subsystems/install.md`, Ownership units and merge strategies](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/install.md#ownership-units-and-merge-strategies)).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum Strategy {

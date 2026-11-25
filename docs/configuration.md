@@ -1,8 +1,8 @@
 # Configuring a project
 
-- **Status:** written on 2026-11-17, in Phase 7 of the project plan (`PLAN.md`), the documentation phase, before the first release. It describes the `grimoire` command-line interface (CLI) as built from this repository on that date. The examples, except the made-up server in §1.6, were run with a local debug build in scratch directories, against the catalog embedded in that build.
-- **Design:** [`architecture.md`](architecture.md) §6–§8 (manifests and configuration, the install model, and the client adapters); [ADR-0001](adr/0001-catalog-delivery.md), the architecture decision record (ADR) that embeds the catalog in the binary; and [ADR-0008](adr/0008-phase-4-client-adapters.md), which decides what each client gets.
-- **Related:** every command, flag and exit code is in [`cli.md`](cli.md), every diagnostic code in [`diagnostics.md`](diagnostics.md), and the versioning and deprecation policy in [`versioning.md`](versioning.md).
+- **Status:** written on 2026-11-17, in Phase 7, the documentation phase (milestone M7 in [`roadmap.md`](roadmap.md)), before the first release. It describes the `grimoire` command-line interface (CLI) as built from this repository on that date. The examples, except the made-up server in §1.6, were run with a local debug build in scratch directories, against the catalog embedded in that build.
+- **Design:** [`subsystems/model.md`](subsystems/model.md#manifests-and-configuration), [`subsystems/install.md`](subsystems/install.md) and [`subsystems/adapters.md`](subsystems/adapters.md) (manifests and configuration, the install model, and the client adapters); [ADR-0001](adr/0001-catalog-delivery.md), the architecture decision record (ADR) that embeds the catalog in the binary; and [ADR-0008](adr/0008-phase-4-client-adapters.md), which decides what each client gets.
+- **Related:** every command, flag and exit code is in [`cli.md`](cli.md), every diagnostic code in [`diagnostics.md`](diagnostics.md), and the versioning and deprecation policy in [`05-release.md`](05-release.md#versioning).
 
 Grimoire keeps two files at the root of your project. Both are written in TOML, a configuration file format of `key = value` lines grouped under `[table]` headers.
 
@@ -58,7 +58,7 @@ This project:
 
 | Field | Type | Default | Meaning |
 |---|---|---|---|
-| `format` | integer | required | The file format. Must be `1`. How the number changes is in [`versioning.md`](versioning.md). |
+| `format` | integer | required | The file format. Must be `1`. How the number changes is in [`05-release.md`](05-release.md#versioning). |
 | `clients` | array of client ids | required | The clients to write for: at least one, each listed once. The ids are `claude-code`, `agents-md`, `codex`, `cursor`, `gemini-cli` and `copilot` (§4.1). |
 | `bundles` | array of bundle ids | `[]` | Bundles to install: every member, at the version requirement the bundle gives it. |
 | `tags` | array of tags | `[]` | Install every asset that carries one of these tags (§1.4). |
@@ -123,7 +123,7 @@ An asset's `requires` lists the other assets it depends on, and its manifest is 
 - **Tags** select every asset with the tag, except deprecated assets (assets being retired in favor of a named replacement) and assets that support none of the project's clients (a warning, `resolve/tag-skipped`). A tag that no asset carries is a warning (`resolve/unknown-tag`).
 - **A tag is a moving selection.** A later grimoire release may carry more assets with that tag, and `plan` then shows them as new.
 - **`exclude`** drops an asset that a bundle or tag selects. An asset that another selected asset requires can't be excluded (`resolve/excluded-dependency`).
-- **Deprecated assets** still install when you, a bundle or `requires` select them, with a warning that names the replacement (`resolve/deprecated`). How long a deprecated asset stays in the catalog is in [`versioning.md`](versioning.md).
+- **Deprecated assets** still install when you, a bundle or `requires` select them, with a warning that names the replacement (`resolve/deprecated`). How long a deprecated asset stays in the catalog is in [`05-release.md`](05-release.md#versioning).
 - **Conflicts.** Two selected assets stop resolution when either declares a conflict with the other, and the error says what selected each one (`resolve/conflict`).
 - `grimoire show <id>` prints an asset's permissions, outputs, dependencies and conflicts, and `grimoire list` searches the catalog.
 
@@ -222,7 +222,7 @@ Every asset declares what it can cause at run time, as a list of permissions. Yo
 - `<NAME>` is 1–128 characters of `A-Z`, `0-9` and `_`, and doesn't start with a digit. A bare `env` is refused in `grimoire.toml`.
 - Each variable is its own grant, so a new version that reads one more variable needs your consent again.
 - An agent's tools need matching permissions: `read` and `search` need `filesystem-read`, `edit` needs `filesystem-write`, `execute` needs `shell` and `web` needs `network`. Catalog validation, which checks every asset in the catalog, enforces this.
-- A grant is consent, not a sandbox (a sandbox would limit what the program can do). Grimoire checks it before it installs anything, and can't limit what a binary or a client does afterward. What each client enforces of an agent's tool list is in [`security-model.md`](security-model.md).
+- A grant is consent, not a sandbox (a sandbox would limit what the program can do). Grimoire checks it before it installs anything, and can't limit what a binary or a client does afterward. What each client enforces of an agent's tool list is in [`subsystems/adapters.md`](subsystems/adapters.md#per-client-mapping).
 - `grimoire show <id>` prints an asset's permissions and the variables it reads.
 
 ### 2.2 Where consent is recorded
@@ -255,7 +255,7 @@ secret-guard = ["filesystem-read", "hooks"]
 
 ### 2.4 When an update needs more
 
-A new version that declares a permission you haven't accepted stops `grimoire update` and `grimoire apply` (`resolve/permission`, exit 3). Nothing is written, not even the lock. There is no silent escalation: an update never gains permissions without your consent (threat F14 in [`security-model.md`](security-model.md)).
+A new version that declares a permission you haven't accepted stops `grimoire update` and `grimoire apply` (`resolve/permission`, exit 3). Nothing is written, not even the lock. There is no silent escalation: an update never gains permissions without your consent (threat F14 in [`01-architecture.md`](01-architecture.md#threats-and-mitigations)).
 
 The error names the asset, what selected it, the missing grants and how to accept them:
 
@@ -335,7 +335,7 @@ In TOML, each `[[name]]` header starts one more element of a list of tables.
 - **Review its diffs like code.** A lock diff shows every version, permission and output change. A new `allow` value is new consent, and a new `path` is a new file in your repository.
 - **Line endings.** The lock is written with `\n` line endings, and reads the same on every operating system: paths use `/` and records are sorted.
   - A checkout that converted it to `\r\n` (Windows line endings), for example with Git's `core.autocrlf` setting, holds the same lock, and Grimoire doesn't rewrite it for that alone.
-  - Hashes of text fold `\r\n` to `\n` too, treating both as the same. So a managed file whose line endings were converted is not drift (managed content that changed since Grimoire wrote it, §6), and Grimoire leaves it as it is (threat F13 in [`security-model.md`](security-model.md), line-ending conversion mistaken for drift).
+  - Hashes of text fold `\r\n` to `\n` too, treating both as the same. So a managed file whose line endings were converted is not drift (managed content that changed since Grimoire wrote it, §6), and Grimoire leaves it as it is (threat F13 in [`01-architecture.md`](01-architecture.md#threats-and-mitigations), line-ending conversion mistaken for drift).
 - **`grimoire verify`** reads only the lock, not `grimoire.toml` or the catalog. It checks every recorded output against the disk: each file's hash, each block's text and each entry's value.
   - It exits 5 and lists every output that was edited or is missing, or whose file it can't parse (`verify/mismatch`). Without a lock it exits 3 (`verify/no-lock`).
   - Because it doesn't depend on which asset versions the running grimoire carries, it is a good CI check for hand edits to managed content.
@@ -429,7 +429,7 @@ In the five configuration files below, Grimoire owns single entries and leaves e
 
 ### 4.5 Shared rules and skills
 
-Clients read each other's files. So where several selected clients can read one location, Grimoire writes the content there once and lists all of them in the lock's `clients` ([ADR-0008](adr/0008-phase-4-client-adapters.md), [`architecture.md`](architecture.md) §8.2). This is decided per asset, from the clients that asset is installed for.
+Clients read each other's files. So where several selected clients can read one location, Grimoire writes the content there once and lists all of them in the lock's `clients` ([ADR-0008](adr/0008-phase-4-client-adapters.md), [`subsystems/adapters.md`](subsystems/adapters.md#client-read-matrix-and-cross-client-planning)). This is decided per asset, from the clients that asset is installed for.
 
 **Rules.** When `agents-md` or `codex` is one of a rule's clients, the rule is written once, as its `AGENTS.md` block, and:
 - `claude-code` gets no `.claude/rules/` file: it reads `AGENTS.md` through Grimoire's `@AGENTS.md` block in `CLAUDE.md`;
@@ -450,7 +450,7 @@ Otherwise each client gets its own file (§4.2). A path-scoped rule in `AGENTS.m
 - an `AGENTS.md` rule that Claude Code or Gemini CLI reads although it isn't installed for them (`plan/cross-client-rule`);
 - an agent, hook or MCP server that Cursor, Copilot or Claude Code also loads from another client's file (`plan/cross-client-agent`, `plan/cross-client-hooks`, `plan/cross-client-mcp`).
 
-Installing for one client can grant something in another: for example, Cursor and Copilot run the hooks Grimoire writes to `.claude/settings.json`. [`security-model.md`](security-model.md) covers what that means.
+Installing for one client can grant something in another: for example, Cursor and Copilot run the hooks Grimoire writes to `.claude/settings.json`. [Cross-client leaks](subsystems/adapters.md#cross-client-leaks) covers what that means.
 
 ### 4.6 Steps only you can take
 
@@ -487,7 +487,7 @@ Several clients read project files only after you trust the project or approve a
 
 ## 6. Drift and conflicts
 
-Drift is managed content that changed on disk since Grimoire wrote it. For each unit it owns, Grimoire compares three things: what is on disk, what the lock recorded, and what it would write now ([`architecture.md`](architecture.md) §7.3).
+Drift is managed content that changed on disk since Grimoire wrote it. For each unit it owns, Grimoire compares three things: what is on disk, what the lock recorded, and what it would write now ([`subsystems/install.md`](subsystems/install.md#drift-and-conflicts)).
 
 | What `plan` finds | What `apply` does |
 |---|---|

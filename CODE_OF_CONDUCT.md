@@ -8,7 +8,7 @@ It applies to everyone who takes part, the maintainer included, in every project
 
 ## How to report
 
-<!-- before-first-release: before the first release, replace the placeholder below with the address for conduct reports and delete both marker lines, in a pull request merged ahead of the release PR (docs/release.md §2 C). -->
+<!-- before-first-release: before the first release, replace the placeholder below with the address for conduct reports and delete both marker lines, in a pull request merged ahead of the release PR (docs/05-release.md, "Switch releases on (last)"). -->
 **Contact for conduct reports: not set yet.** The maintainer adds it here before the first release. Until then, reach the maintainer with the "Ask for a private contact" issue form, at https://github.com/jabbott-iii/Grimoire/issues/new/choose. The issue is public, so say nothing in it about what happened or who was involved. The maintainer replies there with a private channel for your report. GitHub's own report tools send a report to GitHub, not to the maintainer.
 <!-- /before-first-release -->
 

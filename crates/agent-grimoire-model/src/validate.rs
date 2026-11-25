@@ -1,7 +1,7 @@
 //! Cross-field validation of single documents.
 //!
 //! The design is in
-//! [`docs/architecture.md` §6.4, Catalog validation](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#64-catalog-validation-cargo-xtask-validate-also-a-ci-gate).
+//! [`docs/subsystems/catalog.md`, Catalog validation](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/catalog.md#catalog-validation).
 //!
 //! Parsing already enforces field types, value formats and unknown-field
 //! rejection. These checks cover rules that span several fields of one

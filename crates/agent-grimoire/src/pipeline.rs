@@ -111,7 +111,7 @@ const CODEX_BUDGET: usize = 32 * 1024;
 /// Warns when the planned `AGENTS.md` uses most of Codex's budget on its own,
 /// at three quarters of it (24 KiB of the default 32 KiB). That threshold was
 /// settled in item 5, "Codex `AGENTS.md` budget", of
-/// [`docs/architecture.md` §11, Open design issues](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#11-open-design-issues-to-settle-in-the-phase-noted).
+/// [`docs/subsystems/adapters.md`, What plan reports](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/adapters.md#what-plan-reports).
 fn codex_budget(out: &mut Out<'_, '_>, plan: &Plan) {
     let Some(size) = plan
         .files

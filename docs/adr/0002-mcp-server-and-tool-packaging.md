@@ -9,7 +9,7 @@
 Model Context Protocol (MCP) servers and tools are code-bearing assets.
 
 - An MCP server is a program that offers an AI client tools, resources and prompts over MCP. A tool is a program the client runs, for example as a hook (a command the client runs before or after an action).
-- Both are Rust crates (a crate is Rust's unit of packaging) whose source lives in their asset directory under `catalog/` (see `architecture.md` §4, the repository layout).
+- Both are Rust crates (a crate is Rust's unit of packaging) whose source lives in their asset directory under `catalog/` (see `01-architecture.md`, "Repository layout").
 
 Installing such an asset writes only client configuration that points at an executable. Grimoire never downloads or runs anything at install time. That leaves two questions: what the executable is, and how it reaches the user's machine.
 
@@ -87,7 +87,7 @@ Adopt **(A), separate binaries**, with a deliberately narrow v1 distribution sco
      - a CycloneDX SBOM (CycloneDX is a standard SBOM format);
      - a build-provenance attestation;
      - a keyless signature (made with a short-lived certificate from Sigstore, an open-source signing service, so there is no long-lived key to protect).
-   - All binaries are also included in the GitHub Container Registry (GHCR) image (Phase 6, the container-image phase of `PLAN.md`), so a `docker run -i --rm --entrypoint grimoire-mcp-<id> ghcr.io/…@sha256:…` command can act as a stdio server (one that talks to its client over standard input and output) with nothing installed locally. Phase 6 fixed the exact form: asset binaries sit in `/opt/grimoire/bin/`, off the image's `PATH`, so `--entrypoint` takes that absolute path ([ADR-0011](0011-container-image.md), [`docs/container.md`](../container.md)).
+   - All binaries are also included in the GitHub Container Registry (GHCR) image (Phase 6, the container-image phase of `roadmap.md`), so a `docker run -i --rm --entrypoint grimoire-mcp-<id> ghcr.io/…@sha256:…` command can act as a stdio server (one that talks to its client over standard input and output) with nothing installed locally. Phase 6 fixed the exact form: asset binaries sit in `/opt/grimoire/bin/`, off the image's `PATH`, so `--entrypoint` takes that absolute path ([ADR-0011](0011-container-image.md), [`docs/container.md`](../container.md)).
 4. **Package managers carry only `grimoire` in v1.**
    - npm, PyPI (the Python Package Index), Homebrew (a package manager for macOS and Linux), Scoop and winget (package managers for Windows) get the CLI only.
    - Extending them to asset binaries, likely as extra binaries inside the existing per-platform packages rather than new packages, is revisited after v1 with real usage data.

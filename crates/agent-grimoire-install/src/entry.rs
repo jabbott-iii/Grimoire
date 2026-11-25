@@ -2,7 +2,7 @@
 //! and `.codex/config.toml`.
 //!
 //! The design is in
-//! [`docs/architecture.md` §7.2, Ownership units and merge strategies](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#72-ownership-units-and-merge-strategies).
+//! [`docs/subsystems/install.md`, Ownership units and merge strategies](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/install.md#ownership-units-and-merge-strategies).
 //!
 //! An entry key is an RFC 6901 JSON Pointer to what Grimoire owns:
 //!

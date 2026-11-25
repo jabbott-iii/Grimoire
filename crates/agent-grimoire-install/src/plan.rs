@@ -1,9 +1,9 @@
 //! The planner: desired outputs + lock + disk → actions.
 //!
-//! The design is in `docs/architecture.md`, in
-//! [§7.1, Desired state, plan, apply](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#71-desired-state-plan-apply),
-//! [§7.2, Ownership units and merge strategies](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#72-ownership-units-and-merge-strategies) and
-//! [§7.3, Drift and conflicts](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#73-drift-and-conflicts).
+//! The design is in
+//! [`docs/subsystems/install.md`, Desired state, plan, apply](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/install.md#desired-state-plan-apply),
+//! [`docs/subsystems/install.md`, Ownership units and merge strategies](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/install.md#ownership-units-and-merge-strategies) and
+//! [`docs/subsystems/install.md`, Drift and conflicts](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/install.md#drift-and-conflicts).
 //!
 //! [`plan`] is pure. It is given the current bytes of every path involved and
 //! decides, for every owned unit, what applying would do and whether that would

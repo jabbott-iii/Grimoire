@@ -17,7 +17,7 @@ each value by its bold name. If a value still reads `[FILL IN: …]`, the rule i
 yet. Work out that value from the repository itself, and tell the user which values are missing
 so they can fill them in.
 
-- **Where text lives:** `README.md`, `AGENTS.md`, `PLAN.md`, `CONTRIBUTING.md`, `SECURITY.md`,
+- **Where text lives:** `README.md`, `AGENTS.md`, `CONTRIBUTING.md`, `SECURITY.md`,
   and `CODE_OF_CONDUCT.md`; everything in `docs/`; each crate's `README.md`, crate docs, doc
   comments, and code comments, in `crates/`, `xtask/`, and the asset crates; the CLI's help text,
   diagnostic messages, and other output; the assets in `catalog/`, whose rules, skills, and agents
@@ -43,7 +43,7 @@ so they can fill them in.
   `markdown`, and `powershell`.
 - **Sources of truth:** the code and its tests; the real output of the commands you run;
   `docs/specs.md`, and the primary sources it cites, for every external format, re-read before you
-  rely on one, as `AGENTS.md` requires; the records in `docs/adr/`; and `PLAN.md`, for what is
+  rely on one, as `AGENTS.md` requires; the records in `docs/adr/`; and `docs/roadmap.md`, for what is
   built and what the maintainer decided.
 - **Preview command:** `RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps --locked` for
   doc comments and crate docs. Markdown files have none, so preview them as rendered Markdown.

@@ -4,7 +4,6 @@ paths:
   - "AGENTS.md"
   - "CONTRIBUTING.md"
   - "README.md"
-  - "PLAN.md"
   - "diagrams/**"
   - "diagram/**"
 ---
@@ -27,35 +26,36 @@ each value by its bold name. If a value still reads `[FILL IN: …]`, the rule i
 yet. Work out that value from the repository itself, and tell the user which values are missing
 so they can fill them in.
 
-- **Docs folder:** `docs/`. The roadmap is `PLAN.md` at the repository root, not `roadmap.md` in
-  `docs/`, so read `PLAN.md` wherever this rule or a skill names `roadmap.md`.
-- **Core documents:** none numbered. Keep the existing names, because links to them would break:
-  `docs/architecture.md` (the design: asset kinds, layout, formats, the install model, the
-  adapters, and the CLI), `docs/security-model.md`, `docs/versioning.md`, `docs/release.md`, and
-  `docs/container.md`, with the user reference in `docs/cli.md`, `docs/diagnostics.md`, and
-  `docs/configuration.md`. `README.md` and §1 of `docs/architecture.md` do the overview's job,
-  and `CONTRIBUTING.md` does the quality document's.
-- **Specs:** the sections of `docs/architecture.md`, one or more for each part of the system,
-  and each crate's crate docs (ADR-0012, crate documentation). `docs/specs.md` is something
-  else: the register of external specifications, such as client file formats, MCP, and Agent
-  Skills, each with the version, URL, and date it was checked.
-- **Task IDs:** "none". `PLAN.md` has phases (`Phase 1` to `Phase 7` in §5) with no task IDs,
-  conflicts `C1` to `C9` (§2), and open questions `Q1` to `Q10` (§3).
+- **Docs folder:** `docs/`, with the roadmap in `docs/roadmap.md`.
+- **Core documents:** all six, `docs/00-overview.md` to `docs/05-release.md` (ADR-0013, the
+  adoption of this document set). The user reference sits beside them and is outside this rule:
+  `docs/cli.md`, `docs/diagnostics.md`, `docs/configuration.md`, and `docs/container.md`.
+  `04-quality.md` names `testing.md` for how tests are written.
+- **Specs:** `docs/subsystems/`, one file for each part of the system, and each crate's crate
+  docs (ADR-0012, crate documentation). `docs/specs.md` is something else: the register of
+  external specifications, such as client file formats, MCP, and Agent Skills, each with the
+  version, URL, and date it was checked, which `AGENTS.md` requires.
+- **Task IDs:** `M<milestone>.<task>`, such as `M4.2`. Milestones M1 to M7 are the former Phases 1
+  to 7, so "Phase 4" in an older record or in `docs/specs.md` means milestone M4. The areas are
+  `repo`, `ci`, `docs`, and the scopes in `commits.md`: `model`, `catalog`, `resolve`, `install`,
+  `adapters`, `cli`, `mcp`, `testkit`, `xtask`, and `release`.
 - **Environments:** Linux, then macOS and Windows. Local work and agent sessions run on Linux;
   macOS and Windows run only in CI after a push (`macos-15` and `windows-2025` in `ci.yml`); and
   the workflows, the ruleset, and the Release dry-run need GitHub itself.
-- **Definition of done:** `PLAN.md` §5, where every phase ends with a report of the exact
-  commands run and their results, a list of the checks not run, a proposed Conventional Commits
-  message with no attribution lines, and a stop. The checks are "Everyday commands" in
+- **Definition of done:** the task's `Accept` results hold, its `Verify` commands ran and passed,
+  the **Done checks** in `commits.md` pass, and the maintainer approved and committed the change.
+  The report gives the exact commands run and their results, the checks not run, and a proposed
+  Conventional Commits message with no attribution lines. The checks are "Everyday commands" in
   `AGENTS.md`; no single command runs them all.
 - **Decision log:** `docs/adr/NNNN-<title>.md`, one file per record, cited as `ADR-NNNN`. Records
   have `- **Status:**` and `- **Date:**` lines and `## Context`, `## Decision`, and
   `## Consequences` sections, often with `## Options` or `## Alternatives considered`, instead of
   the single-file template in "Decision records". Follow the existing records' shape.
-- **Feature list:** "none".
-- **Status locations:** the `**Status:**` line at the top of `PLAN.md` and each phase's
-  `**Outcome**` line; the `before-first-release` notes in `README.md`, `CODE_OF_CONDUCT.md`, and
-  `SECURITY.md`; the `**Status:**` line of `docs/versioning.md`; and the `## Status` section of
+- **Feature list:** "none". The "What Grimoire does and does not do" section of `README.md` says
+  what users get.
+- **Status locations:** the `**Status:**` line at the top of `docs/roadmap.md` and its task ticks;
+  the `before-first-release` notes in `README.md`, `CODE_OF_CONDUCT.md`, and `SECURITY.md`; the
+  `**Status:**` line at the top of `docs/05-release.md`; and the `## Status` section of
   each library crate's `README.md`.
 - **Checked documents:** `docs/cli.md`, checked against the command tree and the exit codes by
   `crates/agent-grimoire/src/docs_check.rs`; `docs/diagnostics.md`, by
@@ -64,13 +64,12 @@ so they can fill them in.
   `xtask/src/crate_docs.rs`. `cargo test --workspace --locked` runs all four.
   `cargo xtask release plan` checks the `before-first-release` markers, and lychee checks every
   Markdown link in CI.
-- **Agent guide:** `AGENTS.md`, which `CLAUDE.md` imports, and the "Where things are" table in
-  `PLAN.md`.
+- **Agent guide:** `AGENTS.md`, which `CLAUDE.md` imports.
 - **Update map:** "Documentation" in `AGENTS.md`, and "Changing the CLI or the libraries" in
   `CONTRIBUTING.md`.
 - **Diagrams:** "none".
-- **Gate evidence:** "none". The phases in `PLAN.md` close with free-form exit criteria and an
-  `**Outcome**` line.
+- **Gate evidence:** "none". Each milestone in `docs/roadmap.md` closes with free-form exit
+  criteria.
 
 ## Decisions that are the user's
 

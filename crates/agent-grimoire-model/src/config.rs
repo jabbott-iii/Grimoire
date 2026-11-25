@@ -1,6 +1,6 @@
 //! The project configuration, `grimoire.toml` in a user's repository.
 //!
-//! The design is in [`docs/architecture.md` §6.2, `grimoire.toml`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#62-grimoiretoml-user-repo).
+//! The design is in [`docs/subsystems/model.md`, `grimoire.toml`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/model.md#grimoiretoml).
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;

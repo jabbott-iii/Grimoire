@@ -2,8 +2,9 @@
 
 Grimoire is a catalog of AI-agent assets (rules, skills, agents, tools, MCP servers) plus a Rust command-line tool (CLI), `grimoire`, that installs the assets a user selects into their repository. MCP is the Model Context Protocol.
 
-- [`PLAN.md`](PLAN.md) has the phased plan and its current status.
-- [`docs/architecture.md`](docs/architecture.md) has the design.
+- [`docs/00-overview.md`](docs/00-overview.md) to [`docs/05-release.md`](docs/05-release.md) are the core documents: the overview, the architecture, the dependency policy, the platforms, quality, and releasing. Read them in order.
+- [`docs/roadmap.md`](docs/roadmap.md) has the milestones, their tasks and the current status.
+- [`docs/subsystems/`](docs/subsystems/) has a spec for each part of the system. Read the spec of the part you change.
 - [`docs/adr/`](docs/adr/) has the decisions, as architecture decision records (ADRs) that also give the reasons.
 - [`docs/specs.md`](docs/specs.md) has the external specifications (specs) that Grimoire relies on, as verified at their sources.
 
@@ -20,10 +21,10 @@ Grimoire is a catalog of AI-agent assets (rules, skills, agents, tools, MCP serv
 
 [Doctrina](https://github.com/jabbott-iii/Doctrina) is the maintainer's library of portable rules and skills for coding agents. Grimoire uses five of its rules, in `.claude/rules/`: `writing.md`, `commits.md`, `rust.md`, `testing.md`, and `roadmap-and-docs.md`. Each rule's **Project details** section holds Grimoire's values. All eleven of Doctrina's skills are in `.claude/skills/`, unchanged.
 
-- **Follow the rules as this repository's rules.** Claude Code loads `writing.md`, `commits.md`, and `testing.md` in every session, `rust.md` when it works on Rust files, and `roadmap-and-docs.md` when it works on `PLAN.md`, `AGENTS.md`, `README.md`, `CONTRIBUTING.md`, or files in `docs/`. If you are another agent, read every file in `.claude/rules/` before you start.
+- **Follow the rules as this repository's rules.** Claude Code loads `writing.md`, `commits.md`, and `testing.md` in every session, `rust.md` when it works on Rust files, and `roadmap-and-docs.md` when it works on `AGENTS.md`, `README.md`, `CONTRIBUTING.md`, or files in `docs/`. If you are another agent, read every file in `.claude/rules/` before you start.
 - **This file and the ADRs win** where a rule's general text says otherwise, for example on the shape of a crate README ([ADR-0012](docs/adr/0012-crate-documentation.md)) or of a decision record.
 - **Claude Code offers the skills as slash commands**, such as `/next-task` and `/fix-doc-drift`. Each one sets `disable-model-invocation: true`, so it starts only when someone types it. `build-course` relies on Doctrina's `teaching-materials.md`, which Grimoire hasn't adopted.
-- **Keep the copies in step with Doctrina.** Change a rule's general text or a skill in Doctrina first, then copy it here. Change only **Project details** here. The one local change to general text is `PLAN.md` in `roadmap-and-docs.md`'s `paths`, because Grimoire's roadmap is `PLAN.md`.
+- **Keep the copies in step with Doctrina.** Change a rule's general text or a skill in Doctrina first, then copy it here. Change only **Project details** here. No rule's general text differs from Doctrina's ([ADR-0013](docs/adr/0013-roadmap-and-docs-document-set.md)).
 
 ## Repository layout
 
@@ -38,7 +39,7 @@ Grimoire is a catalog of AI-agent assets (rules, skills, agents, tools, MCP serv
 | `crates/agent-grimoire-mcp` | Shared hardening (security defenses) for MCP server assets, never published: stdio, Streamable HTTP, limits and OAuth resource-server checks (checks of the access tokens that clients present) |
 | `crates/agent-grimoire-testkit` | Fixture catalogs and projects for tests (never published) |
 | `xtask/` | `cargo xtask schema`, `validate`, `pack-catalog`, `gen-marketplace`, `new`, `release`; scaffolding templates (the starting files for new assets) in `xtask/templates/` |
-| `packaging/` | Hand-written release inputs that aren't Rust ([ADR-0010](docs/adr/0010-language-policy-exceptions.md), the language-policy exceptions): the `install.sh`/`install.ps1` templates, the npm launcher, and the templates of the workflows that sync the Homebrew tap and the Scoop bucket. Release assets are generated from them at release time and never checked in ([`docs/release.md`](docs/release.md)) |
+| `packaging/` | Hand-written release inputs that aren't Rust ([ADR-0010](docs/adr/0010-language-policy-exceptions.md), the language-policy exceptions): the `install.sh`/`install.ps1` templates, the npm launcher, and the templates of the workflows that sync the Homebrew tap and the Scoop bucket. Release assets are generated from them at release time and never checked in ([`docs/05-release.md`](docs/05-release.md)) |
 | `.github/scripts/` | Workflow scripts that are language-policy exceptions ([ADR-0010](docs/adr/0010-language-policy-exceptions.md), [ADR-0011](docs/adr/0011-container-image.md)): `image-tags.sh`, the image's push, tag and `latest` steps. ShellCheck, a shell-script linter, checks them in continuous integration (CI) |
 | `Dockerfile` | The container image ([ADR-0011](docs/adr/0011-container-image.md), [`docs/container.md`](docs/container.md)): the release's static musl binaries on distroless static, a base image with no shell and no C library, COPY only. Only `release.yml` builds it, from the context that `cargo xtask release image context` writes |
 | `.grype.yaml` | The image's Grype gate ([ADR-0011](docs/adr/0011-container-image.md)); Grype is a vulnerability scanner. Any medium, high or critical match fails, fixed or not. A finding without a fix needs an ignore rule with a reason, reviewed like the exceptions in `deny.toml`, the cargo-deny dependency policy |
@@ -46,7 +47,8 @@ Grimoire is a catalog of AI-agent assets (rules, skills, agents, tools, MCP serv
 | `.claude-plugin/`, `plugins/claude-code/` | The Claude Code plugin marketplace, generated from `catalog/`. Never edit by hand |
 | `.claude/rules/`, `.claude/skills/` | The rules and skills adopted from Doctrina for work on Grimoire itself (see above). Grimoire doesn't install them; they aren't catalog assets |
 | `schemas/` | Generated JSON Schemas. Never edit by hand |
-| `docs/cli.md`, `docs/diagnostics.md`, `docs/configuration.md`, `docs/versioning.md` | The user reference: commands, flags, exit codes, `--json` output and environment; every user-facing diagnostic code; `grimoire.toml`, `grimoire.lock`, permissions and clients; the versioning and deprecation policy |
+| `docs/00-overview.md` to `docs/05-release.md`, `docs/roadmap.md`, `docs/subsystems/`, `docs/adr/`, `docs/specs.md` | The planning and design documents ([ADR-0013](docs/adr/0013-roadmap-and-docs-document-set.md)): the core documents, in reading order; the roadmap, the only place that reports status; one spec for each part of the system; the decision records; and the register of external formats |
+| `docs/cli.md`, `docs/diagnostics.md`, `docs/configuration.md`, `docs/container.md` | The user reference: commands, flags, exit codes, `--json` output and environment; every user-facing diagnostic code; `grimoire.toml`, `grimoire.lock`, permissions and clients; running and verifying the container image |
 | `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md` | The community files, at the root. `README.md` is also the `agent-grimoire` crate's page on crates.io, the PyPI long description and the README in every CLI archive |
 | `.github/ISSUE_TEMPLATE/`, `.github/pull_request_template.md`, `.github/CODEOWNERS` | The issue forms and the `config.yml` of the form chooser, the pull request checklist, and the code owners |
 
@@ -106,6 +108,13 @@ Terms in the comments above:
 
 ## Documentation
 
+- **The design documents follow the code** (`.claude/rules/roadmap-and-docs.md`). In the same change:
+  - a change in a part's behavior or design updates its spec in `docs/subsystems/`;
+  - a decision made or changed gets a record in `docs/adr/`;
+  - a finished roadmap task is ticked in `docs/roadmap.md`, and the status locations agree with it: the roadmap's `**Status:**` line, the `before-first-release` notes, the `**Status:**` line of `docs/05-release.md`, and each library crate's `## Status`;
+  - a new crate, command, module or rule gets its row in this file;
+  - a change to a policy updates its core document: dependencies in `docs/02-dependency-policy.md`, platforms in `docs/03-platforms.md`, tests and checks in `docs/04-quality.md`, versions and releases in `docs/05-release.md`;
+  - a change to the workflow or the checks also updates `CONTRIBUTING.md` and the pull request template.
 - **The user reference follows the code.** A change to a command, flag or exit code updates [`docs/cli.md`](docs/cli.md), and a new user-facing diagnostic code updates [`docs/diagnostics.md`](docs/diagnostics.md). A unit test and an integration test fail when a command, flag, exit code or diagnostic code is in the code but not in these files, or the other way round. Descriptions aren't checked, so update them in the same change.
 - **The root `README.md` uses absolute links only** (`https://github.com/jabbott-iii/Grimoire/blob/main/…`), and an xtask test enforces it. Relative links break where the file is republished: crates.io resolves them against `crates/agent-grimoire/`, PyPI doesn't rewrite them, and the CLI archives hold no `docs/`.
 - **Keep one copy of each community file.** `README.md`, `CONTRIBUTING.md`, `SECURITY.md` and `CODE_OF_CONDUCT.md` live at the root. Never add one in `.github/` or `docs/`, where GitHub also looks for them. GitHub reads `.github/` first, then the root, then `docs/`, so a copy in `.github/` would replace the root file on GitHub.
@@ -120,10 +129,10 @@ Terms in the comments above:
 
 Adding an asset is a data-only change under `catalog/`. See [`catalog/README.md`](catalog/README.md) for the required files, and run `cargo xtask validate` before you open a pull request.
 
-Any change to installed content needs a version bump and a CHANGELOG entry. Asset versions and deprecation follow [`docs/versioning.md`](docs/versioning.md).
+Any change to installed content needs a version bump and a CHANGELOG entry. Asset versions and deprecation follow [`docs/05-release.md`](docs/05-release.md#versioning).
 
 ## Commits
 
 Use Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `ci:`, `refactor:`, `test:`). The root `CHANGELOG.md` is generated from them by release-plz ([ADR-0003](docs/adr/0003-release-tooling.md), which chose release-plz for versions and changelogs). Each asset's `CHANGELOG.md` is written by hand.
 
-Mark a breaking change with `!` (`feat!: …`) or a `BREAKING CHANGE:` footer. That includes a change that breaks any library crate's public API and, while Grimoire is 0.x, an MSRV bump ([`docs/versioning.md`](docs/versioning.md)). Nothing else catches an unmarked one: release-plz runs no SemVer (semantic versioning) check of the public API.
+Mark a breaking change with `!` (`feat!: …`) or a `BREAKING CHANGE:` footer. That includes a change that breaks any library crate's public API and, while Grimoire is 0.x, an MSRV bump ([`docs/05-release.md`](docs/05-release.md#versioning)). Nothing else catches an unmarked one: release-plz runs no SemVer (semantic versioning) check of the public API.

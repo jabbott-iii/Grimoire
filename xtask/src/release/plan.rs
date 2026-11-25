@@ -193,7 +193,7 @@ pub(crate) fn check_markers(
         return Ok(());
     }
     Err(format!(
-        "{} still {} a `{BEFORE_FIRST_RELEASE}` or `{BEFORE_FIRST_RELEASE_END}` marker. Do what each opening marker says, and delete everything from it to its closing `{BEFORE_FIRST_RELEASE_END}` line, in a pull request merged to main before the release PR (docs/release.md §2 C): the README is published with the release and can't change afterwards",
+        "{} still {} a `{BEFORE_FIRST_RELEASE}` or `{BEFORE_FIRST_RELEASE_END}` marker. Do what each opening marker says, and delete everything from it to its closing `{BEFORE_FIRST_RELEASE_END}` line, in a pull request merged to main before the release PR (docs/05-release.md, Switch releases on (last)): the README is published with the release and can't change afterwards",
         marked.join(", "),
         if marked.len() == 1 { "has" } else { "have" },
     ))
@@ -286,7 +286,7 @@ pub(crate) fn check_min_cli_versions(pack: &[u8], version: &str) -> Result<(), S
     }
     let one = newer.len() == 1;
     Err(format!(
-        "{} {} a newer grimoire than {version}, the version this run releases, so that release could never install {} (`resolve/cli-too-old`). In a pull request merged to main, lower the asset's `min-cli-version` (with an asset version bump and an entry in the asset's CHANGELOG.md, then `cargo xtask pack-catalog`), or release a version at least that new through a release PR (docs/release.md §1)",
+        "{} {} a newer grimoire than {version}, the version this run releases, so that release could never install {} (`resolve/cli-too-old`). In a pull request merged to main, lower the asset's `min-cli-version` (with an asset version bump and an entry in the asset's CHANGELOG.md, then `cargo xtask pack-catalog`), or release a version at least that new through a release PR (docs/subsystems/release.md, How a release flows)",
         newer.join(", "),
         if one { "needs" } else { "need" },
         if one { "it" } else { "them" },

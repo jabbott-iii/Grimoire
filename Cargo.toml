@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-# Code-bearing assets are crates in their own asset directories (architecture.md §4).
+# Code-bearing assets are crates in their own asset directories (docs/01-architecture.md, "Repository layout").
 # Cargo rejects a glob that matches nothing, so each kind's glob arrives with its first asset.
 members = ["crates/*", "xtask", "catalog/tools/*", "catalog/mcp-servers/*"]
 
@@ -9,7 +9,7 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.96"
 license = "MIT OR Apache-2.0"
-# The maintainer kept this spelling (PLAN.md C8, 2026-11-17). Trusted publishers and
+# The maintainer kept this spelling (2026-11-17, task M1.1 in docs/roadmap.md). Trusted publishers and
 # cosign identities match it exactly, so never change its case.
 repository = "https://github.com/jabbott-iii/Grimoire"
 # Relative to the workspace root when inherited.

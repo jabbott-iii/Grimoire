@@ -1,6 +1,6 @@
 //! Command-line definitions.
 //!
-//! The design is in [`docs/architecture.md` §9, CLI](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#9-cli).
+//! The design is in [`docs/subsystems/cli.md`, CLI](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/cli.md).
 
 use std::path::PathBuf;
 

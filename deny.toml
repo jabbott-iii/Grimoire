@@ -2,7 +2,7 @@
 # Run locally with `cargo deny check`. Never loosen an entry to get CI green; fix the dependency instead.
 
 [graph]
-# The release targets (PLAN.md §4), so platform-specific dependencies are checked too.
+# The release targets (docs/03-platforms.md, "Targets"), so platform-specific dependencies are checked too.
 targets = [
     "x86_64-unknown-linux-musl",
     "aarch64-unknown-linux-musl",

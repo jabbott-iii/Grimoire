@@ -9,7 +9,7 @@ The installer writes into users' repositories. The brief (the maintainer's origi
 - Atomic means a file is either fully written or left as it was.
 - Path traversal means using `..` to climb out of a directory. A symlink escape is a symbolic link that leads outside the root.
 
-`architecture.md` §7.4, the filesystem-safety section, named cap-std for this. cap-std is a Rust library for capability-based file access: every access goes through a handle to an open directory, and can't reach outside it.
+`subsystems/install.md`, "Filesystem safety", named cap-std for this. cap-std is a Rust library for capability-based file access: every access goes through a handle to an open directory, and can't reach outside it.
 
 Two parts of the problem are already solved before any file is read or written:
 - **Path strings.** Every managed path is a `RelPath`: ASCII, relative, `/`-separated, with no `..`, drive or UNC prefixes (Windows network paths such as `\\server\share`), `:`, or Windows device names (such as `CON` or `NUL`). A destination string can't name anything outside the root.
@@ -81,5 +81,5 @@ The policy's intent still holds:
 - **Durability.** cap-tempfile does not fsync (force written data to disk). Grimoire syncs the temporary file before the rename, and syncs the directory afterward on Unix (best effort). Windows has no directory sync.
 - **Windows.**
   - cap-std performs the final rename and removal path-based on Windows (by full path, not relative to an open handle), after resolving both parents inside the sandbox. *(Corrected 2026-11-22: creating a missing directory ends the same way, in cap-primitives 4.0.3's `windows/fs/create_dir_unchecked.rs`.)*
-  - Confinement holds, but on Windows the last step is not handle-relative. This is recorded in `docs/security-model.md`.
+  - Confinement holds, but on Windows the last step is not handle-relative. This is recorded in `docs/01-architecture.md`.
 - **Reversibility.** All filesystem access is in one module (`crates/agent-grimoire-install/src/fs.rs`). Moving to (b), or to another library, changes that module only.

@@ -31,7 +31,7 @@
 //!   `grimoire.lock`.
 //!
 //! The design is in
-//! [`docs/architecture.md` §9, CLI](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#9-cli):
+//! [`docs/subsystems/cli.md`, CLI](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/cli.md):
 //! the commands (§9.1), machine use (§9.2) and exit codes (§9.3).
 //!
 //! ## How the binary calls it
@@ -77,7 +77,7 @@
 //!
 //! The library part of this package, [`run`], [`Context`] and [`Exit`], is
 //! not part of Grimoire's public API
-//! ([`docs/versioning.md` §1, The public API](https://github.com/jabbott-iii/Grimoire/blob/main/docs/versioning.md#1-the-public-api)).
+//! ([`docs/05-release.md`, The public API](https://github.com/jabbott-iii/Grimoire/blob/main/docs/05-release.md#the-public-api)).
 //! It exists so that the CLI's tests can drive the CLI. Nothing else depends
 //! on it, so a change to it isn't a breaking change. Don't depend on it.
 //!
@@ -235,7 +235,7 @@
 //!
 //! [`docs/cli.md`, Exit codes](https://github.com/jabbott-iii/Grimoire/blob/main/docs/cli.md#exit-codes)
 //! gives every condition and the commands that return each status, and
-//! [`docs/architecture.md` §9.3, Exit codes](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#93-exit-codes)
+//! [`docs/subsystems/cli.md`, Exit codes](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/cli.md#exit-codes)
 //! is their design.
 //!
 //! `run` doesn't catch panics. A panic, the way a Rust program stops on an

@@ -21,7 +21,7 @@ const RESERVED_ID_PREFIXES: [&str; 5] = [
 ///   ([`docs/specs.md`, CC-SKILL](https://github.com/jabbott-iii/Grimoire/blob/main/docs/specs.md#cc-skill-skills)).
 /// - `grimoire`: the owner of Grimoire's own managed blocks, e.g. the `CLAUDE.md`
 ///   import of `AGENTS.md`
-///   ([`docs/architecture.md` §8.2, Client read matrix and cross-client planning](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#82-client-read-matrix-and-cross-client-planning)).
+///   ([`docs/subsystems/adapters.md`, Client read matrix and cross-client planning](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/adapters.md#client-read-matrix-and-cross-client-planning)).
 const RESERVED_IDS: [&str; 2] = ["synced", "grimoire"];
 
 fn check_asset_id(value: &str) -> Result<(), String> {

@@ -6,8 +6,8 @@ Bundles live in `catalog/bundles/<id>.toml`. A bundle is a named, versioned list
 
 - Adding an asset is a **data-only change** under this directory: it needs no change to Grimoire's own code.
 - `cargo xtask validate` checks everything described here, and CI (continuous integration, the checks that run on every pull request and every push to `main`) runs it. `cargo xtask` is the repository's set of helper commands, written in Rust.
-- The design is in [`docs/architecture.md`](../docs/architecture.md) §3–§6, which cover the asset kinds, the repository layout, identifiers and versions, and manifests, configuration and catalog validation.
-- How to open the pull request is in [`CONTRIBUTING.md`](../CONTRIBUTING.md). Asset versions and deprecation (retiring an asset in favor of a named replacement) follow [`docs/versioning.md`](../docs/versioning.md).
+- The design is in the specs: [`docs/subsystems/catalog.md`](../docs/subsystems/catalog.md) for the asset kinds and catalog validation, [`docs/subsystems/model.md`](../docs/subsystems/model.md) for identifiers, versions, manifests and configuration, and [`docs/01-architecture.md`](../docs/01-architecture.md#repository-layout) for the repository layout.
+- How to open the pull request is in [`CONTRIBUTING.md`](../CONTRIBUTING.md). Asset versions and deprecation (retiring an asset in favor of a named replacement) follow [`docs/05-release.md`](../docs/05-release.md#versioning).
 
 A client is an AI coding tool that Grimoire installs assets for, such as Claude Code or Cursor. MCP is the protocol through which a client uses the tools and other content that a separate server program offers.
 
@@ -99,11 +99,11 @@ Start a new asset with `cargo xtask new <kind> <id> --maintainer <login>` (or `c
 - **Version bumps.** Any change to an asset's files needs a version bump (a higher `version` in `asset.toml`) and a CHANGELOG entry: `asset.toml` itself and every other file in the asset's directory, because they are installed or built. `README.md`, `CHANGELOG.md`, `evals/` and `tests/` are exempt.
 - **Removing an asset.**
   - It is allowed only if the asset was already `maturity = "deprecated"` (with a named `replacement`) at the comparison base: on `main` for a pull request, or at the previous tip (the commit the branch pointed to before the push) for a push. Deprecate it in an earlier change first.
-  - The policy in [`docs/versioning.md`](../docs/versioning.md) also keeps a deprecated asset, with its replacement, in at least one CLI (command-line interface) release before removal. `cargo xtask validate` can't check that, so review does.
+  - The policy in [`docs/05-release.md`](../docs/05-release.md#versioning) also keeps a deprecated asset, with its replacement, in at least one CLI (command-line interface) release before removal. `cargo xtask validate` can't check that, so review does.
 - **`min-cli-version` is at most the workspace version.**
   - `min-cli-version` names the oldest grimoire that can install the asset. The workspace version is `version` in the root `Cargo.toml`, which the CLI and its libraries share.
   - `cargo xtask validate` doesn't check it: `cargo test -p agent-grimoire --test builtin` does, and CI runs it. The test installs every embedded asset with the workspace's own version and fails with `resolve/cli-too-old` when one needs a newer grimoire.
-  - Between releases, the workspace version is still the last release's. So an asset that needs a CLI feature that isn't released yet lands after the release that ships the feature, with that release's version ([`docs/versioning.md`](../docs/versioning.md) §4, on asset versions).
+  - Between releases, the workspace version is still the last release's. So an asset that needs a CLI feature that isn't released yet lands after the release that ships the feature, with that release's version ([`docs/05-release.md`](../docs/05-release.md#asset-versions), on asset versions).
 - **Versions and reserved names.**
   - Versions are SemVer (semantic versioning, `MAJOR.MINOR.PATCH`) without build metadata, the `+…` suffix SemVer allows. So `1.2.3` and the pre-release `1.2.3-rc.1` are fine, and `1.2.3+build.5` isn't.
   - The ids `synced` and `grimoire` are reserved, as are the prefixes above. Claude Code reserves `synced` as a skill folder name, and `grimoire` owns Grimoire's own managed blocks, such as the `CLAUDE.md` import of `AGENTS.md`.

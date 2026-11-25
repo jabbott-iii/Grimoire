@@ -3,7 +3,7 @@
 These files turn a built `grimoire` into the release's distribution channels: the ways users can install it, such as the install scripts, npm, Homebrew and Scoop.
 
 - `cargo xtask release` (the repository's Rust release commands) reads them, and `.github/workflows/release.yml` runs it.
-- The runbook, the step-by-step guide to a release, is [`docs/release.md`](../docs/release.md).
+- The runbook, the step-by-step guide to a release, is [`docs/05-release.md`](../docs/05-release.md).
 - The design is [ADR-0009](../docs/adr/0009-release-pipeline.md), the architecture decision record (ADR) for the release pipeline and its distribution channels.
 
 | Path | What | Where it ends up |

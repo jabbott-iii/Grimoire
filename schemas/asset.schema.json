@@ -189,7 +189,7 @@
       "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
     },
     "Kind": {
-      "description": "An asset kind ([`docs/architecture.md` §3, Asset kinds](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#3-asset-kinds)).",
+      "description": "An asset kind ([`docs/subsystems/catalog.md`, Asset kinds](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/catalog.md#asset-kinds)).",
       "oneOf": [
         {
           "description": "Instructions loaded into context automatically, always or for matching paths.",
@@ -731,7 +731,7 @@
       "pattern": "^((rules|skills|agents):.+|instructions|mcp|hooks)$"
     },
     "Strategy": {
-      "description": "How an output is written\n([`docs/architecture.md` §6.1, `asset.toml`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#61-assettoml) and\n[§7.2, Ownership units and merge strategies](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#72-ownership-units-and-merge-strategies)).",
+      "description": "How an output is written\n([`docs/subsystems/model.md`, `asset.toml`](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/model.md#assettoml) and\n[`docs/subsystems/install.md`, Ownership units and merge strategies](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/install.md#ownership-units-and-merge-strategies)).",
       "oneOf": [
         {
           "description": "A whole file (or directory tree), byte-for-byte.",

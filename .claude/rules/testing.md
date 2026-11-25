@@ -45,7 +45,7 @@ branches".
   dependencies; and an offline link check), `security.yml`, `codeql.yml`, and the Release dry-run
   in `release.yml`, whose `release checks` job fails unless every dry-run job passed. They run on
   every pull request and every push to `main`. The branch ruleset doesn't require the CI,
-  Security, or Release checks yet (a maintainer step in `docs/release.md` §2 A), so treat each
+  Security, or Release checks yet (a maintainer step in `docs/05-release.md`, "Repository settings"), so treat each
   one as required anyway.
 
 ## A failing test means the code is wrong

@@ -4,7 +4,7 @@
 - **Date:** 2026-11-17
 - **Specs:** `RUST-REGISTRY-P5`, `NPM-P5`, `PYPI-P5`, `BREW-SCOOP-P5`, `WINGET-P5`, `SUPPLY-CHAIN-P5`, `ACTIONS-P5`, `INSTALLERS-P5` in [`../specs.md`](../specs.md), the register of verified external specs. An ID in parentheses below, such as (`NPM-P5`), names the entry a fact comes from.
 - **Amends:** [ADR-0002](0002-mcp-server-and-tool-packaging.md) (how asset binaries are found), [ADR-0003](0003-release-tooling.md) (who tags and publishes, release-PR CI, installers, PyPI, Homebrew and Scoop, dry-runs) and [ADR-0004](0004-package-and-binary-names.md) (the winget identifier and command name)
-- **Related:** [ADR-0010](0010-language-policy-exceptions.md), the code this pipeline needs that isn't Rust. [`docs/release.md`](../release.md) is the runbook.
+- **Related:** [ADR-0010](0010-language-policy-exceptions.md), the code this pipeline needs that isn't Rust. [`docs/05-release.md`](../05-release.md) is the runbook.
 
 ## Context
 
@@ -13,7 +13,7 @@ ADR-0003, an earlier architecture decision record (ADR), chose release-plz for v
 - how release pull requests (PRs), the PRs release-plz opens with the next versions, get continuous integration (CI) checks;
 - how Homebrew and Scoop (package managers for macOS and Linux, and for Windows) update themselves.
 
-Phase 5 is the release-pipeline phase of `PLAN.md`. It re-checked every channel (each way users install Grimoire) in eight research topics, each re-checked by a skeptic, a second reviewer who tried to disprove it (`*-P5`). These findings changed the plan:
+Phase 5 is the release-pipeline phase of `roadmap.md`. It re-checked every channel (each way users install Grimoire) in eight research topics, each re-checked by a skeptic, a second reviewer who tried to disprove it (`*-P5`). These findings changed the plan:
 
 - **release-plz.**
   - `release-plz/action` (its GitHub Action) installs cargo-binstall with `curl | tar` and no checksum, today from `releases/latest`. It then installs a release-plz archive that has no checksum file.
@@ -141,7 +141,7 @@ The GitHub Release comes before the registries because `cargo binstall`, the ins
 
 Why a switch:
 - A run that references a missing environment creates it with no protection rules. No job may name `release`, `crates-io`, `npm` or `pypi` until the maintainer has created them and added the required reviewer.
-- The maintainer sets the variable last, after the one-time bootstrap (setup) in `docs/release.md`. Until then, every push to `main` runs the dry-run.
+- The maintainer sets the variable last, after the one-time bootstrap (setup) in `docs/05-release.md`. Until then, every push to `main` runs the dry-run.
 - The variable only turns release mode on; it approves nothing. The required reviewers on the environments are the gates.
 
 ### Re-runs
@@ -156,12 +156,12 @@ Why a switch:
   - GitHub allows them for 30 days, and a re-run uses the run's own commit, so it can't pick up a fix.
   - If a re-run can't finish the release, and the GitHub Release is missing or still a draft, and no registry has the version, the maintainer deletes the draft and the tag (nothing locks them before publication), fixes `main`, and releases again.
   - If any registry already has the version, it is never reused: the next release bumps it.
-  - `docs/release.md` §3, on recovery, has the steps.
+  - `docs/05-release.md`, "Recovery", on recovery, has the steps.
 - A published tag is never deleted or moved. With immutable releases, GitHub refuses both, and the tag name can never be reused.
 
 ### Assets
 
-Targets and runners (`PLAN.md` §4, the target matrix). A target, or target triple, is Rust's name for a platform, such as `x86_64-unknown-linux-musl`. PR dry-runs build the three marked *PR*, one per OS.
+Targets and runners (`03-platforms.md`, "Targets", the target matrix). A target, or target triple, is Rust's name for a platform, such as `x86_64-unknown-linux-musl`. PR dry-runs build the three marked *PR*, one per OS.
 
 | Target | Runner | Archive |
 |---|---|---|
@@ -199,7 +199,7 @@ In the table, `{V}` is the release version and `{assetV}` the asset's own versio
   - issuer `https://token.actions.githubusercontent.com`.
 - The ref is `refs/heads/main` because releases run on a push to `main`, not on a tag. Fulcio builds the identity from `job_workflow_ref` (the token claim that names the workflow file and ref) and keeps its case. The immutable `sub` doesn't change it.
 - `actions/attest` v4.2.2 writes SLSA provenance (a build record in the Supply-chain Levels for Software Artifacts format) for every file, and one CycloneDX SBOM attestation per archive.
-- Users check downloads with `sha256sum -c`, `gh attestation verify` (gh 2.102.0 or later), `cosign verify-blob`, and `gh release verify-asset` for GitHub's own release attestation. The exact commands are in `docs/release.md`.
+- Users check downloads with `sha256sum -c`, `gh attestation verify` (gh 2.102.0 or later), `cosign verify-blob`, and `gh release verify-asset` for GitHub's own release attestation. The exact commands are in `docs/05-release.md`.
 - *(Phase 6, [ADR-0011](0011-container-image.md) decision 6: every signature and attestation moved into the reusable workflow `.github/workflows/sign.yml`, which the `sign-files` job calls, because every job in `release.yml` with `id-token` got the identity above. The identity is now `https://github.com/jabbott-iii/Grimoire/.github/workflows/sign.yml@refs/heads/main`. Any repository can call a public reusable workflow and get a certificate with that same name, so verifiers also pin the caller: cosign with `--certificate-github-workflow-repository jabbott-iii/Grimoire --certificate-github-workflow-ref refs/heads/main`, and gh with `--repo jabbott-iii/Grimoire --signer-workflow jabbott-iii/Grimoire/.github/workflows/sign.yml@refs/heads/main --source-ref refs/heads/main --deny-self-hosted-runners`. No release exists yet, so no release was signed with the identity above: every release is signed by `sign.yml`. Since ADR-0011's 2026-11-18 amendment, the image is signed by `sign-image.yml` instead: its identity and `--signer-workflow` are `…/sign-image.yml@refs/heads/main`, with the same caller pins.)*
 
 ### What PR dry-runs check, and what they can't
@@ -252,8 +252,8 @@ What PR dry-runs can't check:
 - **release-plz's token can do more than open the release PR.**
   - The job's `GITHUB_TOKEN` has `contents: write` and `pull-requests: write`, so a compromised release-plz binary could push branches, create or delete tags, publish GitHub Releases or merge PRs the ruleset allows.
   - It has no `id-token`, so it can't reach a registry.
-  - See `security-model.md` §6b, on releases and distribution.
-- **Immutability isn't enforced by the workflow.** `publish` only warns when a release comes out mutable. Such a release has no release attestation, so the tap and bucket can't sync it until it is deleted and published again (`docs/release.md` §3).
+  - See `subsystems/release.md`, "The trust chain", on releases and distribution.
+- **Immutability isn't enforced by the workflow.** `publish` only warns when a release comes out mutable. Such a release has no release attestation, so the tap and bucket can't sync it until it is deleted and published again (`docs/05-release.md`, "Recovery").
 - **Rust 1.100.0 is younger than the 7-day rule** used for every other pin (a pinned release must be at least 7 days old when it is adopted). It was released on 2026-11-12, and the newest eligible toolchain is 1.99.1. This was a Phase 1 choice (the phase that set up the workspace) and isn't changed here.
 - **release-plz 0.4.3 has no upstream checksum file.** Its pin is GitHub's asset digest. That pins the exact bytes, but says nothing about who built them.
 - **`macos-15-intel`'s image is stale.** Its latest release is from 2026-08-24, with Rust 1.98.0, and `macos-26-intel` is now a standard label. Builds must install the pinned toolchain rather than use the image's Rust. Moving `x86_64-apple-darwin` to `macos-26-intel` is a follow-up.

@@ -13,7 +13,7 @@
 git_release_enable = false
 git_tag_enable = false
 # Library APIs are internal to the CLI, but a change that breaks one must be marked
-# breaking (`!`), so it ships as the next 0.y (docs/versioning.md). Nothing checks
+# breaking (`!`), so it ships as the next 0.y (docs/05-release.md). Nothing checks
 # that automatically: cargo-semver-checks would be one more unverified download.
 semver_check = false
 # `cargo update --workspace` only: dependency bumps arrive through Dependabot.

@@ -7,7 +7,7 @@
 //!
 //! `AGENTS.md` has no path scoping, so a path-scoped rule's block starts with a
 //! line saying which files it applies to
-//! ([`docs/architecture.md` §3.1, Rule](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#31-rule)).
+//! ([`docs/subsystems/catalog.md`, Rule](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/catalog.md#rule)).
 
 use agent_grimoire_install::plan::Content;
 use agent_grimoire_model::{Anchor, ClientId, OutputSpec, RelPath, Strategy};
@@ -52,7 +52,7 @@ pub(crate) fn block(
 
 /// A rule as block text: the rule, after a scope line when it is path-scoped,
 /// because shared instruction files have no path scoping
-/// ([`docs/architecture.md` §3.1, Rule](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#31-rule)).
+/// ([`docs/subsystems/catalog.md`, Rule](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/catalog.md#rule)).
 pub(crate) fn block_text(
     resolved: &Resolved<'_>,
     spec: &OutputSpec,

@@ -1,7 +1,7 @@
 //! Cross-client placement.
 //!
 //! The design is in
-//! [`docs/architecture.md` §8.2, Client read matrix and cross-client planning](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#82-client-read-matrix-and-cross-client-planning),
+//! [`docs/subsystems/adapters.md`, Client read matrix and cross-client planning](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/adapters.md#client-read-matrix-and-cross-client-planning),
 //! and [ADR-0008](https://github.com/jabbott-iii/Grimoire/blob/main/docs/adr/0008-phase-4-client-adapters.md),
 //! the record of what the Codex, Cursor, Gemini CLI and Copilot adapters write,
 //! chose both placements below.
@@ -215,7 +215,7 @@ fn written(desired: &[Desired]) -> BTreeMap<&AssetId, Written> {
 
 /// Reports duplicates placement can't avoid, and content that another client,
 /// possibly an unselected one, also reads
-/// ([`docs/architecture.md` §8.2, Client read matrix and cross-client planning](https://github.com/jabbott-iii/Grimoire/blob/main/docs/architecture.md#82-client-read-matrix-and-cross-client-planning)).
+/// ([`docs/subsystems/adapters.md`, Client read matrix and cross-client planning](https://github.com/jabbott-iii/Grimoire/blob/main/docs/subsystems/adapters.md#client-read-matrix-and-cross-client-planning)).
 pub(crate) fn warnings(resolution: &Resolution<'_>, desired: &[Desired], report: &mut Report) {
     let project = |path: &str| {
         desired
