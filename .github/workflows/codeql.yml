@@ -1,6 +1,6 @@
 # CodeQL code scanning (advanced setup): on every pull request to main, every push to
 # main, and weekly, so that new queries surface findings without a code change. The
-# ruleset's code-scanning rule reads these results.
+# results reach pull requests as the `CodeQL` check.
 name: "CodeQL Advanced"
 
 on:
@@ -49,6 +49,10 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
+          # More security queries than the default suite, because the code reads
+          # untrusted input: a user's project, catalog directories, the embedded pack,
+          # MCP requests, and hook events (rust.md; CODEQL in docs/specs.md).
+          queries: security-extended
       - name: Perform CodeQL analysis
         uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
