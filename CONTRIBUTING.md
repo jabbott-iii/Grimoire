@@ -54,6 +54,7 @@ Small fixes can go straight to a pull request.
 cargo fmt --all
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
+RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps --locked   # the API docs, as CI builds them
 cargo xtask validate                        # validate catalog/
 cargo xtask validate --base upstream/main   # also require version bumps for changed assets
 ```
@@ -129,6 +130,7 @@ If you see a client change but can't fix it yourself, open a client format chang
 ## Commits
 
 - **Use [Conventional Commits](https://www.conventionalcommits.org/)**, a message format that starts with the type of change: `feat:`, `fix:`, `docs:`, `chore:`, `ci:`, `refactor:` or `test:`.
+- **[`.claude/rules/commits.md`](.claude/rules/commits.md) lists the scopes**, such as `cli`, `catalog`, and `xtask`, and the changes that must land in the same commit, such as a model type and its regenerated `schemas/`. [`.claude/rules/writing.md`](.claude/rules/writing.md) covers the text of commit messages, docs, and comments.
 - **release-plz reads them.** It writes the root `CHANGELOG.md` from these messages and picks the next version from them. [ADR-0003](docs/adr/0003-release-tooling.md) chose release-plz for versions and changelogs, and [ADR-0009](docs/adr/0009-release-pipeline.md), the release pipeline, limited it to opening the release pull request, which carries the new version and changelog. The release workflow tags and publishes.
 - **Every commit message counts.** Pull requests are merged with merge commits only, so each commit on your branch reaches `main` as you wrote it. Before you ask for review, squash fixups (fold each fix-up commit into the commit it fixes) and reword unclear messages.
 - **Mark every breaking change** with `!` after the type (`feat!:`) or a `BREAKING CHANGE:` footer, as [`docs/versioning.md`](docs/versioning.md) requires. Two kinds are easy to miss:
@@ -186,7 +188,7 @@ Each has a stated scope and checks of its own. Any other code that isn't Rust ne
 
 ## AI-assisted contributions
 
-Contributions written with a coding agent are held to the same standard as any other. [`AGENTS.md`](AGENTS.md) holds the rules the agent must follow ([`CLAUDE.md`](CLAUDE.md) imports it for Claude Code): verify formats first, report only what was run, never handle credentials, never weaken checks, and keep changes small. You are responsible for every line you submit, so read it all and run the checks yourself.
+Contributions written with a coding agent are held to the same standard as any other. [`AGENTS.md`](AGENTS.md) holds the rules the agent must follow ([`CLAUDE.md`](CLAUDE.md) imports it for Claude Code): verify formats first, report only what was run, never handle credentials, never weaken checks, and keep changes small. The rules in [`.claude/rules/`](.claude/rules/) apply too: Claude Code loads them itself, and any other agent must read every file there before it starts. The skills in [`.claude/skills/`](.claude/skills/) are slash commands, such as `/next-task`, that start only when someone types them. You are responsible for every line you submit, so read it all and run the checks yourself.
 
 ## Security issues
 
