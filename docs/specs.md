@@ -46,7 +46,7 @@ Rows were checked 2026-11-16 unless they say otherwise; the client rows were re-
 | DENY | cargo-deny | 0.21.0; action v2.1.2 | https://github.com/EmbarkStudios/cargo-deny | Verified |
 | UNUSED-DEPS | Cargo unused-dep lints, cargo-machete, cargo-shear, cargo-udeps | Rust 1.100.0; 0.10.1 / 1.14.1 / 0.1.61 | https://doc.rust-lang.org/stable/cargo/reference/lints.html | Verified |
 | SECRETS | GitHub secret scanning, gitleaks, private vulnerability reporting | gitleaks v8.30.1 | https://docs.github.com/en/code-security | Verified; private vulnerability reporting re-checked 2026-11-17 in SECURITY-POLICY-P7 (now enabled) |
-| DEPENDABOT | Dependabot options | docs fetched 2026-11-16 | https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference | Verified; Docker re-checked 2026-11-17 in BASE-IMAGE-P6 (cooldown fails open outside Docker Hub) |
+| DEPENDABOT | Dependabot options | docs fetched 2026-11-16; `commit-message` from github/docs @ `92ac1df470ee` (2026-11-24) | https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference | Verified; Docker re-checked 2026-11-17 in BASE-IMAGE-P6 (cooldown fails open outside Docker Hub); `commit-message` re-checked 2026-11-24 |
 | LYCHEE | lychee link checker | 0.24.2; action v2.9.0 | https://github.com/lycheeverse/lychee-action | Verified; the v0.24.2 tarball checked locally 2026-11-17 for Phase 7 (its SHA-256 matches `ci.yml`) |
 | RUST | Rust stable toolchain | 1.100.0 (channel 2026-11-12) | https://static.rust-lang.org/dist/channel-rust-stable.toml | Verified; re-checked 2026-11-17 in ACTIONS-P5 |
 | CRATES | Candidate crate versions | see table | https://crates.io | Verified |
@@ -861,6 +861,13 @@ Checked 2026-11-16. Status: Verified.
   - **Cooldown fails open outside Docker Hub.** Since dependabot-core `3bfea916` (2026-09-18), the only accepted publication date is Docker Hub's `tag_last_pushed`. For gcr.io the update is allowed at once, with a `cooldown_date_unavailable` warning. The check above missed this. So the maintainer checks a new digest's age by hand before merging, for example with `curl -s https://gcr.io/v2/distroless/static-debian13/tags/list | jq '.manifest["sha256:<digest>"].timeUploadedMs'` (an undocumented field; BASE-IMAGE-P6).
   - **Docker gets no security updates.** Images in workflow `container:`, `services:` or `uses: docker://` are never updated.
   - Distroless bump PRs carry no release notes: Dependabot reads them only from config `Labels`, and distroless sets none.
+- **Re-checked 2026-11-24, `commit-message`** (the page's source, `content/code-security/reference/supply-chain-security/dependabot-options-reference.md` in https://github.com/github/docs, at its last commit `92ac1df470ee`):
+  - Without the option, "Commit messages follow similar patterns to those detected in the repository." Dependabot's first pull request here, `4e40d28`, got `build(deps): …` that way.
+  - `prefix`, of up to 50 characters, starts every commit message and pull request title. Dependabot adds the colon itself after a prefix that ends with a letter, a digit, `)`, or `]`.
+  - `include` accepts only `scope`, which puts the type of dependency after the prefix: `deps` or `deps-dev`. So `prefix: "ci"` gives `ci(deps): …`. That a GitHub Actions update is always `deps`, never `deps-dev`, is UNVERIFIED until Dependabot's first such pull request.
+  - `prefix-development` is supported only by `bundler`, `composer`, `mix`, `maven`, `npm`, `pip`, and `uv`.
+  - For grouped updates, "the branch name and pull request title are defined by the group `IDENTIFIER`". How a group's title combines with the prefix is UNVERIFIED.
+  - Used by the `github-actions` entry in `.github/dependabot.yml`, whose updates change workflows and so take the `ci` type of `.claude/rules/commits.md`.
 
 ### LYCHEE
 - **Version:** lychee v0.24.2; `lycheeverse/lychee-action` v2.9.0, commit `e7477775783ea5526144ba13e8db5eec57747ce8`.

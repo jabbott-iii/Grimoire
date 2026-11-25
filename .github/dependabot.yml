@@ -1,4 +1,5 @@
-# Syntax verified against docs.github.com on 2026-11-16 (DEPENDABOT in docs/specs.md).
+# Syntax verified against docs.github.com on 2026-11-16, and `commit-message` on 2026-11-24
+# (DEPENDABOT in docs/specs.md).
 # Every entry sets a cooldown of at least 7 days for version updates; security updates are never delayed.
 # The docker entry's cooldown has no effect for gcr.io (see below), so its updates are checked by hand.
 version: 2
@@ -37,6 +38,12 @@ updates:
         applies-to: version-updates
         patterns: ["*"]
         update-types: ["minor", "patch"]
+    # Action bumps change workflows, which .claude/rules/commits.md types as `ci`, so their
+    # messages read `ci(deps): …`. The other entries keep the prefix that Dependabot detects
+    # from the history, `build(deps): …`.
+    commit-message:
+      prefix: "ci"
+      include: "scope"
 
   # Bumps the pinned toolchain in rust-toolchain.toml. The MSRV (rust-version) is never changed by Dependabot.
   - package-ecosystem: "rust-toolchain"
